@@ -36,27 +36,35 @@ router.get('/location/:_id', (req, res) => {
 });
 
 router.get('/city/:city', (req, res) => {
+  //Criteria variable
   const city = { city: req.params.city};
-  var cityEvents = [];
-  Location.find(city)
+  //Array for all events of one city
+  let cityEvents = [];
+  
+  var promise = new Promise(() => {
+    //Get all locations which have the searched city as their city attribute
+    Location.find(city)
     .then(locations => {
+      console.log("cityEvents innerhalb äußere then", cityEvents);
+      var tempCityEvents = [];
+      //Iterate over all locations of the searched city
       locations.forEach((location) => {
         const id = { location: location._id};
+        //get all events which have the location ID
         Event.find(id)
           .then(events => {
+            //Iterate over all events and push them into the final array
             events.forEach((event) => {
               cityEvents.push(event);
             });
-            console.log(1);
-            console.log(cityEvents);
+            console.log("cityEvents", cityEvents);
           });
-          console.log(2);
-          console.log(cityEvents);
       });
-      console.log(3);
-      console.log(cityEvents);
-      res.json(cityEvents);
     });
+  }).then(() => { //After all events are pushed to the array, return the array
+    console.log("servusla");
+    res.json(cityEvents);
+  });
 });
 
 router.get('/month/:month', (req, res) => {
