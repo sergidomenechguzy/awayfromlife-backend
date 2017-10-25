@@ -36,35 +36,34 @@ router.get('/location/:_id', (req, res) => {
 });
 
 router.get('/city/:city', (req, res) => {
-  //Criteria variable
-  const city = { city: req.params.city};
-  //Array for all events of one city
-  let cityEvents = [];
-  
-  var promise = new Promise(() => {
-    //Get all locations which have the searched city as their city attribute
-    Location.find(city)
-    .then(locations => {
-      console.log("cityEvents innerhalb äußere then", cityEvents);
-      var tempCityEvents = [];
-      //Iterate over all locations of the searched city
-      locations.forEach((location) => {
-        const id = { location: location._id};
-        //get all events which have the location ID
-        Event.find(id)
-          .then(events => {
-            //Iterate over all events and push them into the final array
-            events.forEach((event) => {
-              cityEvents.push(event);
-            });
-            console.log("cityEvents", cityEvents);
-          });
+  const cityQuery = { city: req.params.city };
+  var cityEvents = [];
+
+  Event.find()
+  .then((events) => {
+    // console.log("ALL EVENTS OUTER", events);
+    Location.find(cityQuery)
+    .then((locations) => {
+      // console.log("ALL EVENTS INNER", events);
+      // console.log("ALL CITY LOCATIONS", locations);
+      events.forEach((event) => {
+        locations.forEach((location) => {
+          // console.log("CURRENT EVENT", event);
+          // console.log("CURRENT LOCATION", location);
+          // console.log("CURRENT EVENTLIST", cityEvents);
+          if (event.location == location._id) {
+            cityEvents.push(event);
+          }
+        });
       });
+      // console.log("CURRENT EVENTLIST", cityEvents);
+    })
+    .then(() => {
+      res.json(cityEvents);
     });
-  }).then(() => { //After all events are pushed to the array, return the array
-    console.log("servusla");
-    res.json(cityEvents);
   });
+
+  
 });
 
 router.get('/month/:month', (req, res) => {
