@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:_id', (req, res) => {
-  const id = { _id: req.params._id};
+  const id = { _id: req.params._id };
   Event.findOne(id)
     .then(event => {
       res.json(event);
@@ -28,7 +28,7 @@ router.get('/:_id', (req, res) => {
 });
 
 router.get('/location/:_id', (req, res) => {
-  const id = { location: req.params._id};
+  const id = { location: req.params._id };
   Event.find(id)
     .then(events => {
       res.json(events);
@@ -40,30 +40,19 @@ router.get('/city/:city', (req, res) => {
   var cityEvents = [];
 
   Event.find()
-  .then((events) => {
-    // console.log("ALL EVENTS OUTER", events);
-    Location.find(cityQuery)
-    .then((locations) => {
-      // console.log("ALL EVENTS INNER", events);
-      // console.log("ALL CITY LOCATIONS", locations);
-      events.forEach((event) => {
-        locations.forEach((location) => {
-          // console.log("CURRENT EVENT", event);
-          // console.log("CURRENT LOCATION", location);
-          // console.log("CURRENT EVENTLIST", cityEvents);
-          if (event.location == location._id) {
-            cityEvents.push(event);
-          }
+    .then((events) => {
+      Location.find(cityQuery)
+        .then((locations) => {
+          events.forEach((event) => {
+            locations.forEach((location) => {
+              if (event.location == location._id) cityEvents.push(event);
+            });
+          });
+        })
+        .then(() => {
+          res.json(cityEvents);
         });
-      });
-      // console.log("CURRENT EVENTLIST", cityEvents);
-    })
-    .then(() => {
-      res.json(cityEvents);
     });
-  });
-
-  
 });
 
 router.get('/month/:month', (req, res) => {
@@ -71,7 +60,7 @@ router.get('/month/:month', (req, res) => {
   Event.find()
     .then(events => {
       events.forEach((event) => {
-        if(event.date.getMonth() == req.params.month) {
+        if (event.date.getMonth() == req.params.month) {
           monthEvents.push(event);
         }
       });
@@ -86,7 +75,7 @@ router.post('/', (req, res) => {
 });
 
 router.put('/:_id', (req, res) => {
-  const id = { _id: req.params._id};
+  const id = { _id: req.params._id };
   const update = {
     title: req.body.title,
     description: req.body.description,
@@ -94,15 +83,15 @@ router.put('/:_id', (req, res) => {
     date: req.body.date
   };
   Event.findOneAndUpdate(id, update, {}, (err, event) => {
-    if(err) throw err;
+    if (err) throw err;
     res.json(event);
   });
 });
 
 router.delete('/:_id', (req, res) => {
-  const id = { _id: req.params._id};
+  const id = { _id: req.params._id };
   Event.remove(id, (err, event) => {
-    if(err) throw err;
+    if (err) throw err;
     res.json(event);
   });
 });
