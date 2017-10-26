@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const moment = require('moment');
 const router = express.Router();
 
 // load event model
@@ -14,7 +15,6 @@ const Location = mongoose.model('locations');
 router.get('/', (req, res) => {
   Event.find()
     .then(events => {
-      console.log(events);
       res.json(events);
     });
 });
@@ -37,7 +37,7 @@ router.get('/location/:_id', (req, res) => {
 
 router.get('/city/:city', (req, res) => {
   const cityQuery = { city: req.params.city };
-  var cityEvents = [];
+  let cityEvents = [];
 
   Event.find()
     .then((events) => {
@@ -55,16 +55,16 @@ router.get('/city/:city', (req, res) => {
     });
 });
 
-router.get('/month/:month', (req, res) => {
-  let monthEvents = [];
+router.get('/date/:date', (req, res) => {
+  let dateEvents = [];
   Event.find()
-    .then(events => {
+    .then((events) => {
       events.forEach((event) => {
-        if (event.date.getMonth() == req.params.month) {
-          monthEvents.push(event);
-        }
+        if (moment(event.startDate).format('YYYY-MM') == req.params.date) dateEvents.push(event);
+        else if (moment(event.startDate).format('YYYY-MM-DD') == req.params.date) dateEvents.push(event);
+        else if (moment(event.startDate).format('YYYY') == req.params.date) dateEvents.push(event);
       });
-      res.json(monthEvents);
+      res.json(dateEvents);
     });
 });
 
