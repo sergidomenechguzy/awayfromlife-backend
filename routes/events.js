@@ -56,15 +56,10 @@ router.get('/city/:city', (req, res) => {
 });
 
 router.get('/date/:date', (req, res) => {
-  let dateEvents = [];
-  Event.find()
+  let regex = "^" + req.params.date;
+  Event.find({startDate: new RegExp(regex, "g")})
     .then((events) => {
-      events.forEach((event) => {
-        if (moment(event.startDate).format('YYYY-MM') == req.params.date) dateEvents.push(event);
-        else if (moment(event.startDate).format('YYYY-MM-DD') == req.params.date) dateEvents.push(event);
-        else if (moment(event.startDate).format('YYYY') == req.params.date) dateEvents.push(event);
-      });
-      res.json(dateEvents);
+      res.json(events);
     });
 });
 
