@@ -6,7 +6,7 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-// routes
+// events
 router.get('/', (req, res) => {
   Location.find()
     .then(locations => {
