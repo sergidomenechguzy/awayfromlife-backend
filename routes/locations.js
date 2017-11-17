@@ -22,6 +22,14 @@ router.get('/:_id', (req, res) => {
     });
 });
 
+router.get('/name/:name', (req, res) => {
+  let regex = ".*" + req.params.name + ".*";
+  Event.find({name: new RegExp(regex, "gi")})
+  .then((locations) => {
+    res.json(locations);
+  });
+});
+
 router.post('/', (req, res) => {
   new Location(req.body)
     .save()
