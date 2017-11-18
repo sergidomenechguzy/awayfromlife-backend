@@ -2,21 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
-const ExtractJwt = require('passport-jwt').ExtractJwt;
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 // load user model
 require('../models/User');
 const User = mongoose.model('users');
-
-const jwtOptions = {};
-jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
-jwtOptions.secretOrKey = 'superSecretSecret';
-
-const jwtOptionsFrontend = {};
-jwtOptionsFrontend.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
-jwtOptionsFrontend.secretOrKey = 'currentFrontendSecret';
 
 // events
 router.get('/', (req, res) => {
@@ -27,22 +18,12 @@ router.get('/', (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-  let email;
-  let password;
+  const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
+  const email = decodedToken.email;
+  const password = decodedToken.password;
 
-  passport.use(new JwtStrategy(jwtOptionsFrontend, (jwt_payload, next) => {
-    console.log('payload received', jwt_payload);
-    email = jwt_payload.email;
-    password = jwt_payload.passport;
-  }));
-
-  // if(req.body.email && req.body.password) {
-  //   email = req.body.email;
-  //   password = req.body.password;
-  // }
   User.findOne({email: email})
   .then(user => {
-    console.log(user);
     if(!user) {
       res.status(401).json({message:"wrong email or password1"});
     }
@@ -50,7 +31,7 @@ router.post('/login', (req, res) => {
       if(err) throw err;
       if(isMatch) {
         const payload = {id: user.id};
-        const token = jwt.sign(payload, jwtOptions.secretOrKey);
+        const token = jwt.sign(payload, 'superSecretSecret');
         res.json({message: "ok", token: token});
       } else {
         res.status(401).json({message:"wrong email or password2"});
@@ -59,11 +40,41 @@ router.post('/login', (req, res) => {
   })
 });
 
+router.post('/login2', (req, res) => {
+  let email;
+  let password;
+
+  if(req.body.email && req.body.password) {
+    email = req.body.email;
+    password = req.body.password;
+  }
+  let unhashedPassword = password;
+  User.findOne({email: email})
+  .then(user => {
+    if(!user) {
+      res.status(401).json({message:"wrong email or password1"});
+    }
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if(err) throw err;
+      if(isMatch) {
+        const payload = {email: email, password: unhashedPassword};
+        const token = jwt.sign(payload, 'currentFrontendSecret');
+        const payload2 = {id: user.id};
+        const token2 = jwt.sign(payload2, 'superSecretSecret');
+        res.json({message: "ok", tokenLogin: token, tokenID: token2});
+      } else {
+        res.status(401).json({message:"wrong email or password2"});
+      }
+    })
+  })
+});
+
 router.post('/register', (req, res) => {
+  const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
   const newUser = new User({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password
+    name: decodedToken.name,
+    email: decodedToken.email,
+    password: decodedToken.password
   });
 
   bcrypt.genSalt(10, (err, salt) => {
