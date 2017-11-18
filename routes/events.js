@@ -28,8 +28,8 @@ router.get('/:_id', (req, res) => {
 });
 
 router.get('/title/:title', (req, res) => {
-  let regex = ".*" + req.param.title + ".*";
-  Event.find({title: new RegExp(regex, "g")})
+  let regex = ".*" + req.params.title + ".*";
+  Event.find({title: new RegExp(regex, "gi")})
   .then((events) => {
     res.json(events);
   });
