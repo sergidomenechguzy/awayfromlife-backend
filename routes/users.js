@@ -14,6 +14,10 @@ const jwtOptions = {};
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
 jwtOptions.secretOrKey = 'superSecretSecret';
 
+const jwtOptionsFrontend = {};
+jwtOptionsFrontend.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
+jwtOptionsFrontend.secretOrKey = 'currentFrontendSecret';
+
 // events
 router.get('/', (req, res) => {
   User.find()
@@ -25,10 +29,17 @@ router.get('/', (req, res) => {
 router.post('/login', (req, res) => {
   let email;
   let password;
-  if(req.body.email && req.body.password) {
-    email = req.body.email;
-    password = req.body.password;
-  }
+
+  passport.use(new JwtStrategy(jwtOptionsFrontend, (jwt_payload, next) => {
+    console.log('payload received', jwt_payload);
+    email = jwt_payload.email;
+    password = jwt_payload.passport;
+  }));
+
+  // if(req.body.email && req.body.password) {
+  //   email = req.body.email;
+  //   password = req.body.password;
+  // }
   User.findOne({email: email})
   .then(user => {
     console.log(user);
