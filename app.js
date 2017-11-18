@@ -11,6 +11,7 @@ const events = require('./routes/events');
 // connect to mongoose
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://testuser:testuser@ds119685.mlab.com:19685/awayfromlife', { useMongoClient: true })
+//mongoose.connect('mongodb://superadmin:shingshongadmin@ds119675.mlab.com:19675/awayfromlife', { useMongoClient: true })
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
