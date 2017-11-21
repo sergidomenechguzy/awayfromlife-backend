@@ -6,7 +6,7 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-// routes
+// events
 router.get('/', (req, res) => {
   Location.find()
     .then(locations => {
@@ -20,6 +20,14 @@ router.get('/:_id', (req, res) => {
     .then(location => {
       res.json(location);
     });
+});
+
+router.get('/name/:name', (req, res) => {
+  let regex = ".*" + req.params.name + ".*";
+  Event.find({name: new RegExp(regex, "gi")})
+  .then((locations) => {
+    res.json(locations);
+  });
 });
 
 router.post('/', (req, res) => {

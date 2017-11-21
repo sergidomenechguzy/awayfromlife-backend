@@ -27,6 +27,14 @@ router.get('/:_id', (req, res) => {
     });
 });
 
+router.get('/title/:title', (req, res) => {
+  let regex = ".*" + req.params.title + ".*";
+  Event.find({title: new RegExp(regex, "gi")})
+  .then((events) => {
+    res.json(events);
+  });
+});
+
 router.get('/location/:_id', (req, res) => {
   const id = { location: req.params._id };
   Event.find(id)

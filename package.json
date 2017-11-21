@@ -9,9 +9,13 @@
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.2",
     "express": "^4.16.1",
+    "jsonwebtoken": "^8.1.0",
     "moment": "^2.19.1",
-    "mongoose": "^4.12.1"
+    "mongoose": "^4.12.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^3.0.1"
   }
 }
