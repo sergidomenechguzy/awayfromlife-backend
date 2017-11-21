@@ -40,35 +40,6 @@ router.post('/login', (req, res) => {
   })
 });
 
-router.post('/login2', (req, res) => {
-  let email;
-  let password;
-
-  if(req.body.email && req.body.password) {
-    email = req.body.email;
-    password = req.body.password;
-  }
-  let unhashedPassword = password;
-  User.findOne({email: email})
-  .then(user => {
-    if(!user) {
-      res.status(401).json({message:"wrong email or password1"});
-    }
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if(err) throw err;
-      if(isMatch) {
-        const payload = {email: email, password: unhashedPassword};
-        const token = jwt.sign(payload, 'currentFrontendSecret');
-        const payload2 = {id: user.id};
-        const token2 = jwt.sign(payload2, 'superSecretSecret');
-        res.json({message: "ok", tokenLogin: token, tokenID: token2});
-      } else {
-        res.status(401).json({message:"wrong email or password2"});
-      }
-    })
-  })
-});
-
 router.post('/register', (req, res) => {
   const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
   const newUser = new User({
