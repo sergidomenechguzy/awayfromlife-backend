@@ -19,12 +19,13 @@ const EventSchema = new Schema({
     required: true
   },
   endDate: {
-	  type: String
+    type: String
   },
   time: {
-	type: String,
-	required: true
+    type: String,
+    required: true
   }
 });
 
 mongoose.model('events', EventSchema);
+mongoose.model('unvalidated_events', EventSchema);

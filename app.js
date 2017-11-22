@@ -8,6 +8,8 @@ const app = express();
 // load routes
 const locations = require('./routes/locations');
 const events = require('./routes/events');
+const unvalidated_locations = require('./routes/unvalidated_locations');
+const unvalidated_events = require('./routes/unvalidated_events');
 const users = require('./routes/users');
 
 // passport config
@@ -16,6 +18,7 @@ require('./config/passport')(passport);
 // connect to mongoose
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://testuser:testuser@ds119685.mlab.com:19685/awayfromlife', { useMongoClient: true })
+//mongoose.connect('mongodb://superadmin:shingshongadmin@ds119675.mlab.com:19675/awayfromlife', { useMongoClient: true })
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
@@ -39,6 +42,8 @@ app.get('/', (req, res) => {
 // use routes
 app.use('/api/locations', locations);
 app.use('/api/events', events);
+app.use('/api/unvalidated-locations', unvalidated_locations);
+app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
 
 const port = 3000;
