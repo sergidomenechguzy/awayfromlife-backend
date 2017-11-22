@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const passport = require('passport');
 const router = express.Router();
 
 // load location model
@@ -39,7 +40,7 @@ router.get('/name/:name', (req, res) => {
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   const newLocation = {
     name: req.body.name,
     address: req.body.address,
@@ -58,7 +59,7 @@ router.post('/', (req, res) => {
     });
 });
 
-router.put('/:_id', (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     name: req.body.name,
@@ -76,7 +77,7 @@ router.put('/:_id', (req, res) => {
   });
 });
 
-router.delete('/:_id', (req, res) => {
+router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Location.remove(id, (err, location) => {
     if (err) throw err;

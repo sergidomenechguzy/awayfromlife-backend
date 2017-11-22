@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const passport = require('passport');
 const router = express.Router();
 
 // load event model
@@ -91,7 +92,7 @@ router.get('/date/:date', (req, res) => {
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   const newEvent = {
     title: req.body.title,
     description: req.body.description,
@@ -108,7 +109,7 @@ router.post('/', (req, res) => {
     });
 });
 
-router.put('/:_id', (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     title: req.body.title,
@@ -124,7 +125,7 @@ router.put('/:_id', (req, res) => {
   });
 });
 
-router.delete('/:_id', (req, res) => {
+router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Event.remove(id, (err, event) => {
     if (err) throw err;

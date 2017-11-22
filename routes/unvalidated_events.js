@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const passport = require('passport');
 const router = express.Router();
 
 // load event model
@@ -7,7 +8,7 @@ require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
 
 // unvalidated_events routes
-router.get('/', (req, res) => {
+router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   Event.find()
     .then(events => {
       res.json(events);
@@ -17,7 +18,7 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/:_id', (req, res) => {
+router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Event.findOne(id)
     .then(event => {
@@ -28,7 +29,7 @@ router.get('/:_id', (req, res) => {
     });
 });
 
-router.get('/title/:title', (req, res) => {
+router.get('/title/:title', passport.authenticate('jwt', { session: false }), (req, res) => {
   let regex = ".*" + req.params.title + ".*";
   Event.find({ title: new RegExp(regex, "gi") })
     .then((events) => {
@@ -39,7 +40,7 @@ router.get('/title/:title', (req, res) => {
     });
 });
 
-router.get('/date/:date', (req, res) => {
+router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req, res) => {
   let regex = "^" + req.params.date;
   Event.find({ startDate: new RegExp(regex, "g") })
     .then((events) => {
@@ -67,7 +68,7 @@ router.post('/', (req, res) => {
     });
 });
 
-router.delete('/:_id', (req, res) => {
+router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Event.remove(id, (err, event) => {
     if (err) throw err;
