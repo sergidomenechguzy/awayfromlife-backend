@@ -13,15 +13,20 @@ jwtOptions.secretOrKey = 'superSecretSecret';
 
 module.exports = function (passport) {
   passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
-    User.findOne({ _id: jwt_payload.id })
-      .then(user => {
-        if (!user) {
-          next(null, false);
-        }
-        next(null, user);
-      })
-      .catch((err) => {
-        throw err;
-      });
+    if (jwt_payload.expire < Date.now()) {
+      next(null, false);
+    }
+    else {
+      User.findOne({ _id: jwt_payload.id })
+        .then(user => {
+          if (!user) {
+            next(null, false);
+          }
+          next(null, user);
+        })
+        .catch((err) => {
+          throw err;
+        });
+    }
   }));
 };

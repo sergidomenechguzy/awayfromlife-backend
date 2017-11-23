@@ -36,7 +36,9 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', (req, res) => {
-  res.send('API started');
+  const date1 = Date.now();
+  const date2 = Date.now() + 10000;
+  res.send('API started ' + date1 + ', ' + date2);
 });
 
 // use routes

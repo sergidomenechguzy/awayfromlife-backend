@@ -10,16 +10,6 @@ require('../models/User');
 const User = mongoose.model('users');
 
 // events
-router.get('/', (req, res) => {
-  User.find()
-    .then(users => {
-      res.json(users);
-    })
-    .catch((err) => {
-      throw err;
-    });
-});
-
 router.post('/login', (req, res) => {
   const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
   const email = decodedToken.email;
@@ -33,7 +23,10 @@ router.post('/login', (req, res) => {
       bcrypt.compare(password, user.password, (err, isMatch) => {
         if (err) throw err;
         if (isMatch) {
-          const payload = { id: user.id };
+          const payload = {
+            id: user.id,
+            expire: Date.now() + 7200000
+          };
           const token = jwt.sign(payload, 'superSecretSecret');
           res.json({ message: "ok", token: token });
         } else {
