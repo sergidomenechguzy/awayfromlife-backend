@@ -8,6 +8,8 @@ const app = express();
 // load routes
 const locations = require('./routes/locations');
 const events = require('./routes/events');
+const unvalidated_locations = require('./routes/unvalidated_locations');
+const unvalidated_events = require('./routes/unvalidated_events');
 const users = require('./routes/users');
 
 // passport config
@@ -34,12 +36,16 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', (req, res) => {
-  res.send('API started');
+  const date1 = Date.now();
+  const date2 = Date.now() + 10000;
+  res.send('API started ' + date1 + ', ' + date2);
 });
 
 // use routes
 app.use('/api/locations', locations);
 app.use('/api/events', events);
+app.use('/api/unvalidated-locations', unvalidated_locations);
+app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
 
 const port = 3000;

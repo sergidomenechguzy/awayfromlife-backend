@@ -10,34 +10,33 @@ require('../models/User');
 const User = mongoose.model('users');
 
 // events
-router.get('/', (req, res) => {
-  User.find()
-    .then(users => {
-      res.json(users);
-    });
-});
-
 router.post('/login', (req, res) => {
   const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
   const email = decodedToken.email;
   const password = decodedToken.password;
 
-  User.findOne({email: email})
-  .then(user => {
-    if(!user) {
-      res.status(401).json({message:"wrong email or password1"});
-    }
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if(err) throw err;
-      if(isMatch) {
-        const payload = {id: user.id};
-        const token = jwt.sign(payload, 'superSecretSecret');
-        res.json({message: "ok", token: token});
-      } else {
-        res.status(401).json({message:"wrong email or password2"});
+  User.findOne({ email: email })
+    .then(user => {
+      if (!user) {
+        res.status(401).json({ message: "wrong email or password1" });
       }
+      bcrypt.compare(password, user.password, (err, isMatch) => {
+        if (err) throw err;
+        if (isMatch) {
+          const payload = {
+            id: user.id,
+            expire: Date.now() + 7200000
+          };
+          const token = jwt.sign(payload, 'superSecretSecret');
+          res.json({ message: "ok", token: token });
+        } else {
+          res.status(401).json({ message: "wrong email or password2" });
+        }
+      })
     })
-  })
+    .catch((err) => {
+      throw err;
+    });
 });
 
 router.post('/register', (req, res) => {
@@ -50,15 +49,18 @@ router.post('/register', (req, res) => {
 
   bcrypt.genSalt(10, (err, salt) => {
     bcrypt.hash(newUser.password, salt, (err, hash) => {
-      if(err) throw err;
+      if (err) throw err;
       newUser.password = hash;
       newUser.save()
-        .then(res.send('registered'));
+        .then(res.send('registered'))
+        .catch((err) => {
+          throw err;
+        });
     });
   });
 });
 
-router.get('/auth', passport.authenticate('jwt', {session: false}), (req, res) => {
+router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
   res.json('You are authorized');
 });
 

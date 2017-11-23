@@ -12,23 +12,23 @@ const LocationSchema = new Schema({
     required: true
   },
   status: {
-	type: String,
-	default: 'opened'
+    type: String,
+    default: 'opened'
   },
   city: {
-	type: String
+    type: String
   },
   country: {
-	type: String
+    type: String
   },
   email: {
-	  type: String
+    type: String
   },
   information: {
     type: String
   },
   website: {
-	  type: String
+    type: String
   },
   facebook_page_url: {
     type: String
@@ -36,3 +36,4 @@ const LocationSchema = new Schema({
 });
 
 mongoose.model('locations', LocationSchema);
+mongoose.model('unvalidated_locations', LocationSchema);

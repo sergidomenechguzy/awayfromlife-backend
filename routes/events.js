@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const moment = require('moment');
+const passport = require('passport');
 const router = express.Router();
 
 // load event model
@@ -11,11 +11,14 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-// events
+// events routes
 router.get('/', (req, res) => {
   Event.find()
     .then(events => {
       res.json(events);
+    })
+    .catch((err) => {
+      throw err;
     });
 });
 
@@ -24,15 +27,21 @@ router.get('/:_id', (req, res) => {
   Event.findOne(id)
     .then(event => {
       res.json(event);
+    })
+    .catch((err) => {
+      throw err;
     });
 });
 
 router.get('/title/:title', (req, res) => {
   let regex = ".*" + req.params.title + ".*";
-  Event.find({title: new RegExp(regex, "gi")})
-  .then((events) => {
-    res.json(events);
-  });
+  Event.find({ title: new RegExp(regex, "gi") })
+    .then((events) => {
+      res.json(events);
+    })
+    .catch((err) => {
+      throw err;
+    });
 });
 
 router.get('/location/:_id', (req, res) => {
@@ -40,6 +49,9 @@ router.get('/location/:_id', (req, res) => {
   Event.find(id)
     .then(events => {
       res.json(events);
+    })
+    .catch((err) => {
+      throw err;
     });
 });
 
@@ -59,43 +71,65 @@ router.get('/city/:city', (req, res) => {
         })
         .then(() => {
           res.json(cityEvents);
+        })
+        .catch((err) => {
+          throw err;
         });
+    })
+    .catch((err) => {
+      throw err;
     });
 });
 
 router.get('/date/:date', (req, res) => {
   let regex = "^" + req.params.date;
-  Event.find({startDate: new RegExp(regex, "g")})
+  Event.find({ startDate: new RegExp(regex, "g") })
     .then((events) => {
       res.json(events);
+    })
+    .catch((err) => {
+      throw err;
     });
 });
 
-router.post('/', (req, res) => {
-  new Event(req.body)
+router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+  const newEvent = {
+    title: req.body.title,
+    description: req.body.description,
+    location: req.body.location,
+    startDate: req.body.startDate,
+    endDate: req.body.endDate,
+    time: req.body.time
+  }
+  new Event(newEvent)
     .save()
-    .then(res.send('saved'));
+    .then(res.send('saved'))
+    .catch((err) => {
+      throw err;
+    });
 });
 
-router.put('/:_id', (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     title: req.body.title,
     description: req.body.description,
     location: req.body.location,
-    date: req.body.date
+    startDate: req.body.startDate,
+    endDate: req.body.endDate,
+    time: req.body.time
   };
   Event.findOneAndUpdate(id, update, {}, (err, event) => {
     if (err) throw err;
-    res.json(event);
+    res.json('updated');
   });
 });
 
-router.delete('/:_id', (req, res) => {
+router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Event.remove(id, (err, event) => {
     if (err) throw err;
-    res.json(event);
+    res.json('deleted');
   });
 });
 

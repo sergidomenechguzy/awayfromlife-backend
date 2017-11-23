@@ -5,10 +5,10 @@ const router = express.Router();
 
 // load location model
 require('../models/Location');
-const Location = mongoose.model('locations');
+const Location = mongoose.model('unvalidated_locations');
 
-// locations routes
-router.get('/', (req, res) => {
+// unvalidated_locations routes
+router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   Location.find()
     .then(locations => {
       res.json(locations);
@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/:_id', (req, res) => {
+router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
   const id = { _id: req.params._id };
   Location.findOne(id)
     .then(location => {
@@ -29,7 +29,7 @@ router.get('/:_id', (req, res) => {
     });
 });
 
-router.get('/name/:name', (req, res) => {
+router.get('/name/:name', passport.authenticate('jwt', { session: false }), (req, res) => {
   let regex = ".*" + req.params.name + ".*";
   Event.find({ name: new RegExp(regex, "gi") })
     .then((locations) => {
@@ -40,7 +40,7 @@ router.get('/name/:name', (req, res) => {
     });
 });
 
-router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.post('/', (req, res) => {
   const newLocation = {
     name: req.body.name,
     address: req.body.address,
@@ -57,24 +57,6 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
     .catch((err) => {
       throw err;
     });
-});
-
-router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-  const id = { _id: req.params._id };
-  const update = {
-    name: req.body.name,
-    address: req.body.address,
-    status: req.body.status,
-    city: req.body.city,
-    email: req.body.email,
-    information: req.body.information,
-    website: req.body.website,
-    facebook_page_url: req.body.facebook_page_url
-  };
-  Location.findOneAndUpdate(id, update, {}, (err, location) => {
-    if (err) throw err;
-    res.json('updated');
-  });
 });
 
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
