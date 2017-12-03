@@ -47,7 +47,7 @@ app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
 
-const port = 3000;
+const port = 61000;
 
 app.listen(port, () => {
   console.log(`Server startet on port ${port}`);
