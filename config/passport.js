@@ -7,9 +7,12 @@ const JwtStrategy = require('passport-jwt').Strategy;
 require('../models/User');
 const User = mongoose.model('users');
 
+//load secrets
+const secrets = require('./secrets.js');
+
 const jwtOptions = {};
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
-jwtOptions.secretOrKey = 'superSecretSecret';
+jwtOptions.secretOrKey = secrets.authSecret;
 
 module.exports = function (passport) {
   passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {

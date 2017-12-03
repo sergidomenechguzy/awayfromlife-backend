@@ -9,9 +9,12 @@ const router = express.Router();
 require('../models/User');
 const User = mongoose.model('users');
 
+//load secrets
+const secrets = require('./secrets.js');
+
 // events
 router.post('/login', (req, res) => {
-  const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
+  const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
   const email = decodedToken.email;
   const password = decodedToken.password;
 
@@ -27,7 +30,7 @@ router.post('/login', (req, res) => {
             id: user.id,
             expire: Date.now() + 7200000
           };
-          const token = jwt.sign(payload, 'superSecretSecret');
+          const token = jwt.sign(payload, secrets.authSecret);
           res.json({ message: "ok", token: token });
         } else {
           res.status(401).json({ message: "wrong email or password2" });
