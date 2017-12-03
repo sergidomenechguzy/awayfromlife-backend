@@ -8,7 +8,7 @@ require('../models/User');
 const User = mongoose.model('users');
 
 //load secrets
-const secrets = require('./secrets.js');
+const secrets = require('../secrets.js');
 
 const jwtOptions = {};
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
