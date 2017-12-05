@@ -64,7 +64,7 @@ router.post('/register', (req, res) => {
 });
 
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
-  res.json('You are authorized');
+  res.send('You are authorized');
 });
 
 module.exports = router;
