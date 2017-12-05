@@ -20,7 +20,7 @@ const secrets = require('./secrets.js');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
-mongoose.connect(secrets.serverDBLink, { useMongoClient:true})
+mongoose.connect(secrets.dbURL, { useMongoClient:true})
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
@@ -50,7 +50,7 @@ app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
 
-const port = secrets.serverPort;
+const port = secrets.port;
 
 app.listen(port, () => {
   console.log(`Server startet on port ${port}`);

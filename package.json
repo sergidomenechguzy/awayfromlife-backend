@@ -4,7 +4,8 @@
   "description": "Backend Api Application for the Awayfromlife event map and calendar",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "NODE_ENV=production node app.js",
+    "dev": "node app.js"
   },
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
