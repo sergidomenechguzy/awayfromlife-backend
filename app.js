@@ -50,7 +50,7 @@ app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
 
-const port = 61234;
+const port = secrets.serverPort;
 
 app.listen(port, () => {
   console.log(`Server startet on port ${port}`);
