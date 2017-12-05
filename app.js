@@ -15,9 +15,12 @@ const users = require('./routes/users');
 // passport config
 require('./config/passport')(passport);
 
+//load secrets
+const secrets = require('./secrets.js');
+
 // connect to mongoose
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://aflappUser:fisch@localhost:21435/aflapp', { useMongoClient:true})
+mongoose.connect(secrets.serverDBLink, { useMongoClient:true})
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
