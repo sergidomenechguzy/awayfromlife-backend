@@ -10,7 +10,7 @@ require('../models/User');
 const User = mongoose.model('users');
 
 //load secrets
-const secrets = require('../secrets.js');
+const secrets = require('../config/secrets.js');
 
 // events
 router.post('/login', (req, res) => {
