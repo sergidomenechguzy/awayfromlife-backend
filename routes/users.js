@@ -21,7 +21,7 @@ router.post('/login', (req, res) => {
   User.findOne({ email: email })
     .then(user => {
       if (!user) {
-        res.status(401).json({ message: "wrong email or password1" });
+        res.status(401).json({ message: "wrong email or password" });
       }
       bcrypt.compare(password, user.password, (err, isMatch) => {
         if (err) throw err;
@@ -33,7 +33,7 @@ router.post('/login', (req, res) => {
           const token = jwt.sign(payload, secrets.authSecret);
           res.json({ message: "ok", token: token });
         } else {
-          res.status(401).json({ message: "wrong email or password2" });
+          res.status(401).json({ message: "wrong email or password" });
         }
       })
     })
@@ -43,7 +43,7 @@ router.post('/login', (req, res) => {
 });
 
 router.post('/register', (req, res) => {
-  const decodedToken = jwt.verify(req.body.token, 'currentFrontendSecret');
+  const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
   const newUser = new User({
     name: decodedToken.name,
     email: decodedToken.email,
