@@ -63,6 +63,23 @@ router.post('/register', (req, res) => {
   });
 });
 
+router.post('/tokens', (req, res) => {
+  const payloadRegister = {
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password
+  };
+  const tokenRegister = jwt.sign(payloadRegister, secrets.frontEndSecret);
+
+  const payloadLogin = {
+    email: req.body.email,
+    password: req.body.password
+  };
+  const tokenLogin = jwt.sign(payloadLogin, secrets.frontEndSecret);
+
+  res.json({ tokenRegister: tokenRegister, tokenLogin: tokenLogin });
+});
+
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
   res.send('You are authorized');
 });
