@@ -16,7 +16,7 @@ const users = require('./routes/users');
 require('./config/passport')(passport);
 
 //load secrets
-const secrets = require('./config/secrets.js');
+const secrets = require('./config/secrets');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
