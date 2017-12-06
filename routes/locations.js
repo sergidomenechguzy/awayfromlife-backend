@@ -53,7 +53,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
   };
   new Location(newLocation)
     .save()
-    .then(res.send('saved'))
+    .then(res.status(200).json({ message: "Location saved" }))
     .catch((err) => {
       throw err;
     });
@@ -73,7 +73,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
   };
   Location.findOneAndUpdate(id, update, {}, (err, location) => {
     if (err) throw err;
-    res.json('updated');
+    res.status(200).json({ message: "Location updated" });
   });
 });
 
@@ -81,7 +81,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
   const id = { _id: req.params._id };
   Location.remove(id, (err, location) => {
     if (err) throw err;
-    res.json('deleted');
+    res.status(200).json({ message: "Location deleted" });
   });
 });
 

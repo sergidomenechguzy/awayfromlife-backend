@@ -21,11 +21,14 @@ module.exports = function (passport) {
     }
     else {
       User.findOne({ _id: jwt_payload.id })
-        .then(user => {
+        .then((user) => {
           if (!user) {
-            next(null, false);
+            return next(null, false);
           }
-          next(null, user);
+          if ((jwt_payload.expire - 7200000) < user.lastModified) {
+            return next(null, false);
+          }
+          return next(null, user);
         })
         .catch((err) => {
           throw err;

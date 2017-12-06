@@ -103,7 +103,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
   }
   new Event(newEvent)
     .save()
-    .then(res.send('saved'))
+    .then(res.status(200).json({ message: "Event saved" }))
     .catch((err) => {
       throw err;
     });
@@ -121,7 +121,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
   };
   Event.findOneAndUpdate(id, update, {}, (err, event) => {
     if (err) throw err;
-    res.json('updated');
+    res.status(200).json({ message: "Event updated" });
   });
 });
 
@@ -129,7 +129,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
   const id = { _id: req.params._id };
   Event.remove(id, (err, event) => {
     if (err) throw err;
-    res.json('deleted');
+    res.status(200).json({ message: "Event deleted" });
   });
 });
 
