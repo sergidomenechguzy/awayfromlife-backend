@@ -11,6 +11,7 @@ const events = require('./routes/events');
 const unvalidated_locations = require('./routes/unvalidated_locations');
 const unvalidated_events = require('./routes/unvalidated_events');
 const users = require('./routes/users');
+const bugs = require('./routes/bugs');
 
 // passport config
 require('./config/passport')(passport);
@@ -39,9 +40,7 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', (req, res) => {
-  const date1 = Date.now();
-  const date2 = Date.now() + 10000;
-  res.send('API started ' + date1 + ', ' + date2);
+  res.send('Backend Service for the Awayfromlife Event Calendar. API started...');
 });
 
 // use routes
@@ -50,6 +49,7 @@ app.use('/api/events', events);
 app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
+app.use('/api/bugs', bugs);
 
 const port = secrets.port;
 
