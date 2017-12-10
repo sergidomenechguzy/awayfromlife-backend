@@ -3,17 +3,17 @@ const Schema = mongoose.Schema;
 
 // create event schema
 const BugSchema = new Schema({
-  error: {
-    type: String,
-    required: true
+  function: {
+    type: String
   },
   description: {
-    type: String,
-    required: true
+    type: String
   },
-  login: {
-    type: Number,
-    required: true
+  loggedIn: {
+    type: Number
+  },
+  component: {
+    type: String
   }
 });
 

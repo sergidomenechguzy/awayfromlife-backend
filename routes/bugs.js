@@ -20,9 +20,10 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const newBug = {
-    error: req.body.error,
+    function: req.body.function,
     description: req.body.description,
-    login: req.body.login
+    loggedIn: req.body.loggedIn,
+    component: req.body.component
   };
   new Bug(newBug)
     .save()
