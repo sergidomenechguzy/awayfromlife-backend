@@ -11,7 +11,10 @@ const Location = mongoose.model('unvalidated_locations');
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   Location.find()
     .then(locations => {
-      res.json(locations);
+      if (locations.length == 0) {
+        return res.status(200).json({ message: "No locations found" });
+      }
+      return res.json(locations);
     })
     .catch((err) => {
       throw err;
@@ -22,7 +25,10 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
   const id = { _id: req.params._id };
   Location.findOne(id)
     .then(location => {
-      res.json(location);
+      if (!location) {
+        return res.status(200).json({ message: "No location found with this ID" });
+      }
+      return res.json(location);
     })
     .catch((err) => {
       throw err;
@@ -31,9 +37,12 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
 
 router.get('/name/:name', passport.authenticate('jwt', { session: false }), (req, res) => {
   let regex = ".*" + req.params.name + ".*";
-  Event.find({ name: new RegExp(regex, "gi") })
+  Location.find({ name: new RegExp(regex, "gi") })
     .then((locations) => {
-      res.json(locations);
+      if (locations.length == 0) {
+        return res.status(200).json({ message: "No location found with this name" });
+      }
+      return res.json(locations);
     })
     .catch((err) => {
       throw err;
@@ -53,7 +62,9 @@ router.post('/', (req, res) => {
   };
   new Location(newLocation)
     .save()
-    .then(res.status(200).json({ message: "Location saved" }))
+    .then(() => {
+      return res.status(200).json({ message: "Location saved" })
+    })
     .catch((err) => {
       throw err;
     });
@@ -63,7 +74,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
   const id = { _id: req.params._id };
   Location.remove(id, (err, location) => {
     if (err) throw err;
-    res.status(200).json({ message: "Location deleted" });
+    return res.status(200).json({ message: "Location deleted" });
   });
 });
 

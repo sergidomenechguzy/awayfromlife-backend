@@ -17,7 +17,7 @@ jwtOptions.secretOrKey = secrets.authSecret;
 module.exports = function (passport) {
   passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
     if (jwt_payload.expire < Date.now()) {
-      next(null, false);
+      return next(null, false);
     }
     else {
       User.findOne({ _id: jwt_payload.id })
