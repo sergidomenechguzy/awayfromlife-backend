@@ -46,7 +46,7 @@ router.get('/title/:title', (req, res) => {
 
 router.get('/location/:_id', (req, res) => {
   const id = { location: req.params._id };
-  Event.find(id)
+  Location.find(id)
     .then(events => {
       res.json(events);
     })
@@ -99,7 +99,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
     location: req.body.location,
     startDate: req.body.startDate,
     endDate: req.body.endDate,
-    time: req.body.time
+    time: req.body.time,
+    bands: req.body.bands
   }
   new Event(newEvent)
     .save()
@@ -117,7 +118,8 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
     location: req.body.location,
     startDate: req.body.startDate,
     endDate: req.body.endDate,
-    time: req.body.time
+    time: req.body.time,
+    bands: req.body.bands
   };
   Event.findOneAndUpdate(id, update, {}, (err, event) => {
     if (err) throw err;

@@ -82,7 +82,14 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
           bcrypt.genSalt(10, (err, salt) => {
             bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
               if (err) throw err;
-              User.findOneAndUpdate({ _id: decodedAuthToken.id }, { $set: { password: hash }, $set: { lastModified: Date.now() } }, (err, doc) => {
+              updatedUser = {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                password: hash,
+                lastModified: Date.now()
+              }
+              User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
                 if (err) throw err;
                 const payload = {
                   id: user.id,
