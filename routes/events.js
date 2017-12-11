@@ -46,7 +46,7 @@ router.get('/title/:title', (req, res) => {
 
 router.get('/location/:_id', (req, res) => {
   const id = { location: req.params._id };
-  Location.find(id)
+  Event.find(id)
     .then(events => {
       res.json(events);
     })
