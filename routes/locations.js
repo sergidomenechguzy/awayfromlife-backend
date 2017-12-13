@@ -7,6 +7,9 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+//load params
+const params = require('../config/params.js');
+
 // locations routes
 router.get('/', (req, res) => {
   Location.find()
@@ -49,7 +52,7 @@ router.get('/name/:name', (req, res) => {
     });
 });
 
-router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
   const newLocation = {
     name: req.body.name,
     address: req.body.address,
@@ -70,7 +73,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
     });
 });
 
-router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     name: req.body.name,

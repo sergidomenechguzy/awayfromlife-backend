@@ -7,6 +7,9 @@ const router = express.Router();
 require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
 
+//load params
+const params = require('../config/params.js');
+
 // unvalidated_events routes
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
   Event.find()
@@ -63,7 +66,7 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/', params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
   const newEvent = {
     title: req.body.title,
     description: req.body.description,

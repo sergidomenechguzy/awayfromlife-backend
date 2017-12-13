@@ -11,6 +11,9 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+//load params
+const params = require('../config/params.js');
+
 // events routes
 router.get('/', (req, res) => {
   Event.find()
@@ -116,7 +119,7 @@ router.get('/date/:date', (req, res) => {
     });
 });
 
-router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
   const newEvent = {
     title: req.body.title,
     description: req.body.description,
@@ -136,7 +139,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
     });
 });
 
-router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     title: req.body.title,
