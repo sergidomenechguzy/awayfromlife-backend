@@ -36,6 +36,15 @@ router.get('/:query', (req, res) => {
         };
         responseList = responseList.concat(locationInformation);
       });
+      responseList.sort((a, b) => {
+        if (a.title.toLowerCase() < b.title.toLowerCase()) {
+          return -1;
+        }
+        if (a.title.toLowerCase() > b.title.toLowerCase()) {
+          return 1;
+        }
+        return 0;
+      });
       return res.json(responseList);
     })
     .catch((err) => {
