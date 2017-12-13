@@ -73,7 +73,8 @@ router.post('/', params.checkParameters(["title", "location", "startDate", "time
     location: req.body.location,
     startDate: req.body.startDate,
     endDate: req.body.endDate,
-    time: req.body.time
+    time: req.body.time,
+    bands: req.body.bands
   }
   new Event(newEvent)
     .save()
