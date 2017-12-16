@@ -11,6 +11,8 @@ const events = require('./routes/events');
 const unvalidated_locations = require('./routes/unvalidated_locations');
 const unvalidated_events = require('./routes/unvalidated_events');
 const users = require('./routes/users');
+const bugs = require('./routes/bugs');
+const search = require('./routes/search');
 
 // passport config
 require('./config/passport')(passport);
@@ -48,6 +50,8 @@ app.use('/api/events', events);
 app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
+app.use('/api/bugs', bugs);
+app.use('/api/search', search);
 
 const port = secrets.port;
 

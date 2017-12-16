@@ -7,11 +7,17 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+//load params
+const params = require('../config/params.js');
+
 // locations routes
 router.get('/', (req, res) => {
   Location.find()
     .then(locations => {
-      res.json(locations);
+      if (locations.length == 0) {
+        return res.status(200).json({ message: "No locations found" });
+      }
+      return res.json(locations);
     })
     .catch((err) => {
       throw err;
@@ -22,7 +28,10 @@ router.get('/:_id', (req, res) => {
   const id = { _id: req.params._id };
   Location.findOne(id)
     .then(location => {
-      res.json(location);
+      if (!location) {
+        return res.status(200).json({ message: "No location found with this ID" });
+      }
+      return res.json(location);
     })
     .catch((err) => {
       throw err;
@@ -33,14 +42,17 @@ router.get('/name/:name', (req, res) => {
   let regex = ".*" + req.params.name + ".*";
   Location.find({ name: new RegExp(regex, "gi") })
     .then((locations) => {
-      res.json(locations);
+      if (locations.length == 0) {
+        return res.status(200).json({ message: "No location found with this name" });
+      }
+      return res.json(locations);
     })
     .catch((err) => {
       throw err;
     });
 });
 
-router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
   const newLocation = {
     name: req.body.name,
     address: req.body.address,
@@ -53,13 +65,15 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
   };
   new Location(newLocation)
     .save()
-    .then(res.status(200).json({ message: "Location saved" }))
+    .then(() => {
+      return res.status(200).json({ message: "Location saved" })
+    })
     .catch((err) => {
       throw err;
     });
 });
 
-router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
   const id = { _id: req.params._id };
   const update = {
     name: req.body.name,
@@ -71,9 +85,9 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
     website: req.body.website,
     facebook_page_url: req.body.facebook_page_url
   };
-  Location.findOneAndUpdate(id, update, {}, (err, location) => {
+  Location.findOneAndUpdate(id, update, (err, location) => {
     if (err) throw err;
-    res.status(200).json({ message: "Location updated" });
+    return res.status(200).json({ message: "Location updated" });
   });
 });
 
@@ -81,7 +95,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
   const id = { _id: req.params._id };
   Location.remove(id, (err, location) => {
     if (err) throw err;
-    res.status(200).json({ message: "Location deleted" });
+    return res.status(200).json({ message: "Location deleted" });
   });
 });
 
