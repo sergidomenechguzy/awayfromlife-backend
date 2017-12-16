@@ -120,27 +120,4 @@ router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res)
   return res.status(200).json({ message: "You are authorized" });
 });
 
-router.post('/tokens', (req, res) => {
-  const payloadRegister = {
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password
-  };
-  const tokenRegister = jwt.sign(payloadRegister, secrets.frontEndSecret);
-
-  const payloadLogin = {
-    email: req.body.email,
-    password: req.body.password
-  };
-  const tokenLogin = jwt.sign(payloadLogin, secrets.frontEndSecret);
-
-  const payloadPassword = {
-    oldPassword: req.body.oldPassword,
-    newPassword: req.body.newPassword
-  };
-  const tokenPassword = jwt.sign(payloadPassword, secrets.frontEndSecret);
-
-  return res.status(200).json({ tokenRegister: tokenRegister, tokenLogin: tokenLogin, tokenPassword: tokenPassword});
-});
-
 module.exports = router;
