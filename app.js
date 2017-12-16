@@ -18,7 +18,7 @@ const search = require('./routes/search');
 require('./config/passport')(passport);
 
 //load secrets
-const secrets = require('./config/secrets.js');
+const secrets = require('./config/secrets');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
