@@ -15,6 +15,10 @@ const BugSchema = new Schema({
   },
   component: {
     type: String
+  },
+  user: {
+    type: String,
+    required: true
   }
 });
 

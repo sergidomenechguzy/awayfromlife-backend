@@ -24,12 +24,13 @@ router.get('/', (req, res) => {
     });
 });
 
-router.post('/', params.checkParameters(["function"]), (req, res) => {
+router.post('/', params.checkParameters(["function, user"]), (req, res) => {
   const newBug = {
     function: req.body.function,
     description: req.body.description,
     loggedIn: req.body.loggedIn,
-    component: req.body.component
+    component: req.body.component,
+    user: req.body.user
   };
   new Bug(newBug)
     .save()
