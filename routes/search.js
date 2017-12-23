@@ -11,6 +11,27 @@ require('../models/Location');
 const Location = mongoose.model('locations');
 
 // search routes
+router.get('/', (req, res) => {
+  let responseList = []; 
+
+  Event.find()
+  .then((events) => {
+    responseList.push(events);
+
+    Location.find()
+    .then((locations) => {
+      responseList.push(locations);
+      return res.json(responseList);
+    })
+    .catch((err) => {
+      throw err;
+    });
+  })
+  .catch((err) => {
+    throw err;
+  });
+});
+
 router.get('/:query', (req, res) => {
   const regex = ".*" + req.params.query + ".*";
   let responseList = [];
