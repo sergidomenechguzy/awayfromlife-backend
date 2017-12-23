@@ -22,8 +22,7 @@ const EventSchema = new Schema({
     type: String
   },
   time: {
-    type: String,
-    required: true
+    type: String
   },
   bands: {
     type: [String]
