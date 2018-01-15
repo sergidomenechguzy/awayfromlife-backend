@@ -37,9 +37,9 @@ router.get('/:page', (req, res) => {
 			Event.count().then((count) => {
 				return res.json({
 					events: events,
-                    current: page,
-                    pages: Math.ceil(count / perPage)
-					});
+					current: page,
+					pages: Math.ceil(count / perPage)
+				});
 			}).catch((err) => {
 				throw err;
 			});
@@ -91,7 +91,7 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
 		});
 });
 
-router.post('/', params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
+router.post('/', params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,

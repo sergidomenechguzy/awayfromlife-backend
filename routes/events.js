@@ -41,9 +41,9 @@ router.get('/:page', (req, res) => {
 			Event.count().then((count) => {
 				return res.json({
 					events: events,
-                    current: page,
-                    pages: Math.ceil(count / perPage)
-					});
+					current: page,
+					pages: Math.ceil(count / perPage)
+				});
 			}).catch((err) => {
 				throw err;
 			});
@@ -144,7 +144,7 @@ router.get('/date/:date', (req, res) => {
 		});
 });
 
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -164,7 +164,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		});
 });
 
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate", "time"]), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const id = { _id: req.params._id };
 	const update = {
 		title: req.body.title,

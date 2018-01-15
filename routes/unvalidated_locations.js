@@ -37,9 +37,9 @@ router.get('/:page', (req, res) => {
 			Location.count().then((count) => {
 				return res.json({
 					locations: locations,
-                    current: page,
-                    pages: Math.ceil(count / perPage)
-					});
+					current: page,
+					pages: Math.ceil(count / perPage)
+				});
 			}).catch((err) => {
 				throw err;
 			});
