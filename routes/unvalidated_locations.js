@@ -24,8 +24,8 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 		});
 });
 
-router.get('/:page', (req, res) => {
-	const perPage = 10;
+router.get('/:page/:perPage', (req, res) => {
+	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
 	Location.find()
 		.skip((perPage * page) - perPage)
