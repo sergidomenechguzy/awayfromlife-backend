@@ -7,10 +7,11 @@ const router = express.Router();
 require('../models/Bug');
 const Bug = mongoose.model('bugs');
 
-//load params
+// load params
 const params = require('../config/params.js');
 
 // bugs routes
+// get all bugs
 router.get('/', (req, res) => {
 	Bug.find()
 		.then(bugs => {
@@ -24,6 +25,7 @@ router.get('/', (req, res) => {
 		});
 });
 
+// post location to database
 router.post('/', params.checkParameters(["function"]), (req, res) => {
 	const newBug = {
 		function: req.body.function,
@@ -42,6 +44,7 @@ router.post('/', params.checkParameters(["function"]), (req, res) => {
 		});
 });
 
+// delete location by id
 router.delete('/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Bug.remove(id, (err, bug) => {

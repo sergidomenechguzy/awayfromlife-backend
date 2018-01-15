@@ -11,6 +11,7 @@ require('../models/Location');
 const Location = mongoose.model('locations');
 
 // search routes
+// get all elements
 router.get('/', (req, res) => {
   let responseList = []; 
 
@@ -32,6 +33,7 @@ router.get('/', (req, res) => {
   });
 });
 
+// get all search results
 router.get('/:query', (req, res) => {
 	const regex = ".*" + req.params.query + ".*";
 	let responseList = [];

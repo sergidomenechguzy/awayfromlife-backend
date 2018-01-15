@@ -7,10 +7,11 @@ const router = express.Router();
 require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
 
-//load params
+// load params
 const params = require('../config/params.js');
 
 // unvalidated_events routes
+// get all events
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Event.find()
 		.then(events => {
@@ -24,6 +25,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 		});
 });
 
+// get paginated events
 router.get('/:page/:perPage', (req, res) => {
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
@@ -49,6 +51,7 @@ router.get('/:page/:perPage', (req, res) => {
 		});
 });
 
+// get event by id
 router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const id = { _id: req.params._id };
 	Event.findOne(id)
@@ -63,6 +66,7 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
 		});
 });
 
+// get events by title
 router.get('/title/:title', passport.authenticate('jwt', { session: false }), (req, res) => {
 	let regex = ".*" + req.params.title + ".*";
 	Event.find({ title: new RegExp(regex, "gi") })
@@ -77,6 +81,7 @@ router.get('/title/:title', passport.authenticate('jwt', { session: false }), (r
 		});
 });
 
+// get events by date
 router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req, res) => {
 	let regex = "^" + req.params.date;
 	Event.find({ startDate: new RegExp(regex, "g") })
@@ -91,6 +96,7 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
 		});
 });
 
+// post event to database
 router.post('/', params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
@@ -111,6 +117,7 @@ router.post('/', params.checkParameters(["title", "location", "startDate"]), (re
 		});
 });
 
+// delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const id = { _id: req.params._id };
 	Event.remove(id, (err, event) => {

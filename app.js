@@ -17,7 +17,7 @@ const search = require('./routes/search');
 // passport config
 require('./config/passport')(passport);
 
-//load secrets
+// load secrets
 const secrets = require('./config/secrets');
 
 // connect to mongoose
@@ -40,6 +40,7 @@ app.use(function (req, res, next) {
 	next();
 });
 
+// root route
 app.get('/', (req, res) => {
 	res.send('Backend Service for the Awayfromlife Event Calendar. API started...');
 });

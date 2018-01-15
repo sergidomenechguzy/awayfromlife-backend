@@ -14,6 +14,7 @@ const jwtOptions = {};
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
 jwtOptions.secretOrKey = secrets.authSecret;
 
+// authenticates user with authentication-token
 module.exports = function (passport) {
 	passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
 		if (jwt_payload.expire < Date.now()) {

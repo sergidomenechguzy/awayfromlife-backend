@@ -1,3 +1,4 @@
+// checks if given parameters exist in request
 module.exports.checkParameters = function (params) {
 	return function (req, res, next) {
 		let missingParams = [];

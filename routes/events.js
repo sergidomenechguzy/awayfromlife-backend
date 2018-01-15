@@ -11,10 +11,11 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-//load params
+// load params
 const params = require('../config/params.js');
 
 // events routes
+// get all events
 router.get('/', (req, res) => {
 	Event.find()
 		.then(events => {
@@ -28,6 +29,7 @@ router.get('/', (req, res) => {
 		});
 });
 
+// get paginated events
 router.get('/:page/:perPage', (req, res) => {
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
@@ -53,6 +55,7 @@ router.get('/:page/:perPage', (req, res) => {
 		});
 });
 
+// get event by id
 router.get('/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Event.findOne(id)
@@ -67,6 +70,7 @@ router.get('/:_id', (req, res) => {
 		});
 });
 
+// get events by title
 router.get('/title/:title', (req, res) => {
 	let regex = ".*" + req.params.title + ".*";
 	Event.find({ title: new RegExp(regex, "gi") })
@@ -81,6 +85,7 @@ router.get('/title/:title', (req, res) => {
 		});
 });
 
+// get events by location id
 router.get('/location/:_id', (req, res) => {
 	const id = { location: req.params._id };
 	Event.find(id)
@@ -95,6 +100,7 @@ router.get('/location/:_id', (req, res) => {
 		});
 });
 
+// get events by city
 router.get('/city/:city', (req, res) => {
 	const cityQuery = { city: req.params.city };
 	let cityEvents = [];
@@ -130,6 +136,7 @@ router.get('/city/:city', (req, res) => {
 		});
 });
 
+// get events by date
 router.get('/date/:date', (req, res) => {
 	let regex = "^" + req.params.date;
 	Event.find({ startDate: new RegExp(regex, "g") })
@@ -144,6 +151,7 @@ router.get('/date/:date', (req, res) => {
 		});
 });
 
+// post event to database
 router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
@@ -164,6 +172,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		});
 });
 
+// update event by id
 router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
 	const id = { _id: req.params._id };
 	const update = {
@@ -181,6 +190,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 	});
 });
 
+// delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const id = { _id: req.params._id };
 	Event.remove(id, (err, event) => {

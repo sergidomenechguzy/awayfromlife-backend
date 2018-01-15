@@ -9,10 +9,11 @@ const router = express.Router();
 require('../models/User');
 const User = mongoose.model('users');
 
-//load secrets
+// load secrets
 const secrets = require('../config/secrets');
 
-// events
+// users routes
+// login by login-token in body
 router.post('/login', (req, res) => {
 	if (!req.body.token) {
 		return res.status(400).json({ message: "Token missing" });
@@ -42,6 +43,7 @@ router.post('/login', (req, res) => {
 		});
 });
 
+// register by register-token in body
 router.post('/register', (req, res) => {
 	if (!req.body.token) {
 		return res.status(400).json({ message: "Token missing" });
@@ -66,6 +68,7 @@ router.post('/register', (req, res) => {
 	});
 });
 
+// reset password by password-token in body
 router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const decodedAuthToken = jwt.verify(req.headers.authorization.split(" ")[1], secrets.authSecret);
 	if (!req.body.token) {
@@ -116,10 +119,12 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 	}
 });
 
+// check authorization
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
 	return res.status(200).json({ message: "You are authorized" });
 });
 
+// post data to get different tokens
 router.post('/tokens', (req, res) => {
 	const payloadRegister = {
 		name: req.body.name,

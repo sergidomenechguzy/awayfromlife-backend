@@ -7,10 +7,11 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-//load params
+// load params
 const params = require('../config/params.js');
 
 // locations routes
+// get all locations
 router.get('/', (req, res) => {
 	Location.find()
 		.then(locations => {
@@ -24,6 +25,7 @@ router.get('/', (req, res) => {
 		});
 });
 
+// get paginated locations
 router.get('/:page/:perPage', (req, res) => {
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
@@ -49,6 +51,7 @@ router.get('/:page/:perPage', (req, res) => {
 		});
 });
 
+// get location by id
 router.get('/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Location.findOne(id)
@@ -63,6 +66,7 @@ router.get('/:_id', (req, res) => {
 		});
 });
 
+// get location by name
 router.get('/name/:name', (req, res) => {
 	let regex = ".*" + req.params.name + ".*";
 	Location.find({ name: new RegExp(regex, "gi") })
@@ -77,6 +81,7 @@ router.get('/name/:name', (req, res) => {
 		});
 });
 
+// post location to database
 router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
@@ -98,6 +103,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		});
 });
 
+// update location by id
 router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["name", "address"]), (req, res) => {
 	const id = { _id: req.params._id };
 	const update = {
@@ -116,6 +122,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 	});
 });
 
+// delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const id = { _id: req.params._id };
 	Location.remove(id, (err, location) => {
