@@ -15,24 +15,24 @@ jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme('jwt');
 jwtOptions.secretOrKey = secrets.authSecret;
 
 module.exports = function (passport) {
-  passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
-    if (jwt_payload.expire < Date.now()) {
-      return next(null, false);
-    }
-    else {
-      User.findOne({ _id: jwt_payload.id })
-        .then((user) => {
-          if (!user) {
-            return next(null, false);
-          }
-          if ((jwt_payload.expire - 7200000) < user.lastModified) {
-            return next(null, false);
-          }
-          return next(null, user);
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-  }));
+	passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
+		if (jwt_payload.expire < Date.now()) {
+			return next(null, false);
+		}
+		else {
+			User.findOne({ _id: jwt_payload.id })
+				.then((user) => {
+					if (!user) {
+						return next(null, false);
+					}
+					if ((jwt_payload.expire - 7200000) < user.lastModified) {
+						return next(null, false);
+					}
+					return next(null, user);
+				})
+				.catch((err) => {
+					throw err;
+				});
+		}
+	}));
 };
