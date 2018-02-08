@@ -26,11 +26,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated events
-<<<<<<< HEAD
-router.get('/page/:page/:perPage', (req, res) => {
-=======
 router.get('/page/:page/:perPage', passport.authenticate('jwt', { session: false }), (req, res) => {
->>>>>>> 11988af18386bd775a2470f2b400dccb7c736003
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
 	Event.find()
