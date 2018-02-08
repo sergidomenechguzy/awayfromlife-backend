@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
 });
 
 // get paginated locations
-router.get('/:page/:perPage', (req, res) => {
+router.get('/page/:page/:perPage', (req, res) => {
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
 	Location.find()
