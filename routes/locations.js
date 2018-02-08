@@ -111,7 +111,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 });
 
 // update location by id
-router.put('/:_id', /*passport.authenticate('jwt', { session: false }),*/ params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const id = { _id: req.params._id };
 	const update = {
 		name: req.body.name,
