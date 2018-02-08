@@ -16,7 +16,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 	Event.find()
 		.then(events => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found" });
+				return res.status(200).json({ message: 'No events found' });
 			}
 			return res.json(events);
 		})
@@ -26,7 +26,11 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated events
+<<<<<<< HEAD
 router.get('/page/:page/:perPage', (req, res) => {
+=======
+router.get('/page/:page/:perPage', passport.authenticate('jwt', { session: false }), (req, res) => {
+>>>>>>> 11988af18386bd775a2470f2b400dccb7c736003
 	const perPage = (parseInt(req.params.perPage)) || 10;
 	const page = (parseInt(req.params.page)) || 0;
 	Event.find()
@@ -34,7 +38,7 @@ router.get('/page/:page/:perPage', (req, res) => {
 		.limit(perPage)
 		.then(events => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found" });
+				return res.status(200).json({ message: 'No events found' });
 			}
 			Event.count().then((count) => {
 				return res.json({
@@ -57,7 +61,7 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
 	Event.findOne(id)
 		.then(event => {
 			if (!event) {
-				return res.status(200).json({ message: "No event found with this ID" });
+				return res.status(200).json({ message: 'No event found with this ID' });
 			}
 			return res.json(event);
 		})
@@ -68,11 +72,11 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
 
 // get events by title
 router.get('/title/:title', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = ".*" + req.params.title + ".*";
-	Event.find({ title: new RegExp(regex, "gi") })
+	let regex = '.*' + req.params.title + '.*';
+	Event.find({ title: new RegExp(regex, 'gi') })
 		.then((events) => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No event found with this title" });
+				return res.status(200).json({ message: 'No event found with this title' });
 			}
 			return res.json(events);
 		})
@@ -83,11 +87,11 @@ router.get('/title/:title', passport.authenticate('jwt', { session: false }), (r
 
 // get events by date
 router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = "^" + req.params.date;
-	Event.find({ startDate: new RegExp(regex, "g") })
+	let regex = '^' + req.params.date;
+	Event.find({ startDate: new RegExp(regex, 'g') })
 		.then((events) => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found on this date" });
+				return res.status(200).json({ message: 'No events found on this date' });
 			}
 			return res.json(events);
 		})
@@ -97,7 +101,7 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
 });
 
 // post event to database
-router.post('/', params.checkParameters(["title", "location", "startDate"]), (req, res) => {
+router.post('/', params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -110,7 +114,7 @@ router.post('/', params.checkParameters(["title", "location", "startDate"]), (re
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: "Event saved" })
+			return res.status(200).json({ message: 'Event saved' })
 		})
 		.catch((err) => {
 			throw err;
@@ -122,7 +126,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 	const id = { _id: req.params._id };
 	Event.remove(id, (err, event) => {
 		if (err) throw err;
-		return res.status(200).json({ message: "Event deleted" });
+		return res.status(200).json({ message: 'Event deleted' });
 	});
 });
 

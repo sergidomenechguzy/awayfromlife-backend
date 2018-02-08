@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 	Event.find()
 		.then(events => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found" });
+				return res.status(200).json({ message: 'No events found' });
 			}
 			return res.json(events);
 		})
@@ -38,7 +38,7 @@ router.get('/page/:page/:perPage', (req, res) => {
 		.limit(perPage)
 		.then(events => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found" });
+				return res.status(200).json({ message: 'No events found' });
 			}
 			Event.count().then((count) => {
 				return res.json({
@@ -61,7 +61,7 @@ router.get('/:_id', (req, res) => {
 	Event.findOne(id)
 		.then(event => {
 			if (!event) {
-				return res.status(200).json({ message: "No event found with this ID" });
+				return res.status(200).json({ message: 'No event found with this ID' });
 			}
 			return res.json(event);
 		})
@@ -72,11 +72,11 @@ router.get('/:_id', (req, res) => {
 
 // get events by title
 router.get('/title/:title', (req, res) => {
-	let regex = ".*" + req.params.title + ".*";
-	Event.find({ title: new RegExp(regex, "gi") })
+	let regex = '.*' + req.params.title + '.*';
+	Event.find({ title: new RegExp(regex, 'gi') })
 		.then((events) => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No event found with this title" });
+				return res.status(200).json({ message: 'No event found with this title' });
 			}
 			return res.json(events);
 		})
@@ -91,7 +91,7 @@ router.get('/location/:_id', (req, res) => {
 	Event.find(id)
 		.then(events => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found for this location" });
+				return res.status(200).json({ message: 'No events found for this location' });
 			}
 			return res.json(events);
 		})
@@ -108,12 +108,12 @@ router.get('/city/:city', (req, res) => {
 	Event.find()
 		.then((events) => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found" });
+				return res.status(200).json({ message: 'No events found' });
 			}
 			Location.find(cityQuery)
 				.then((locations) => {
 					if (locations.length == 0) {
-						return res.status(200).json({ message: "No locations found" });
+						return res.status(200).json({ message: 'No locations found' });
 					}
 					events.forEach((event) => {
 						locations.forEach((location) => {
@@ -123,7 +123,7 @@ router.get('/city/:city', (req, res) => {
 				})
 				.then(() => {
 					if (cityEvents.length == 0) {
-						return res.status(200).json({ message: "No events found for this location" });
+						return res.status(200).json({ message: 'No events found for this location' });
 					}
 					return res.json(cityEvents);
 				})
@@ -138,11 +138,11 @@ router.get('/city/:city', (req, res) => {
 
 // get events by date
 router.get('/date/:date', (req, res) => {
-	let regex = "^" + req.params.date;
-	Event.find({ startDate: new RegExp(regex, "g") })
+	let regex = '^' + req.params.date;
+	Event.find({ startDate: new RegExp(regex, 'g') })
 		.then((events) => {
 			if (events.length == 0) {
-				return res.status(200).json({ message: "No events found on this date" });
+				return res.status(200).json({ message: 'No events found on this date' });
 			}
 			return res.json(events);
 		})
@@ -152,7 +152,7 @@ router.get('/date/:date', (req, res) => {
 });
 
 // post event to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -165,7 +165,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: "Event saved" })
+			return res.status(200).json({ message: 'Event saved' })
 		})
 		.catch((err) => {
 			throw err;
@@ -173,7 +173,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 });
 
 // update event by id
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(["title", "location", "startDate"]), (req, res) => {
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const id = { _id: req.params._id };
 	const update = {
 		title: req.body.title,
@@ -186,7 +186,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 	};
 	Event.findOneAndUpdate(id, update, (err, event) => {
 		if (err) throw err;
-		return res.status(200).json({ message: "Event updated" });
+		return res.status(200).json({ message: 'Event updated' });
 	});
 });
 
@@ -195,7 +195,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 	const id = { _id: req.params._id };
 	Event.remove(id, (err, event) => {
 		if (err) throw err;
-		return res.status(200).json({ message: "Event deleted" });
+		return res.status(200).json({ message: 'Event deleted' });
 	});
 });
 

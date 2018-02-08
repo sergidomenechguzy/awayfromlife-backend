@@ -16,26 +16,26 @@ const secrets = require('../config/secrets');
 // login by login-token in body
 router.post('/login', (req, res) => {
 	if (!req.body.token) {
-		return res.status(400).json({ message: "Token missing" });
+		return res.status(400).json({ message: 'Token missing' });
 	}
 	const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
 
 	User.findOne({ email: decodedToken.email })
 		.then(user => {
 			if (!user) {
-				return res.status(401).json({ message: "Wrong email or password" });
+				return res.status(401).json({ message: 'Wrong email or password' });
 			}
 			bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
 				if (err) throw err;
 				if (!isMatch) {
-					return res.status(401).json({ message: "Wrong email or password" });
+					return res.status(401).json({ message: 'Wrong email or password' });
 				}
 				const payload = {
 					id: user.id,
 					expire: Date.now() + 7200000
 				};
 				const token = jwt.sign(payload, secrets.authSecret);
-				res.status(200).json({ message: "You are logged in", token: token });
+				res.status(200).json({ message: 'You are logged in', token: token });
 			})
 		})
 		.catch((err) => {
@@ -46,7 +46,7 @@ router.post('/login', (req, res) => {
 // register by register-token in body
 router.post('/register', (req, res) => {
 	if (!req.body.token) {
-		return res.status(400).json({ message: "Token missing" });
+		return res.status(400).json({ message: 'Token missing' });
 	}
 	const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
 	const newUser = new User({
@@ -60,7 +60,7 @@ router.post('/register', (req, res) => {
 			if (err) throw err;
 			newUser.password = hash;
 			newUser.save()
-				.then(res.status(200).json({ message: "User registered" }))
+				.then(res.status(200).json({ message: 'User registered' }))
 				.catch((err) => {
 					throw err;
 				});
@@ -70,25 +70,25 @@ router.post('/register', (req, res) => {
 
 // reset password by password-token in body
 router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const decodedAuthToken = jwt.verify(req.headers.authorization.split(" ")[1], secrets.authSecret);
+	const decodedAuthToken = jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret);
 	if (!req.body.token) {
-		return res.status(400).json({ message: "Password-token missing" });
+		return res.status(400).json({ message: 'Password-token missing' });
 	}
 	else {
 		const decodedPasswordToken = jwt.verify(req.body.token, secrets.frontEndSecret);
 		if (decodedPasswordToken.newPassword.length < 8) {
-			return res.status(400).json({ message: "Password must be at least 8 characters" });
+			return res.status(400).json({ message: 'Password must be at least 8 characters' });
 		}
 
 		User.findOne({ _id: decodedAuthToken.id })
 			.then(user => {
 				if (!user) {
-					return res.status(400).json({ message: "An error occurred. Please try again." });
+					return res.status(400).json({ message: 'An error occurred. Please try again.' });
 				}
 				bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
 					if (err) throw err;
 					if (!isMatch) {
-						return res.status(400).json({ message: "Wrong password" });
+						return res.status(400).json({ message: 'Wrong password' });
 					}
 					bcrypt.genSalt(10, (err, salt) => {
 						bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
@@ -107,7 +107,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 									expire: Date.now() + 7200000
 								};
 								const token = jwt.sign(payload, secrets.authSecret);
-								return res.status(200).json({ message: "Password changed", token: token });
+								return res.status(200).json({ message: 'Password changed', token: token });
 							});
 						});
 					});
@@ -121,7 +121,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 
 // check authorization
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
-	return res.status(200).json({ message: "You are authorized" });
+	return res.status(200).json({ message: 'You are authorized' });
 });
 
 // post data to get different tokens
