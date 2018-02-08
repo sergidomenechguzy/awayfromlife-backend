@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 	Bug.find()
 		.then(bugs => {
 			if (bugs.length == 0) {
-				return res.status(200).json({ message: "No bugs found" });
+				return res.status(200).json({ message: 'No bugs found' });
 			}
 			return res.json(bugs);
 		})
@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
 });
 
 // post location to database
-router.post('/', params.checkParameters(["function"]), (req, res) => {
+router.post('/', params.checkParameters(['function']), (req, res) => {
 	const newBug = {
 		function: req.body.function,
 		description: req.body.description,
@@ -37,7 +37,7 @@ router.post('/', params.checkParameters(["function"]), (req, res) => {
 	new Bug(newBug)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: "Bug saved" })
+			return res.status(200).json({ message: 'Bug saved' })
 		})
 		.catch((err) => {
 			throw err;
@@ -49,7 +49,7 @@ router.delete('/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Bug.remove(id, (err, bug) => {
 		if (err) throw err;
-		return res.status(200).json({ message: "Bug deleted" });
+		return res.status(200).json({ message: 'Bug deleted' });
 	});
 });
 

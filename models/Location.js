@@ -8,21 +8,40 @@ const LocationSchema = new Schema({
 		required: true
 	},
 	address: {
-		type: String,
-		required: true
+		street: {
+			type: String,
+			required: true
+		},
+		administrative: {
+			type: String
+		},
+		city: {
+			type: String,
+			required: true
+		},
+		country: {
+			type: String,
+			required: true
+		},
+		postcode: {
+			type: String
+		},
+		lat: {
+			type: Number,
+			required: true
+		},
+		lng: {
+			type: Number,
+			required: true
+		},
+		value: {
+			type: String,
+		}
+		
 	},
 	status: {
 		type: String,
 		default: 'opened'
-	},
-	city: {
-		type: String
-	},
-	country: {
-		type: String
-	},
-	email: {
-		type: String
 	},
 	information: {
 		type: String

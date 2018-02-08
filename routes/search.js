@@ -35,25 +35,25 @@ router.get('/', (req, res) => {
 
 // get all search results
 router.get('/:query', (req, res) => {
-	const regex = ".*" + req.params.query + ".*";
+	const regex = '.*' + req.params.query + '.*';
 	let responseList = [];
 
-	Event.find({ title: new RegExp(regex, "gi") })
+	Event.find({ title: new RegExp(regex, 'gi') })
 		.then((events) => {
 			events.forEach((event) => {
 				const eventInformation = {
-					category: "Event",
+					category: 'Event',
 					title: event.title,
 					id: event._id
 				};
 				responseList = responseList.concat(eventInformation);
 			});
 
-			Location.find({ name: new RegExp(regex, "gi") })
+			Location.find({ name: new RegExp(regex, 'gi') })
 				.then((locations) => {
 					locations.forEach((location) => {
 						const locationInformation = {
-							category: "Location",
+							category: 'Location',
 							title: location.name,
 							id: location._id
 						};
