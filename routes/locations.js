@@ -81,6 +81,35 @@ router.get('/name/:name', (req, res) => {
 		});
 });
 
+// get all cities with saved locations
+router.get('/city/all', (req, res) => {
+	let cities = [];
+	Location.find()
+		.then(locations => {
+			if (locations.length == 0) {
+				return res.status(200).json({ message: 'No locations found' });
+			}
+			locations.forEach(location => {
+				if (cities.indexOf(location.address.city) === -1) {
+					cities.push(location.address.city);
+				}
+			});
+			cities.sort((a, b) => {
+				if (a.toLowerCase() < b.toLowerCase()) {
+					return -1;
+				}
+				if (a.toLowerCase() > b.toLowerCase()) {
+					return 1;
+				}
+				return 0;
+			});
+			return res.json(cities);
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
 // post location to database
 router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {

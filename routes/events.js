@@ -102,34 +102,42 @@ router.get('/location/:_id', (req, res) => {
 
 // get events by city
 router.get('/city/:city', (req, res) => {
-	const cityQuery = { city: req.params.city };
 	let cityEvents = [];
+	let counter = 0;
 
-	Event.find()
-		.then((events) => {
-			if (events.length == 0) {
-				return res.status(200).json({ message: 'No events found' });
+	Location.find({ 'address.city': req.params.city })
+		.then(locations => {
+			if (locations.length == 0) {
+				return res.status(200).json({ message: 'No locations found in this city' });
 			}
-			Location.find(cityQuery)
-				.then((locations) => {
-					if (locations.length == 0) {
-						return res.status(200).json({ message: 'No locations found' });
-					}
-					events.forEach((event) => {
-						locations.forEach((location) => {
-							if (event.location == location._id) cityEvents.push(event);
-						});
+			locations.forEach((location, index, array) => {
+				Event.find({ location: location._id })
+					.then(events => {
+						counter++;
+						if(events.length > 0) {
+							cityEvents = cityEvents.concat(events);
+						}
+
+						if(counter === array.length) {
+							if (cityEvents.length == 0) {
+								return res.status(200).json({ message: 'No events found in this city' });
+							}
+							cityEvents.sort((a, b) => {
+								if (a.title.toLowerCase() < b.title.toLowerCase()) {
+									return -1;
+								}
+								if (a.title.toLowerCase() > b.title.toLowerCase()) {
+									return 1;
+								}
+								return 0;
+							});
+							return res.json(cityEvents);
+						}
+					})
+					.catch((err) => {
+						throw err;
 					});
-				})
-				.then(() => {
-					if (cityEvents.length == 0) {
-						return res.status(200).json({ message: 'No events found for this location' });
-					}
-					return res.json(cityEvents);
-				})
-				.catch((err) => {
-					throw err;
-				});
+			});
 		})
 		.catch((err) => {
 			throw err;
