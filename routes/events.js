@@ -18,8 +18,10 @@ const params = require('../config/params.js');
 // get all events
 router.get('/', (req, res) => {
 	Event.find()
+		.collation({ locale: "en", strength: 2 })
+		.sort({title: 1})
 		.then(events => {
-			if (events.length == 0) {
+			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found' });
 			}
 			return res.json(events);
@@ -30,14 +32,18 @@ router.get('/', (req, res) => {
 });
 
 // get paginated events
-router.get('/page/:page/:perPage', (req, res) => {
-	const perPage = (parseInt(req.params.perPage)) || 10;
-	const page = (parseInt(req.params.page)) || 0;
+router.get('/page', (req, res) => {
+	const perPage = (parseInt(req.query.perPage)) || 10;
+	const page = (parseInt(req.query.page)) || 1;
+	const sortBy = (req.query.sortBy) || 'title';
+	const order = (parseInt(req.query.order)) || 1;
 	Event.find()
+		.collation({ locale: "en", strength: 2 })
+		.sort({[sortBy]: order})
 		.skip((perPage * page) - perPage)
 		.limit(perPage)
 		.then(events => {
-			if (events.length == 0) {
+			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found' });
 			}
 			Event.count().then((count) => {
@@ -56,7 +62,7 @@ router.get('/page/:page/:perPage', (req, res) => {
 });
 
 // get event by id
-router.get('/:_id', (req, res) => {
+router.get('/byid/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Event.findOne(id)
 		.then(event => {
@@ -74,8 +80,10 @@ router.get('/:_id', (req, res) => {
 router.get('/title/:title', (req, res) => {
 	let regex = '.*' + req.params.title + '.*';
 	Event.find({ title: new RegExp(regex, 'gi') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({title: 1})
 		.then((events) => {
-			if (events.length == 0) {
+			if (events.length === 0) {
 				return res.status(200).json({ message: 'No event found with this title' });
 			}
 			return res.json(events);
@@ -89,8 +97,10 @@ router.get('/title/:title', (req, res) => {
 router.get('/location/:_id', (req, res) => {
 	const id = { location: req.params._id };
 	Event.find(id)
+		.collation({ locale: "en", strength: 2 })
+		.sort({title: 1})
 		.then(events => {
-			if (events.length == 0) {
+			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location' });
 			}
 			return res.json(events);
@@ -107,7 +117,7 @@ router.get('/city/:city', (req, res) => {
 
 	Location.find({ 'address.city': req.params.city })
 		.then(locations => {
-			if (locations.length == 0) {
+			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city' });
 			}
 			locations.forEach((location, index, array) => {
@@ -119,7 +129,7 @@ router.get('/city/:city', (req, res) => {
 						}
 
 						if(counter === array.length) {
-							if (cityEvents.length == 0) {
+							if (cityEvents.length === 0) {
 								return res.status(200).json({ message: 'No events found in this city' });
 							}
 							cityEvents.sort((a, b) => {
@@ -148,8 +158,10 @@ router.get('/city/:city', (req, res) => {
 router.get('/date/:date', (req, res) => {
 	let regex = '^' + req.params.date;
 	Event.find({ startDate: new RegExp(regex, 'g') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({title: 1})
 		.then((events) => {
-			if (events.length == 0) {
+			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date' });
 			}
 			return res.json(events);

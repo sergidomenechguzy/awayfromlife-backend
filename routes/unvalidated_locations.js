@@ -14,8 +14,10 @@ const params = require('../config/params.js');
 // get all locations
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Location.find()
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
 		.then(locations => {
-			if (locations.length == 0) {
+			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found' });
 			}
 			return res.json(locations);
@@ -26,14 +28,18 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated locations
-router.get('/page/:page/:perPage', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const perPage = (parseInt(req.params.perPage)) || 10;
-	const page = (parseInt(req.params.page)) || 0;
+router.get('/page', passport.authenticate('jwt', { session: false }), (req, res) => {
+	const perPage = (parseInt(req.query.perPage)) || 10;
+	const page = (parseInt(req.query.page)) || 1;
+	const sortBy = (req.query.sortBy) || 'name';
+	const order = (parseInt(req.query.order)) || 1;
 	Location.find()
+		.collation({ locale: "en", strength: 2 })
+		.sort({[sortBy]: order})
 		.skip((perPage * page) - perPage)
 		.limit(perPage)
 		.then(locations => {
-			if (locations.length == 0) {
+			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found' });
 			}
 			Location.count().then((count) => {
@@ -52,7 +58,7 @@ router.get('/page/:page/:perPage', passport.authenticate('jwt', { session: false
 });
 
 // get location by id
-router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
 	const id = { _id: req.params._id };
 	Location.findOne(id)
 		.then(location => {
@@ -70,8 +76,10 @@ router.get('/:_id', passport.authenticate('jwt', { session: false }), (req, res)
 router.get('/name/:name', passport.authenticate('jwt', { session: false }), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
 		.then((locations) => {
-			if (locations.length == 0) {
+			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No location found with this name' });
 			}
 			return res.json(locations);

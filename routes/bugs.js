@@ -15,7 +15,7 @@ const params = require('../config/params.js');
 router.get('/', (req, res) => {
 	Bug.find()
 		.then(bugs => {
-			if (bugs.length == 0) {
+			if (bugs.length === 0) {
 				return res.status(200).json({ message: 'No bugs found' });
 			}
 			return res.json(bugs);

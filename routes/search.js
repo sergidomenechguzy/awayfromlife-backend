@@ -40,25 +40,16 @@ router.get('/:query', (req, res) => {
 
 	Event.find({ title: new RegExp(regex, 'gi') })
 		.then((events) => {
-			events.forEach((event) => {
-				const eventInformation = {
-					category: 'Event',
-					title: event.title,
-					id: event._id
-				};
-				responseList = responseList.concat(eventInformation);
+			responseList = events.map(event => {
+				return { category: 'Event', title: event.title, id: event._id };
 			});
 
 			Location.find({ name: new RegExp(regex, 'gi') })
 				.then((locations) => {
-					locations.forEach((location) => {
-						const locationInformation = {
-							category: 'Location',
-							title: location.name,
-							id: location._id
-						};
-						responseList = responseList.concat(locationInformation);
-					});
+					responseList = responseList.concat(locations.map(location => {
+						return { category: 'Location', title: location.name, id: location._id };
+					}));
+
 					responseList.sort((a, b) => {
 						if (a.title.toLowerCase() < b.title.toLowerCase()) {
 							return -1;
@@ -68,6 +59,7 @@ router.get('/:query', (req, res) => {
 						}
 						return 0;
 					});
+
 					return res.json(responseList);
 				})
 				.catch((err) => {
