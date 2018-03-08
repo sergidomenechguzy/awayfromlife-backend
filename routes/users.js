@@ -119,7 +119,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 	}
 });
 
-// check authorization
+// check authentication
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
 	return res.status(200).json({ message: 'You are authorized' });
 });

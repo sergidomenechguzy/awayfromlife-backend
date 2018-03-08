@@ -89,6 +89,23 @@ router.get('/name/:name', (req, res) => {
 		});
 });
 
+// get all locations in one city
+router.get('/city/:city', (req, res) => {
+	let regex = '.*' + req.params.city + '.*';
+	Location.find({ 'address.city': new RegExp(regex, 'gi') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
+		.then(locations => {
+			if (locations.length === 0) {
+				return res.status(200).json({ message: 'No locations found in this city' });
+			}
+			return res.json(locations);
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
 // get all cities with saved locations
 router.get('/cities', (req, res) => {
 	let cities = [];

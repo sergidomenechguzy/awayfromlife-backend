@@ -26,6 +26,14 @@ const EventSchema = new Schema({
 	},
 	bands: {
 		type: [String]
+	},
+	canceled: {
+		type: Boolean,
+		default: false
+	},
+	lastModified: {
+		type: Number,
+		default: Date.now()
 	}
 });
 

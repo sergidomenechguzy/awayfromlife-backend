@@ -114,8 +114,9 @@ router.get('/location/:_id', (req, res) => {
 router.get('/city/:city', (req, res) => {
 	let cityEvents = [];
 	let counter = 0;
+	let regex = '.*' + req.params.city + '.*';
 
-	Location.find({ 'address.city': req.params.city })
+	Location.find({ 'address.city': new RegExp(regex, 'gi') })
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city' });
@@ -180,7 +181,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		startDate: req.body.startDate,
 		endDate: req.body.endDate,
 		time: req.body.time,
-		bands: req.body.bands
+		bands: req.body.bands,
+		canceled: req.body.canceled
 	}
 	new Event(newEvent)
 		.save()
@@ -202,7 +204,9 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 		startDate: req.body.startDate,
 		endDate: req.body.endDate,
 		time: req.body.time,
-		bands: req.body.bands
+		bands: req.body.bands,
+		canceled: req.body.canceled,
+		lastModified: Date.now()
 	};
 	Event.findOneAndUpdate(id, update, (err, event) => {
 		if (err) throw err;
