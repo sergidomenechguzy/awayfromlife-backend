@@ -9,6 +9,8 @@ const Event = mongoose.model('unvalidated_events');
 
 // load params
 const params = require('../config/params.js');
+// load token.js
+const token = require('../config/token');
 
 // unvalidated_events routes
 // get all events
@@ -18,9 +20,9 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found' });
+				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
-			return res.json(events);
+			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
 		})
 		.catch((err) => {
 			throw err;
@@ -40,14 +42,10 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 		.limit(perPage)
 		.then(events => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found' });
+				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
 			Event.count().then((count) => {
-				return res.json({
-					events: events,
-					current: page,
-					pages: Math.ceil(count / perPage)
-				});
+				return res.status(200).json({ data: events, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
 			}).catch((err) => {
 				throw err;
 			});
@@ -63,9 +61,9 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 	Event.findOne(id)
 		.then(event => {
 			if (!event) {
-				return res.status(200).json({ message: 'No event found with this ID' });
+				return res.status(200).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
 			}
-			return res.json(event);
+			return res.status(200).json({ data: event, token: token.signJWT(req.user.id) });
 		})
 		.catch((err) => {
 			throw err;
@@ -80,9 +78,9 @@ router.get('/title/:title', passport.authenticate('jwt', { session: false }), (r
 		.sort({title: 1})
 		.then((events) => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No event found with this title' });
+				return res.status(200).json({ message: 'No event found with this title', token: token.signJWT(req.user.id) });
 			}
-			return res.json(events);
+			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
 		})
 		.catch((err) => {
 			throw err;
@@ -97,9 +95,9 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
 		.sort({title: 1})
 		.then((events) => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found on this date' });
+				return res.status(200).json({ message: 'No events found on this date', token: token.signJWT(req.user.id) });
 			}
-			return res.json(events);
+			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
 		})
 		.catch((err) => {
 			throw err;
@@ -107,7 +105,7 @@ router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req
 });
 
 // post event to database
-router.post('/', params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
+router.post('/', token.checkToken(), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -120,7 +118,7 @@ router.post('/', params.checkParameters(['title', 'location', 'startDate']), (re
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Event saved' })
+			return res.status(200).json({ message: 'Event saved', token: res.locals.token })
 		})
 		.catch((err) => {
 			throw err;
@@ -132,7 +130,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 	const id = { _id: req.params._id };
 	Event.remove(id, (err, event) => {
 		if (err) throw err;
-		return res.status(200).json({ message: 'Event deleted' });
+		return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
 	});
 });
 

@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 			if (bugs.length === 0) {
 				return res.status(200).json({ message: 'No bugs found' });
 			}
-			return res.json(bugs);
+			return res.status(200).json(bugs);
 		})
 		.catch((err) => {
 			throw err;

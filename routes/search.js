@@ -10,9 +10,12 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+// load token.js
+const token = require('../config/token');
+
 // search routes
 // get all elements
-router.get('/', (req, res) => {
+router.get('/', token.checkToken(), (req, res) => {
   let responseList = []; 
 
   Event.find()
@@ -22,7 +25,7 @@ router.get('/', (req, res) => {
     Location.find()
     .then((locations) => {
       responseList.push(locations);
-      return res.json(responseList);
+      return res.status(200).json({ data: responseList, token: res.locals.token });
     })
     .catch((err) => {
       throw err;
@@ -34,7 +37,7 @@ router.get('/', (req, res) => {
 });
 
 // get all search results
-router.get('/:query', (req, res) => {
+router.get('/:query', token.checkToken(), (req, res) => {
 	const regex = '.*' + req.params.query + '.*';
 	let responseList = [];
 
@@ -60,7 +63,7 @@ router.get('/:query', (req, res) => {
 						return 0;
 					});
 
-					return res.json(responseList);
+					return res.status(200).json({ data: responseList, token: res.locals.token });
 				})
 				.catch((err) => {
 					throw err;

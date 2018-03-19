@@ -11,6 +11,8 @@ const User = mongoose.model('users');
 
 // load secrets
 const secrets = require('../config/secrets');
+// load token.js
+const token = require('../config/token');
 
 // users routes
 // login by login-token in body
@@ -30,12 +32,7 @@ router.post('/login', (req, res) => {
 				if (!isMatch) {
 					return res.status(401).json({ message: 'Wrong email or password' });
 				}
-				const payload = {
-					id: user.id,
-					expire: Date.now() + 7200000
-				};
-				const token = jwt.sign(payload, secrets.authSecret);
-				res.status(200).json({ message: 'You are logged in', token: token });
+				res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
 			})
 		})
 		.catch((err) => {
@@ -102,12 +99,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 							}
 							User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
 								if (err) throw err;
-								const payload = {
-									id: user.id,
-									expire: Date.now() + 7200000
-								};
-								const token = jwt.sign(payload, secrets.authSecret);
-								return res.status(200).json({ message: 'Password changed', token: token });
+								return res.status(200).json({ message: 'Password changed', token: token.signJWT(user.id) });
 							});
 						});
 					});
@@ -121,7 +113,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 
 // check authentication
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
-	return res.status(200).json({ message: 'You are authorized' });
+	return res.status(200).json({ message: 'You are authorized', token: token.signJWT(req.user.id) });
 });
 
 // post data to get different tokens

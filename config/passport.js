@@ -26,7 +26,7 @@ module.exports = function (passport) {
 					if (!user) {
 						return next(null, false);
 					}
-					if ((jwt_payload.expire - 7200000) < user.lastModified) {
+					if ((jwt_payload.expire - 1200000) < user.lastModified) {
 						return next(null, false);
 					}
 					return next(null, user);
