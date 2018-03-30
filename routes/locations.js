@@ -9,18 +9,20 @@ const Location = mongoose.model('locations');
 
 // load params
 const params = require('../config/params.js');
+// load token.js
+const token = require('../config/token');
 
 // locations routes
 // get all locations
-router.get('/', (req, res) => {
+router.get('/', token.checkToken(), (req, res) => {
 	Location.find()
 		.collation({ locale: "en", strength: 2 })
 		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No locations found' });
+				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
-			return res.json(locations);
+			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch((err) => {
 			throw err;
@@ -28,7 +30,7 @@ router.get('/', (req, res) => {
 });
 
 // get paginated locations
-router.get('/page', (req, res) => {
+router.get('/page', token.checkToken(), (req, res) => {
 	const perPage = (parseInt(req.query.perPage)) || 10;
 	const page = (parseInt(req.query.page)) || 1;
 	const sortBy = (req.query.sortBy) || 'name';
@@ -40,14 +42,10 @@ router.get('/page', (req, res) => {
 		.limit(perPage)
 		.then(locations => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No locations found' });
+				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
 			Location.count().then((count) => {
-				return res.json({
-					locations: locations,
-                    current: page,
-                    pages: Math.ceil(count / perPage)
-					});
+				return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 			}).catch((err) => {
 				throw err;
 			});
@@ -58,14 +56,14 @@ router.get('/page', (req, res) => {
 });
 
 // get location by id
-router.get('/byid/:_id', (req, res) => {
+router.get('/byid/:_id', token.checkToken(), (req, res) => {
 	const id = { _id: req.params._id };
 	Location.findOne(id)
 		.then(location => {
 			if (!location) {
-				return res.status(200).json({ message: 'No location found with this ID' });
+				return res.status(200).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
-			return res.json(location);
+			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch((err) => {
 			throw err;
@@ -73,16 +71,33 @@ router.get('/byid/:_id', (req, res) => {
 });
 
 // get locations by name
-router.get('/name/:name', (req, res) => {
+router.get('/name/:name', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
 		.collation({ locale: "en", strength: 2 })
 		.sort({name: 1})
 		.then((locations) => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No location found with this name' });
+				return res.status(200).json({ message: 'No location found with this name', token: res.locals.token });
 			}
-			return res.json(locations);
+			return res.status(200).json({ data: locations, token: res.locals.token });
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
+// get all locations in one city
+router.get('/city/:city', token.checkToken(), (req, res) => {
+	let regex = '.*' + req.params.city + '.*';
+	Location.find({ 'address.city': new RegExp(regex, 'gi') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
+		.then(locations => {
+			if (locations.length === 0) {
+				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
+			}
+			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch((err) => {
 			throw err;
@@ -90,21 +105,21 @@ router.get('/name/:name', (req, res) => {
 });
 
 // get all cities with saved locations
-router.get('/cities', (req, res) => {
+router.get('/cities', token.checkToken(), (req, res) => {
 	let cities = [];
 	Location.find()
 		.collation({ locale: "en", strength: 2 })
 		.sort({'address.city': 1})
 		.then(locations => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No locations found' });
+				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
 			locations.forEach(location => {
 				if (cities.indexOf(location.address.city) === -1) {
 					cities.push(location.address.city);
 				}
 			});
-			return res.json(cities);
+			return res.status(200).json({ data: cities, token: res.locals.token });
 		})
 		.catch((err) => {
 			throw err;
@@ -133,7 +148,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Location(newLocation)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Location saved' })
+			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
 		})
 		.catch((err) => {
 			throw err;
@@ -162,7 +177,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 	};
 	Location.findOneAndUpdate(id, update, (err, location) => {
 		if (err) throw err;
-		return res.status(200).json({ message: 'Location updated' });
+		return res.status(200).json({ message: 'Location updated', token: token.signJWT(req.user.id) });
 	});
 });
 
@@ -171,7 +186,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 	const id = { _id: req.params._id };
 	Location.remove(id, (err, location) => {
 		if (err) throw err;
-		return res.status(200).json({ message: 'Location deleted' });
+		return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
 	});
 });
 
