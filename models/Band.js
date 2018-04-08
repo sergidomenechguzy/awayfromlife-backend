@@ -12,7 +12,27 @@ const BandSchema = new Schema({
 		required: true
 	},
 	origin: {
-		type: Object
+		administrative: {
+			type: String
+		},
+		country: {
+			type: String,
+			required: true
+		},
+		postcode: {
+			type: String
+		},
+		lat: {
+			type: Number,
+			required: true
+		},
+		lng: {
+			type: Number,
+			required: true
+		},
+		value: {
+			type: String,
+		}
 	},
 	history: {
 		type: String
@@ -21,7 +41,12 @@ const BandSchema = new Schema({
 		type: String
 	},
 	releases: {
-		type: [String]
+		releaseName: {
+			type: String
+		},
+		releaseYear: {
+			type: String
+		}
 	},
 	foundingDate: {
 		type: String
