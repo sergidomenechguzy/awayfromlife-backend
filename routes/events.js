@@ -170,6 +170,25 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 		});
 });
 
+// get similar events
+router.get('/similar', token.checkToken(), (req, res) => {
+	const location = req.query.location;
+	let regex = '^' + req.query.date;
+
+	Event.find({ location: location, startDate: new RegExp(regex, 'g') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({title: 1})
+		.then((events) => {
+			if (events.length === 0) {
+				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
+			}
+			return res.status(200).json({ data: events, token: res.locals.token });
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
 // post event to database
 router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
@@ -180,7 +199,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		endDate: req.body.endDate,
 		time: req.body.time,
 		bands: req.body.bands,
-		canceled: req.body.canceled
+		canceled: req.body.canceled,
+		ticketLink: req.body.ticketLink
 	}
 	new Event(newEvent)
 		.save()
@@ -204,6 +224,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 		time: req.body.time,
 		bands: req.body.bands,
 		canceled: req.body.canceled,
+		ticketLink: req.body.ticketLink,
 		lastModified: Date.now()
 	};
 	Event.findOneAndUpdate(id, update, (err, event) => {
