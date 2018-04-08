@@ -8,6 +8,7 @@ const app = express();
 // load routes
 const locations = require('./routes/locations');
 const events = require('./routes/events');
+const bands = require('./routes/bands');
 const unvalidated_locations = require('./routes/unvalidated_locations');
 const unvalidated_events = require('./routes/unvalidated_events');
 const users = require('./routes/users');
@@ -48,6 +49,7 @@ app.get('/', (req, res) => {
 // use routes
 app.use('/api/locations', locations);
 app.use('/api/events', events);
+app.use('/api/bands', bands);
 app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/users', users);
