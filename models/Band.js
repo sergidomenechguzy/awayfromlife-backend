@@ -41,3 +41,4 @@ const BandSchema = new Schema({
 });
 
 mongoose.model('bands', BandSchema);
+mongoose.model('unvalidated_bands', BandSchema);
