@@ -55,6 +55,23 @@ router.get('/page', token.checkToken(), (req, res) => {
 		});
 });
 
+// get bands by genre
+router.get('/genre/:genre', token.checkToken(), (req, res) => {
+	let regex = '.*' + req.params.genre + '.*';
+	Band.find({ genre: new RegExp(regex, 'gi') })
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
+		.then((bands) => {
+			if (bands.length === 0) {
+				return res.status(200).json({ message: 'No bands found with this genre', token: res.locals.token });
+			}
+			return res.status(200).json({ data: bands, token: res.locals.token });
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
 // post band to database
 router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre']), (req, res) => {
 	const newBand = {
@@ -78,6 +95,37 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		.catch((err) => {
 			throw err;
 		});
+});
+
+// update band by id
+router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre']), (req, res) => {
+	const id = { _id: req.params._id };
+	const update = {
+		name: req.body.name,
+		genre: req.body.genre,
+		origin: req.body.origin,
+		history: req.body.history,
+		label: req.body.label,
+		releases: req.body.releases,
+		foundingDate: req.body.foundingDate,
+		websiteUrl: req.body.websiteUrl,
+		bandcampUrl: req.body.bandcampUrl,
+		soundcloudUrl: req.body.soundcloudUrl,
+		facebookUrl: req.body.facebookUrl
+	};
+	Band.findOneAndUpdate(id, update, (err, band) => {
+		if (err) throw err;
+		return res.status(200).json({ message: 'Band updated', token: token.signJWT(req.user.id) });
+	});
+});
+
+// delete band by id
+router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+	const id = { _id: req.params._id };
+	Band.remove(id, (err, band) => {
+		if (err) throw err;
+		return res.status(200).json({ message: 'Band deleted', token: token.signJWT(req.user.id) });
+	});
 });
 
 module.exports = router;
