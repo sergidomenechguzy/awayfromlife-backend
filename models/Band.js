@@ -12,6 +12,10 @@ const BandSchema = new Schema({
 		required: true
 	},
 	origin: {
+		name: {
+			type: String,
+			required: true
+		},
 		administrative: {
 			type: String
 		},
