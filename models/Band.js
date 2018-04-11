@@ -44,14 +44,14 @@ const BandSchema = new Schema({
 	label: {
 		type: String
 	},
-	releases: {
+	releases: [{
 		releaseName: {
 			type: String
 		},
 		releaseYear: {
 			type: String
 		}
-	},
+	}],
 	foundingDate: {
 		type: String
 	},

@@ -104,16 +104,17 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		},
 		history: req.body.history,
 		label: req.body.label,
-		releases: {
-			releaseName: req.body.releases.releaseName,
-			releaseYear: req.body.releases.releaseYear,
-		},
+		releases: req.body.releases,
+		// releases: {
+		// 	releaseName: req.body.releases.releaseName,
+		// 	releaseYear: req.body.releases.releaseYear,
+		// },
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
 		bandcampUrl: req.body.bandcampUrl,
 		soundcloudUrl: req.body.soundcloudUrl,
 		facebookUrl: req.body.facebookUrl
-	}
+	};
 	new Band(newBand)
 		.save()
 		.then(() => {
@@ -130,10 +131,22 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 	const update = {
 		name: req.body.name,
 		genre: req.body.genre,
-		origin: req.body.origin,
+		origin: {
+			name: req.body.origin.name,
+			administrative: req.body.origin.administrative,
+			country: req.body.origin.country,
+			postcode: req.body.origin.postcode,
+			lat: req.body.origin.lat,
+			lng: req.body.origin.lng,
+			value: req.body.origin.value
+		},
 		history: req.body.history,
 		label: req.body.label,
 		releases: req.body.releases,
+		// releases: {
+		// 	releaseName: req.body.releases.releaseName,
+		// 	releaseYear: req.body.releases.releaseYear,
+		// },
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
 		bandcampUrl: req.body.bandcampUrl,
