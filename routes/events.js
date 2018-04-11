@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
+const moment = require('moment');
 const router = express.Router();
 
 // load event model
@@ -15,6 +16,8 @@ const Location = mongoose.model('locations');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token');
+
+moment.locale('de');
 
 // events routes
 // get all events
@@ -173,7 +176,11 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 // get similar events
 router.get('/similar', token.checkToken(), (req, res) => {
 	const location = req.query.location;
-	let regex = '^' + req.query.date;
+
+	const time = moment(req.query.date);
+
+	let regex = '^' + time.format('YYYY-MM-DD');
+	// let regex = '^' + req.query.date;
 
 	Event.find({ location: location, startDate: new RegExp(regex, 'g') })
 		.collation({ locale: "en", strength: 2 })
