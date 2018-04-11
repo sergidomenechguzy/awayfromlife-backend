@@ -89,14 +89,25 @@ router.get('/genre/:genre', token.checkToken(), (req, res) => {
 });
 
 // post band to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre']), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
 		genre: req.body.genre,
-		origin: req.body.origin,
+		origin: {
+			name: req.body.origin.name,
+			administrative: req.body.origin.administrative,
+			country: req.body.origin.country,
+			postcode: req.body.origin.postcode,
+			lat: req.body.origin.lat,
+			lng: req.body.origin.lng,
+			value: req.body.origin.value
+		},
 		history: req.body.history,
 		label: req.body.label,
-		releases: req.body.releases,
+		releases: {
+			releaseName: req.body.releases.releaseName,
+			releaseYear: req.body.releases.releaseYear,
+		},
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
 		bandcampUrl: req.body.bandcampUrl,
