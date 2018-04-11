@@ -55,6 +55,22 @@ router.get('/page', token.checkToken(), (req, res) => {
 		});
 });
 
+// get band by id
+router.get('/byid/:_id', token.checkToken(), (req, res) => {
+	const id = { _id: req.params._id };
+	Band.findOne(id)
+		.then(band => {
+			if (!band) {
+				return res.status(200).json({ message: 'No Band found with this ID', token: res.locals.token });
+			}
+			return res.status(200).json({ data: band, token: res.locals.token });
+		})
+		.catch((err) => {
+			throw err;
+		});
+});
+
+
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.genre + '.*';
