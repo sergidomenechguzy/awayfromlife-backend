@@ -1,23 +1,23 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// create location schema
-const LocationSchema = new Schema({
+// create user schema
+const BandSchema = new Schema({
 	name: {
 		type: String,
 		required: true
 	},
-	address: {
-		street: {
+	genre: {
+		type: String,
+		required: true
+	},
+	origin: {
+		name: {
 			type: String,
 			required: true
 		},
 		administrative: {
 			type: String
-		},
-		city: {
-			type: String,
-			required: true
 		},
 		country: {
 			type: String,
@@ -37,22 +37,37 @@ const LocationSchema = new Schema({
 		value: {
 			type: String,
 		}
-		
 	},
-	status: {
-		type: String,
-		default: 'opened'
-	},
-	information: {
+	history: {
 		type: String
 	},
-	website: {
+	label: {
 		type: String
 	},
-	facebook_page_url: {
+	releases: [{
+		releaseName: {
+			type: String
+		},
+		releaseYear: {
+			type: String
+		}
+	}],
+	foundingDate: {
+		type: String
+	},
+	websiteUrl: {
+		type: String
+	},
+	bandcampUrl: {
+		type: String
+	},
+	soundcloudUrl: {
+		type: String
+	},
+	facebookUrl: {
 		type: String
 	}
 });
 
-mongoose.model('locations', LocationSchema);
-mongoose.model('unvalidated_locations', LocationSchema);
+mongoose.model('bands', BandSchema);
+mongoose.model('unvalidated_bands', BandSchema);
