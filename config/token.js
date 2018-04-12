@@ -21,25 +21,28 @@ module.exports.checkToken = () => {
 		if(!req.headers.authorization) {
 			return next();
 		}
-		const decodedAuthToken = jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret);
-		if (decodedAuthToken.expire < Date.now()) {
-			return next();
-		}
-		else {
-			User.findOne({ _id: decodedAuthToken.id })
-				.then((user) => {
-					if (!user) {
-						return next();
-					}
-					if ((decodedAuthToken.expire - expireTime) < user.lastModified) {
-						return next();
-					}
-					res.locals.token = jwt.sign({id: user.id, expire: Date.now() + expireTime}, secrets.authSecret);
-					next();
-				})
-				.catch((err) => {
-					throw err;
-				});
-		}
+		jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
+			if (err) return next();
+
+			if (decodedAuthToken.expire < Date.now()) {
+				return next();
+			}
+			else {
+				User.findOne({ _id: decodedAuthToken.id })
+					.then((user) => {
+						if (!user) {
+							return next();
+						}
+						if ((decodedAuthToken.expire - expireTime) < user.lastModified) {
+							return next();
+						}
+						res.locals.token = jwt.sign({id: user.id, expire: Date.now() + expireTime}, secrets.authSecret);
+						next();
+					})
+					.catch((err) => {
+						throw err;
+					});
+			}
+		});
 	}
 }

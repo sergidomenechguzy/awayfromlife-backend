@@ -7,6 +7,10 @@ const router = express.Router();
 require('../models/Band');
 const Band = mongoose.model('bands');
 
+// load event model
+require('../models/Event');
+const Event = mongoose.model('events');
+
 // load params
 const params = require('../config/params.js');
 // load token.js
@@ -70,6 +74,22 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 		});
 });
 
+// get all bands events
+router.get('/events/:_id', token.checkToken(), (req, res) => {
+	const id = req.params._id;
+	
+	let eventList = [];
+
+	Event.find()
+		.collation({ locale: "en", strength: 2 })
+		.sort({name: 1})
+		.then((events) => {
+			events.forEach((event) => {
+				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
+			});
+			return res.status(200).json({ data: eventList, token: res.locals.token });
+		});
+});
 
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(), (req, res) => {
