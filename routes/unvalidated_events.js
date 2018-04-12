@@ -70,40 +70,6 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 		});
 });
 
-// get events by title
-router.get('/title/:title', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = '.*' + req.params.title + '.*';
-	Event.find({ title: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
-		.then((events) => {
-			if (events.length === 0) {
-				return res.status(200).json({ message: 'No event found with this title', token: token.signJWT(req.user.id) });
-			}
-			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
-		})
-		.catch((err) => {
-			throw err;
-		});
-});
-
-// get events by date
-router.get('/date/:date', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = '^' + req.params.date;
-	Event.find({ startDate: new RegExp(regex, 'g') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
-		.then((events) => {
-			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found on this date', token: token.signJWT(req.user.id) });
-			}
-			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
-		})
-		.catch((err) => {
-			throw err;
-		});
-});
-
 // post event to database
 router.post('/', token.checkToken(), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {

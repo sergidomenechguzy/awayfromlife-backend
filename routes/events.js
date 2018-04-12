@@ -180,7 +180,6 @@ router.get('/similar', token.checkToken(), (req, res) => {
 	const time = moment(req.query.date);
 
 	let regex = '^' + time.format('YYYY-MM-DD');
-	// let regex = '^' + req.query.date;
 
 	Event.find({ location: location, startDate: new RegExp(regex, 'g') })
 		.collation({ locale: "en", strength: 2 })

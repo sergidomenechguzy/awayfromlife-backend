@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
 		});
 });
 
-// post location to database
+// post bug to database
 router.post('/', params.checkParameters(['function']), (req, res) => {
 	const newBug = {
 		function: req.body.function,
@@ -44,7 +44,7 @@ router.post('/', params.checkParameters(['function']), (req, res) => {
 		});
 });
 
-// delete location by id
+// delete bug by id
 router.delete('/:_id', (req, res) => {
 	const id = { _id: req.params._id };
 	Bug.remove(id, (err, bug) => {

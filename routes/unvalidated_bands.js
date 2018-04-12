@@ -70,23 +70,6 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 		});
 });
 
-// get bands by genre
-router.get('/genre/:genre', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = '.*' + req.params.genre + '.*';
-	Band.find({ genre: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
-		.then((bands) => {
-			if (bands.length === 0) {
-				return res.status(200).json({ message: 'No bands found with this genre', token: token.signJWT(req.user.id) });
-			}
-			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
-		})
-		.catch((err) => {
-			throw err;
-		});
-});
-
 // post band to database
 router.post('/', token.checkToken(), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {

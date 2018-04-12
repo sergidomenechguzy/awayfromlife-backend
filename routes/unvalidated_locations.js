@@ -70,23 +70,6 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 		});
 });
 
-// get location by name
-router.get('/name/:name', passport.authenticate('jwt', { session: false }), (req, res) => {
-	let regex = '.*' + req.params.name + '.*';
-	Location.find({ name: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
-		.then((locations) => {
-			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No location found with this name', token: token.signJWT(req.user.id) });
-			}
-			return res.status(200).json({ data: locations, token: token.signJWT(req.user.id) });
-		})
-		.catch((err) => {
-			throw err;
-		});
-});
-
 // post location to database
 router.post('/', token.checkToken(), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
