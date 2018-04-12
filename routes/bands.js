@@ -125,10 +125,6 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		history: req.body.history,
 		label: req.body.label,
 		releases: req.body.releases,
-		// releases: {
-		// 	releaseName: req.body.releases.releaseName,
-		// 	releaseYear: req.body.releases.releaseYear,
-		// },
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
 		bandcampUrl: req.body.bandcampUrl,

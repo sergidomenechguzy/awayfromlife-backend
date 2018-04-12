@@ -22,17 +22,17 @@ router.post('/login', (req, res) => {
 	}
 	
 	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
-		if (err) return res.status(401).json({ message: 'Unvalid token' });
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
 		User.findOne({ email: decodedToken.email })
 		.then(user => {
 			if (!user) {
-				return res.status(401).json({ message: 'Wrong email or password' });
+				return res.status(400).json({ message: 'Wrong email or password' });
 			}
 			bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
 				if (err) throw err;
 				if (!isMatch) {
-					return res.status(401).json({ message: 'Wrong email or password' });
+					return res.status(400).json({ message: 'Wrong email or password' });
 				}
 				res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
 			})
@@ -49,7 +49,7 @@ router.post('/register', (req, res) => {
 		return res.status(400).json({ message: 'Token missing' });
 	}
 	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
-		if (err) return res.status(401).json({ message: 'Unvalid token' });
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
 		const newUser = new User({
 			name: decodedToken.name,
@@ -74,13 +74,13 @@ router.post('/register', (req, res) => {
 // reset password by password-token in body
 router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
 	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
-		if (err) return res.status(401).json({ message: 'Unvalid token' });
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
 	
 		if (!req.body.token) {
 			return res.status(400).json({ message: 'Password-token missing' });
 		}
 		jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedPasswordToken) => {
-			if (err) return res.status(401).json({ message: 'Unvalid token' });
+			if (err) return res.status(400).json({ message: 'Unvalid token' });
 
 			if (decodedPasswordToken.newPassword.length < 8) {
 				return res.status(400).json({ message: 'Password must be at least 8 characters' });
