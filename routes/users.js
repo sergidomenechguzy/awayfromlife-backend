@@ -9,115 +9,121 @@ const router = express.Router();
 require('../models/User');
 const User = mongoose.model('users');
 
-//load secrets
+// load secrets
 const secrets = require('../config/secrets');
+// load token.js
+const token = require('../config/token');
 
-// events
+// users routes
+// login by login-token in body
 router.post('/login', (req, res) => {
-  if (!req.body.token) {
-    return res.status(400).json({ message: "Token missing" });
-  }
-  const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
+	if (!req.body.token) {
+		return res.status(400).json({ message: 'Token missing' });
+	}
+	
+	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
-  User.findOne({ email: decodedToken.email })
-    .then(user => {
-      if (!user) {
-        return res.status(401).json({ message: "Wrong email or password" });
-      }
-      bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
-        if (err) throw err;
-        if (!isMatch) {
-          return res.status(401).json({ message: "Wrong email or password" });
-        }
-        const payload = {
-          id: user.id,
-          expire: Date.now() + 7200000
-        };
-        const token = jwt.sign(payload, secrets.authSecret);
-        res.status(200).json({ message: "You are logged in", token: token  });
-      })
-    })
-    .catch((err) => {
-      throw err;
-    });
+		User.findOne({ email: decodedToken.email })
+		.then(user => {
+			if (!user) {
+				return res.status(400).json({ message: 'Wrong email or password' });
+			}
+			bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
+				if (err) throw err;
+				if (!isMatch) {
+					return res.status(400).json({ message: 'Wrong email or password' });
+				}
+				res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
+			})
+		})
+		.catch((err) => {
+			throw err;
+		});
+	});
 });
 
+// register by register-token in body
 router.post('/register', (req, res) => {
-  if (!req.body.token) {
-    return res.status(400).json({ message: "Token missing" });
-  }
-  const decodedToken = jwt.verify(req.body.token, secrets.frontEndSecret);
-  const newUser = new User({
-    name: decodedToken.name,
-    email: decodedToken.email,
-    password: decodedToken.password
-  });
+	if (!req.body.token) {
+		return res.status(400).json({ message: 'Token missing' });
+	}
+	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
-  bcrypt.genSalt(10, (err, salt) => {
-    bcrypt.hash(newUser.password, salt, (err, hash) => {
-      if (err) throw err;
-      newUser.password = hash;
-      newUser.save()
-        .then(res.status(200).json({ message: "User registered" }))
-        .catch((err) => {
-          throw err;
-        });
-    });
-  });
+		const newUser = new User({
+			name: decodedToken.name,
+			email: decodedToken.email,
+			password: decodedToken.password
+		});
+	
+		bcrypt.genSalt(10, (err, salt) => {
+			bcrypt.hash(newUser.password, salt, (err, hash) => {
+				if (err) throw err;
+				newUser.password = hash;
+				newUser.save()
+					.then(res.status(200).json({ message: 'User registered' }))
+					.catch((err) => {
+						throw err;
+					});
+			});
+		});
+	});
 });
 
+// reset password by password-token in body
 router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
-  const decodedAuthToken = jwt.verify(req.headers.authorization.split(" ")[1], secrets.authSecret);
-  if(!req.body.token) {
-    return res.status(400).json({ message: "Password-token missing" });
-  }
-  else {
-    const decodedPasswordToken = jwt.verify(req.body.token, secrets.frontEndSecret);
-    if (decodedPasswordToken.newPassword.length < 8) {
-      return res.status(400).json({ message: "Password must be at least 8 characters" });
-    }
+	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
+		if (err) return res.status(400).json({ message: 'Unvalid token' });
+	
+		if (!req.body.token) {
+			return res.status(400).json({ message: 'Password-token missing' });
+		}
+		jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedPasswordToken) => {
+			if (err) return res.status(400).json({ message: 'Unvalid token' });
 
-    User.findOne({ _id: decodedAuthToken.id })
-    .then(user => {
-      if (!user) {
-        return res.status(400).json({ message: "An error occurred. Please try again." });
-      }
-      bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
-        if (err) throw err;
-        if (!isMatch) {
-          return res.status(400).json({ message: "Wrong password" });
-        }
-        bcrypt.genSalt(10, (err, salt) => {
-          bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
-            if (err) throw err;
-            updatedUser = {
-              _id: user._id,
-              name: user.name,
-              email: user.email,
-              password: hash,
-              lastModified: Date.now()
-            }
-            User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
-              if (err) throw err;
-              const payload = {
-                id: user.id,
-                expire: Date.now() + 7200000
-              };
-              const token = jwt.sign(payload, secrets.authSecret);
-              return res.status(200).json({ message: "Password changed", token: token });
-            });
-          });
-        });
-      })
-    })
-    .catch((err) => {
-      throw err;
-    });
-  }
+			if (decodedPasswordToken.newPassword.length < 8) {
+				return res.status(400).json({ message: 'Password must be at least 8 characters' });
+			}
+	
+			User.findOne({ _id: decodedAuthToken.id })
+				.then(user => {
+					if (!user) {
+						return res.status(400).json({ message: 'An error occurred. Please try again.' });
+					}
+					bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
+						if (err) throw err;
+						if (!isMatch) {
+							return res.status(400).json({ message: 'Wrong password' });
+						}
+						bcrypt.genSalt(10, (err, salt) => {
+							bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
+								if (err) throw err;
+								updatedUser = {
+									_id: user._id,
+									name: user.name,
+									email: user.email,
+									password: hash,
+									lastModified: Date.now()
+								}
+								User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
+									if (err) throw err;
+									return res.status(200).json({ message: 'Password changed', token: token.signJWT(user.id) });
+								});
+							});
+						});
+					})
+				})
+				.catch((err) => {
+					throw err;
+				});
+		});
+	});
 });
 
+// check authentication
 router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
-  return res.status(200).json({ message: "You are authorized" });
+	return res.status(200).json({ message: 'You are authorized', token: token.signJWT(req.user.id) });
 });
 
 module.exports = router;
