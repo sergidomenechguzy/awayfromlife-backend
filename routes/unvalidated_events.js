@@ -57,13 +57,51 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 
 // get event by id
 router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Event.findOne(id)
+	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
-				return res.status(200).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: event, token: token.signJWT(req.user.id) });
+
+			Location.findOne({ _id: event.location })
+				.then(location => {
+					if (!location) {
+						return res.status(200).json({ message: 'No location found with this ID', token: res.locals.token });
+					}
+
+					let bandsArray = [];
+					event.bands.forEach((bandID, index, array) => {
+						Band.findOne({ _id: bandID })
+							.then(band => {
+								if (!band) {
+									return res.status(200).json({ message: 'No band found with this ID', token: res.locals.token });
+								}
+								bandsArray.push(band);
+
+								if (index === array.length - 1) {
+									const responseEvent = {
+										title: event.title,
+										description: event.description,
+										location: location,
+										startDate: event.startDate,
+										endDate: event.endDate,
+										time: event.time,
+										bands: bandsArray,
+										canceled: event.canceled,
+										ticketLink: event.ticketLink
+									};
+	
+									return res.status(200).json({ data: responseEvent, token: res.locals.token });
+								}
+							})
+							.catch((err) => {
+								throw err;
+							});
+					});
+				})
+				.catch((err) => {
+					throw err;
+				});
 		})
 		.catch((err) => {
 			throw err;
