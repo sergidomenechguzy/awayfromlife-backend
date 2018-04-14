@@ -12,6 +12,10 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+// load band model
+require('../models/Band');
+const Band = mongoose.model('bands');
+
 // load params
 const params = require('../config/params.js');
 // load token.js
@@ -29,6 +33,10 @@ router.get('/', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
+			// events.sort((a, b) => {
+			// 	return a.title.localeCompare(b.title);
+			// });
+			
 			return res.status(200).json({ data: events, token: res.locals.token });
 		})
 		.catch((err) => {
@@ -64,13 +72,51 @@ router.get('/page', token.checkToken(), (req, res) => {
 
 // get event by id
 router.get('/byid/:_id', token.checkToken(), (req, res) => {
-	const id = { _id: req.params._id };
-	Event.findOne(id)
+	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
 				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: event, token: res.locals.token });
+
+			Location.findOne({ _id: event.location })
+				.then(location => {
+					if (!location) {
+						return res.status(200).json({ message: 'No location found with this ID', token: res.locals.token });
+					}
+
+					let bandsArray = [];
+					event.bands.forEach((bandID, index, array) => {
+						Band.findOne({ _id: bandID })
+							.then(band => {
+								if (!band) {
+									return res.status(200).json({ message: 'No band found with this ID', token: res.locals.token });
+								}
+								bandsArray.push(band);
+
+								if (index === array.length - 1) {
+									const responseEvent = {
+										title: event.title,
+										description: event.description,
+										location: location,
+										startDate: event.startDate,
+										endDate: event.endDate,
+										time: event.time,
+										bands: bandsArray,
+										canceled: event.canceled,
+										ticketLink: event.ticketLink
+									};
+	
+									return res.status(200).json({ data: responseEvent, token: res.locals.token });
+								}
+							})
+							.catch((err) => {
+								throw err;
+							});
+					});
+				})
+				.catch((err) => {
+					throw err;
+				});
 		})
 		.catch((err) => {
 			throw err;
@@ -96,8 +142,7 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 
 // get events by location id
 router.get('/location/:_id', token.checkToken(), (req, res) => {
-	const id = { location: req.params._id };
-	Event.find(id)
+	Event.find({ location: req.params._id })
 		.collation({ locale: "en", strength: 2 })
 		.sort({title: 1})
 		.then(events => {
@@ -114,7 +159,6 @@ router.get('/location/:_id', token.checkToken(), (req, res) => {
 // get events by city
 router.get('/city/:city', token.checkToken(), (req, res) => {
 	let cityEvents = [];
-	let counter = 0;
 	let regex = '.*' + req.params.city + '.*';
 
 	Location.find({ 'address.city': new RegExp(regex, 'gi') })
@@ -125,12 +169,11 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 			locations.forEach((location, index, array) => {
 				Event.find({ location: location._id })
 					.then(events => {
-						counter++;
 						if(events.length > 0) {
 							cityEvents = cityEvents.concat(events);
 						}
 
-						if(counter === array.length) {
+						if(index === array.length - 1) {
 							if (cityEvents.length === 0) {
 								return res.status(200).json({ message: 'No events found in this city', token: res.locals.token });
 							}
@@ -175,13 +218,10 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 
 // get similar events
 router.get('/similar', token.checkToken(), (req, res) => {
-	const location = req.query.location;
-
 	const time = moment(req.query.date);
-
 	let regex = '^' + time.format('YYYY-MM-DD');
 
-	Event.find({ location: location, startDate: new RegExp(regex, 'g') })
+	Event.find({ location: req.query.location, startDate: new RegExp(regex, 'g') })
 		.collation({ locale: "en", strength: 2 })
 		.sort({title: 1})
 		.then((events) => {
@@ -207,7 +247,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		bands: req.body.bands,
 		canceled: req.body.canceled,
 		ticketLink: req.body.ticketLink
-	}
+	};
 	new Event(newEvent)
 		.save()
 		.then(() => {
@@ -220,7 +260,6 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 
 // update event by id
 router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
-	const id = { _id: req.params._id };
 	const update = {
 		title: req.body.title,
 		description: req.body.description,
@@ -233,7 +272,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 		ticketLink: req.body.ticketLink,
 		lastModified: Date.now()
 	};
-	Event.findOneAndUpdate(id, update, (err, event) => {
+	Event.findOneAndUpdate({ _id: req.params._id }, update, (err, event) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Event updated', token: token.signJWT(req.user.id) });
 	});
@@ -241,8 +280,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 
 // delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Event.remove(id, (err, event) => {
+	Event.remove({ _id: req.params._id }, (err, event) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
 	});
