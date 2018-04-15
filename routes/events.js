@@ -12,14 +12,12 @@ const Event = mongoose.model('events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
-// load band model
-require('../models/Band');
-const Band = mongoose.model('bands');
-
-// load params
-const params = require('../config/params.js');
+// load params.js
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../config/dereference');
 
 moment.locale('de');
 
@@ -37,9 +35,11 @@ router.get('/', token.checkToken(), (req, res) => {
 			// 	return a.title.localeCompare(b.title);
 			// });
 			
-			return res.status(200).json({ data: events, token: res.locals.token });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -59,13 +59,17 @@ router.get('/page', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
-			Event.count().then((count) => {
-				return res.status(200).json({ data: events, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
-			}).catch((err) => {
-				throw err;
-			});
+			Event.count()
+				.then(count => {
+					dereference.eventObjectArray(events, responseEvents => {
+						return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+					});
+				})
+				.catch(err => {
+					throw err;
+				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -77,48 +81,11 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 			if (!event) {
 				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-
-			Location.findOne({ _id: event.location })
-				.then(location => {
-					if (!location) {
-						return res.status(200).json({ message: 'No location found with this ID', token: res.locals.token });
-					}
-
-					let bandsArray = [];
-					event.bands.forEach((bandID, index, array) => {
-						Band.findOne({ _id: bandID })
-							.then(band => {
-								if (!band) {
-									return res.status(200).json({ message: 'No band found with this ID', token: res.locals.token });
-								}
-								bandsArray.push(band);
-
-								if (index === array.length - 1) {
-									const responseEvent = {
-										title: event.title,
-										description: event.description,
-										location: location,
-										startDate: event.startDate,
-										endDate: event.endDate,
-										time: event.time,
-										bands: bandsArray,
-										canceled: event.canceled,
-										ticketLink: event.ticketLink
-									};
-	
-									return res.status(200).json({ data: responseEvent, token: res.locals.token });
-								}
-							})
-							.catch((err) => {
-								throw err;
-							});
-					});
-				})
-				.catch((err) => {
-					throw err;
-				});
+			dereference.eventObject(event, responseEvent => {
+				return res.status(200).json({ data: responseEvent, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -129,13 +96,15 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 	Event.find({ title: new RegExp(regex, 'gi') })
 		.collation({ locale: "en", strength: 2 })
 		.sort({title: 1})
-		.then((events) => {
+		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No event found with this title', token: res.locals.token });
 			}
-			return res.status(200).json({ data: events, token: res.locals.token });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -149,9 +118,11 @@ router.get('/location/:_id', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
 			}
-			return res.status(200).json({ data: events, token: res.locals.token });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -186,15 +157,17 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 								}
 								return 0;
 							});
-							return res.status(200).json({ data: cityEvents, token: res.locals.token });
+							dereference.eventObjectArray(cityEvents, responseEvents => {
+								return res.status(200).json({ data: responseEvents, token: res.locals.token });
+							});
 						}
 					})
-					.catch((err) => {
+					.catch(err => {
 						throw err;
 					});
 			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -205,13 +178,15 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 	Event.find({ startDate: new RegExp(regex, 'g') })
 		.collation({ locale: "en", strength: 2 })
 		.sort({title: 1})
-		.then((events) => {
+		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
 			}
-			return res.status(200).json({ data: events, token: res.locals.token });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -224,13 +199,15 @@ router.get('/similar', token.checkToken(), (req, res) => {
 	Event.find({ location: req.query.location, startDate: new RegExp(regex, 'g') })
 		.collation({ locale: "en", strength: 2 })
 		.sort({title: 1})
-		.then((events) => {
+		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
 			}
-			return res.status(200).json({ data: events, token: res.locals.token });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -253,7 +230,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		.then(() => {
 			return res.status(200).json({ message: 'Event saved', token: token.signJWT(req.user.id) })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });

@@ -8,9 +8,11 @@ require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
 
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../config/dereference');
 
 // unvalidated_events routes
 // get all events
@@ -22,9 +24,11 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
-			return res.status(200).json({ data: events, token: token.signJWT(req.user.id) });
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: token.signJWT(req.user.id) });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -44,13 +48,17 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
-			Event.count().then((count) => {
-				return res.status(200).json({ data: events, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
-			}).catch((err) => {
-				throw err;
-			});
+			Event.count()
+				.then(count => {
+					dereference.eventObjectArray(events, responseEvents => {
+						return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+					});
+				})
+				.catch(err => {
+					throw err;
+				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -62,48 +70,11 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 			if (!event) {
 				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-
-			Location.findOne({ _id: event.location })
-				.then(location => {
-					if (!location) {
-						return res.status(200).json({ message: 'No location found with this ID', token: res.locals.token });
-					}
-
-					let bandsArray = [];
-					event.bands.forEach((bandID, index, array) => {
-						Band.findOne({ _id: bandID })
-							.then(band => {
-								if (!band) {
-									return res.status(200).json({ message: 'No band found with this ID', token: res.locals.token });
-								}
-								bandsArray.push(band);
-
-								if (index === array.length - 1) {
-									const responseEvent = {
-										title: event.title,
-										description: event.description,
-										location: location,
-										startDate: event.startDate,
-										endDate: event.endDate,
-										time: event.time,
-										bands: bandsArray,
-										canceled: event.canceled,
-										ticketLink: event.ticketLink
-									};
-	
-									return res.status(200).json({ data: responseEvent, token: res.locals.token });
-								}
-							})
-							.catch((err) => {
-								throw err;
-							});
-					});
-				})
-				.catch((err) => {
-					throw err;
-				});
+			dereference.eventObjectArray(events, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: token.signJWT(req.user.id) });
+			});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -124,15 +95,14 @@ router.post('/', token.checkToken(), params.checkParameters(['title', 'location'
 		.then(() => {
 			return res.status(200).json({ message: 'Event saved', token: res.locals.token })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Event.remove(id, (err, event) => {
+	Event.remove({ _id: req.params._id }, (err, event) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
 	});
