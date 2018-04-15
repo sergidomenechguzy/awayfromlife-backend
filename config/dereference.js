@@ -24,8 +24,9 @@ const eventObject = module.exports.eventObject = (event, next) => {
 						}
 						bandsArray.push(band);
 
-						if (index === array.length - 1) {
+						if (bandsArray.length === array.length) {
 							const responseEvent = {
+								_id: event._id,
 								title: event.title,
 								description: event.description,
 								location: location,
@@ -51,12 +52,17 @@ const eventObject = module.exports.eventObject = (event, next) => {
 
 module.exports.eventObjectArray = (events, next) => {
 	const responseEvents = [];
-			events.forEach((event, index, array) => {
-				eventObject(event, responseEvent => {
-					responseEvents.push(responseEvent);
-					if (index === array.length - 1) {
-						next(responseEvents);
-					}
+	events.forEach((event, index, array) => {
+		eventObject(event, responseEvent => {
+			responseEvents.push(responseEvent);
+			console.log(index);
+
+			if (responseEvents.length === array.length) {
+				responseEvents.sort((a, b) => {
+					return a.title.localeCompare(b.title);
 				});
-			});
+				next(responseEvents);
+			}
+		});
+	});
 }
