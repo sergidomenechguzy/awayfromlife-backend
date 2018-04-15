@@ -23,27 +23,27 @@ router.get('/', token.checkToken(), (req, res) => {
 	let responseList = [];
 
 	Event.find()
-		.then((events) => {
+		.then(events => {
 			responseList.push(events);
 
 			Location.find()
-				.then((locations) => {
+				.then(locations => {
 					responseList.push(locations);
 
 					Band.find()
-						.then((bands) => {
+						.then(bands => {
 							responseList.push(bands);
 							return res.status(200).json({ data: responseList, token: res.locals.token });
 						})
-						.catch((err) => {
+						.catch(err => {
 							throw err;
 						});
 				})
-				.catch((err) => {
+				.catch(err => {
 					throw err;
 				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -54,19 +54,19 @@ router.get('/:query', token.checkToken(), (req, res) => {
 	let responseList = [];
 
 	Event.find({ title: new RegExp(regex, 'gi') })
-		.then((events) => {
+		.then(events => {
 			responseList = events.map(event => {
 				return { category: 'Event', title: event.title, id: event._id };
 			});
 
 			Location.find({ name: new RegExp(regex, 'gi') })
-				.then((locations) => {
+				.then(locations => {
 					responseList = responseList.concat(locations.map(location => {
 						return { category: 'Location', title: location.name, id: location._id };
 					}));
 
 					Band.find({ name: new RegExp(regex, 'gi') })
-						.then((bands) => {
+						.then(bands => {
 							responseList = responseList.concat(bands.map(band => {
 								return { category: 'Band', title: band.name, id: band._id };
 							}));
@@ -83,15 +83,15 @@ router.get('/:query', token.checkToken(), (req, res) => {
 
 							return res.status(200).json({ data: responseList, token: res.locals.token });
 						})
-						.catch((err) => {
+						.catch(err => {
 							throw err;
 						});
 				})
-				.catch((err) => {
+				.catch(err => {
 					throw err;
 				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });

@@ -24,7 +24,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 			}
 			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -44,28 +44,29 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 			if (bands.length === 0) {
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
-			Band.count().then((count) => {
-				return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
-			}).catch((err) => {
-				throw err;
-			});
+			Band.count()
+				.then(count => {
+					return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+				})
+				.catch(err => {
+					throw err;
+				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // get band by id
 router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Band.findOne(id)
+	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
 				return res.status(200).json({ message: 'No Band found with this ID', token: token.signJWT(req.user.id) });
 			}
 			return res.status(200).json({ data: band, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -98,15 +99,14 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'genre', 'o
 		.then(() => {
 			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // delete band by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Band.remove(id, (err, band) => {
+	Band.remove({ _id: req.params._id }, (err, band) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Band deleted', token: token.signJWT(req.user.id) });
 	});

@@ -24,7 +24,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 			}
 			return res.status(200).json({ data: locations, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -44,28 +44,29 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
 			}
-			Location.count().then((count) => {
-				return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
-			}).catch((err) => {
-				throw err;
-			});
+			Location.count()
+				.then(count => {
+					return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+				})
+				.catch(err => {
+					throw err;
+				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // get location by id
 router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Location.findOne(id)
+	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
 				return res.status(200).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
 			}
 			return res.status(200).json({ data: location, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -94,15 +95,14 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'address.st
 		.then(() => {
 			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Location.remove(id, (err, location) => {
+	Location.remove({ _id: req.params._id }, (err, location) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
 	});
