@@ -87,7 +87,7 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'genre', 'o
 			value: req.body.origin.value
 		},
 		history: req.body.history,
-		label: req.body.label,
+		recordLabel: req.body.recordLabel,
 		releases: req.body.releases,
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,

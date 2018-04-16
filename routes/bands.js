@@ -125,7 +125,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 			value: req.body.origin.value
 		},
 		history: req.body.history,
-		label: req.body.label,
+		recordLabel: req.body.recordLabel,
 		releases: req.body.releases,
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
@@ -158,7 +158,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 			value: req.body.origin.value
 		},
 		history: req.body.history,
-		label: req.body.label,
+		recordLabel: req.body.recordLabel,
 		releases: req.body.releases,
 		foundingDate: req.body.foundingDate,
 		websiteUrl: req.body.websiteUrl,
