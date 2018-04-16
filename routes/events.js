@@ -25,8 +25,6 @@ moment.locale('de');
 // get all events
 router.get('/', token.checkToken(), (req, res) => {
 	Event.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
@@ -94,8 +92,6 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 router.get('/title/:title', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.title + '.*';
 	Event.find({ title: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No event found with this title', token: res.locals.token });
@@ -112,8 +108,6 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 // get events by location id
 router.get('/location/:_id', token.checkToken(), (req, res) => {
 	Event.find({ location: req.params._id })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
@@ -148,15 +142,6 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 							if (cityEvents.length === 0) {
 								return res.status(200).json({ message: 'No events found in this city', token: res.locals.token });
 							}
-							cityEvents.sort((a, b) => {
-								if (a.title.toLowerCase() < b.title.toLowerCase()) {
-									return -1;
-								}
-								if (a.title.toLowerCase() > b.title.toLowerCase()) {
-									return 1;
-								}
-								return 0;
-							});
 							dereference.eventObjectArray(cityEvents, responseEvents => {
 								return res.status(200).json({ data: responseEvents, token: res.locals.token });
 							});
@@ -176,8 +161,6 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 router.get('/date/:date', token.checkToken(), (req, res) => {
 	let regex = '^' + req.params.date;
 	Event.find({ startDate: new RegExp(regex, 'g') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
@@ -197,8 +180,6 @@ router.get('/similar', token.checkToken(), (req, res) => {
 	let regex = '^' + time.format('YYYY-MM-DD');
 
 	Event.find({ location: req.query.location, startDate: new RegExp(regex, 'g') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });

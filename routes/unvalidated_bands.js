@@ -16,12 +16,13 @@ const token = require('../config/token');
 // get all bands
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Band.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(bands => {
 			if (bands.length === 0) {
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
+			bands.sort((a, b) => {
+				return a.title.localeCompare(b.title);
+			});
 			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
 		})
 		.catch(err => {

@@ -20,12 +20,13 @@ const token = require('../config/token');
 // get all bands
 router.get('/', token.checkToken(), (req, res) => {
 	Band.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(bands => {
 			if (bands.length === 0) {
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 			}
+			bands.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
@@ -80,11 +81,12 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 	let eventList = [];
 
 	Event.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(events => {
 			events.forEach(event => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
+			});
+			bands.sort((a, b) => {
+				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: eventList, token: res.locals.token });
 		});
@@ -94,12 +96,13 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 router.get('/genre/:genre', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.genre + '.*';
 	Band.find({ genre: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(bands => {
 			if (bands.length === 0) {
 				return res.status(200).json({ message: 'No bands found with this genre', token: res.locals.token });
 			}
+			bands.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {

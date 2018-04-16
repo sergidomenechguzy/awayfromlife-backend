@@ -16,12 +16,13 @@ const token = require('../config/token');
 // get all locations
 router.get('/', token.checkToken(), (req, res) => {
 	Location.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
@@ -75,12 +76,13 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 router.get('/name/:name', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No location found with this name', token: res.locals.token });
 			}
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
@@ -92,12 +94,13 @@ router.get('/name/:name', token.checkToken(), (req, res) => {
 router.get('/city/:city', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
 	Location.find({ 'address.city': new RegExp(regex, 'gi') })
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
 			}
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
@@ -109,8 +112,6 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 router.get('/cities', token.checkToken(), (req, res) => {
 	let cities = [];
 	Location.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({'address.city': 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
@@ -119,6 +120,9 @@ router.get('/cities', token.checkToken(), (req, res) => {
 				if (cities.indexOf(location.address.city) === -1) {
 					cities.push(location.address.city);
 				}
+			});
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: cities, token: res.locals.token });
 		})

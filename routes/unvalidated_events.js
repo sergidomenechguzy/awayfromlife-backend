@@ -18,8 +18,6 @@ const dereference = require('../config/dereference');
 // get all events
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Event.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({title: 1})
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });

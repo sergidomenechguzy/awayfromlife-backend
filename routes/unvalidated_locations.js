@@ -16,12 +16,13 @@ const token = require('../config/token');
 // get all locations
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Location.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
 			}
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: locations, token: token.signJWT(req.user.id) });
 		})
 		.catch(err => {
