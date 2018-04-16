@@ -60,8 +60,7 @@ module.exports.eventObjectArray = (events, next) => {
 	events.forEach((event, index, array) => {
 		eventObject(event, responseEvent => {
 			responseEvents.push(responseEvent);
-			console.log(index);
-
+			
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
 					return a.title.localeCompare(b.title);
