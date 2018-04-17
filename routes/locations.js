@@ -66,6 +66,9 @@ router.get('/page', token.checkToken(), (req, res) => {
 
 // get location by id
 router.get('/byid/:_id', token.checkToken(), (req, res) => {
+	console.log('_id: ', req.params._id);
+	console.log('typeof: ', typeof req.params._id);
+	
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			console.log(location);
