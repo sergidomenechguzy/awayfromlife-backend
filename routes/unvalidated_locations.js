@@ -16,15 +16,16 @@ const token = require('../config/token');
 // get all locations
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
 	Location.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({name: 1})
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
 			}
+			locations.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
 			return res.status(200).json({ data: locations, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -34,38 +35,45 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 	const perPage = (parseInt(req.query.perPage)) || 10;
 	const page = (parseInt(req.query.page)) || 1;
 	const sortBy = (req.query.sortBy) || 'name';
-	const order = (parseInt(req.query.order)) || 1;
+	
+	let order = 1
+	if (parseInt(req.query.order) === -1) order = -1;
+	
 	Location.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({[sortBy]: order})
-		.skip((perPage * page) - perPage)
-		.limit(perPage)
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
 			}
-			Location.count().then((count) => {
-				return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
-			}).catch((err) => {
-				throw err;
+
+			events.sort((a, b) => {
+				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
+				return a[sortBy].localeCompare(b[sortBy]);
 			});
+			events = events.slice((perPage * page) - perPage, (perPage * page));
+
+			Location.count()
+				.then(count => {
+					return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+				})
+				.catch(err => {
+					throw err;
+				});
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // get location by id
 router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Location.findOne(id)
+	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(200).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
 			}
 			return res.status(200).json({ data: location, token: token.signJWT(req.user.id) });
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -94,18 +102,26 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'address.st
 		.then(() => {
 			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const id = { _id: req.params._id };
-	Location.remove(id, (err, location) => {
-		if (err) throw err;
-		return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
-	});
+	Location.findOne({ _id: req.params._id })
+		.then(location => {
+			if (!location) {
+				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+			}
+			Location.remove({ _id: req.params._id }, (err, location) => {
+				if (err) throw err;
+				return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
+			});
+		})
+		.catch(err => {
+			throw err;
+		});
 });
 
 module.exports = router;

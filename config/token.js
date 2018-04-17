@@ -26,7 +26,7 @@ module.exports.checkToken = () => {
 			if (err) return next();
 
 			User.findOne({ _id: decodedAuthToken.id })
-				.then((user) => {
+				.then(user => {
 					if (!user) {
 						return next();
 					}
@@ -36,7 +36,7 @@ module.exports.checkToken = () => {
 					res.locals.token = jwt.sign({id: user.id, exp: Math.floor(Date.now() / 1000) + expTime}, secrets.authSecret);
 					next();
 				})
-				.catch((err) => {
+				.catch(err => {
 					throw err;
 				});
 		});
