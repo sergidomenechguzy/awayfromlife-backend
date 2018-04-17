@@ -68,6 +68,8 @@ router.get('/page', token.checkToken(), (req, res) => {
 router.get('/byid/:_id', token.checkToken(), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
+			console.log(location);
+			
 			if (!location) {
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
