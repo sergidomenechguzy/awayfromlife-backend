@@ -45,11 +45,11 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
 
-			events.sort((a, b) => {
+			bands.sort((a, b) => {
 				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 				return a[sortBy].localeCompare(b[sortBy]);
 			});
-			events = events.slice((perPage * page) - perPage, (perPage * page));
+			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
 			Band.count()
 				.then(count => {
