@@ -41,7 +41,7 @@ const BandSchema = new Schema({
 	history: {
 		type: String
 	},
-	label: {
+	recordLabel: {
 		type: String
 	},
 	releases: [{

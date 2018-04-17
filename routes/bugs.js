@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 			}
 			return res.status(200).json(bugs);
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
@@ -39,15 +39,14 @@ router.post('/', params.checkParameters(['function']), (req, res) => {
 		.then(() => {
 			return res.status(200).json({ message: 'Bug saved' })
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 });
 
 // delete bug by id
 router.delete('/:_id', (req, res) => {
-	const id = { _id: req.params._id };
-	Bug.remove(id, (err, bug) => {
+	Bug.remove({ _id: req.params._id }, (err, bug) => {
 		if (err) throw err;
 		return res.status(200).json({ message: 'Bug deleted' });
 	});

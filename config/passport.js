@@ -22,7 +22,7 @@ module.exports = function (passport) {
 	passport.use(new JwtStrategy(jwtOptions, (jwt_payload, next) => {
 			
 		User.findOne({ _id: jwt_payload.id })
-			.then((user) => {
+			.then(user => {
 				if (!user) {
 					return next(null, false);
 				}
@@ -31,7 +31,7 @@ module.exports = function (passport) {
 				}
 				return next(null, user);
 			})
-			.catch((err) => {
+			.catch(err => {
 				throw err;
 			});
 	}));

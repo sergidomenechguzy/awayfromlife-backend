@@ -37,7 +37,7 @@ router.post('/login', (req, res) => {
 				res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
 			})
 		})
-		.catch((err) => {
+		.catch(err => {
 			throw err;
 		});
 	});
@@ -63,7 +63,7 @@ router.post('/register', (req, res) => {
 				newUser.password = hash;
 				newUser.save()
 					.then(res.status(200).json({ message: 'User registered' }))
-					.catch((err) => {
+					.catch(err => {
 						throw err;
 					});
 			});
@@ -114,7 +114,7 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 						});
 					})
 				})
-				.catch((err) => {
+				.catch(err => {
 					throw err;
 				});
 		});
