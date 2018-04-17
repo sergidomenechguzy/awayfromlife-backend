@@ -22,7 +22,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
-			dereference.eventObjectArray(events, responseEvents => {
+			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
 				return res.status(200).json({ data: responseEvents, token: token.signJWT(req.user.id) });
 			});
 		})
@@ -36,16 +36,22 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 	const perPage = (parseInt(req.query.perPage)) || 10;
 	const page = (parseInt(req.query.page)) || 1;
 	const sortBy = (req.query.sortBy) || 'title';
-	const order = (parseInt(req.query.order)) || 1;
+	
+	let order = 1
+	if (parseInt(req.query.order) === -1) order = -1;
+	
 	Event.find()
-		.collation({ locale: "en", strength: 2 })
-		.sort({[sortBy]: order})
-		.skip((perPage * page) - perPage)
-		.limit(perPage)
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
 			}
+
+			events.sort((a, b) => {
+				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
+				return a[sortBy].localeCompare(b[sortBy]);
+			});
+			events = events.slice((perPage * page) - perPage, (perPage * page));
+
 			Event.count()
 				.then(count => {
 					dereference.eventObjectArray(events, responseEvents => {
@@ -66,10 +72,10 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
-				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
+				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, responseEvents => {
-				return res.status(200).json({ data: responseEvents, token: token.signJWT(req.user.id) });
+			dereference.eventObject(event, responseEvent => {
+				return res.status(200).json({ data: responseEvent, token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
@@ -100,10 +106,19 @@ router.post('/', token.checkToken(), params.checkParameters(['title', 'location'
 
 // delete location by id
 router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
-	Event.remove({ _id: req.params._id }, (err, event) => {
-		if (err) throw err;
-		return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
-	});
+	Event.findOne({ _id: req.params._id })
+		.then(event => {
+			if (!event) {
+				return res.status(400).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
+			}
+			Event.remove({ _id: req.params._id }, (err, event) => {
+				if (err) throw err;
+				return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
+			});
+		})
+		.catch(err => {
+			throw err;
+		});
 });
 
 module.exports = router;

@@ -55,7 +55,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 		});
 }
 
-module.exports.eventObjectArray = (events, next) => {
+module.exports.eventObjectArray = (events, sortBy, order, next) => {
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
 		eventObject(event, responseEvent => {
@@ -63,7 +63,8 @@ module.exports.eventObjectArray = (events, next) => {
 			
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
-					return a.title.localeCompare(b.title);
+					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
+					return a[sortBy].localeCompare(b[sortBy]);
 				});
 				next(responseEvents);
 			}
