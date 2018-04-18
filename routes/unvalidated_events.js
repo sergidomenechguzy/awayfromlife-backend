@@ -79,28 +79,6 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 						.catch(err => {
 							throw err;
 						});
-
-					// Location.find({ _id: a.location })
-					// 	.then(locationA => {
-					// 		if (locationA.length === 0) {
-					// 			return 1;
-					// 		}
-					// 		Location.find({ _id: b.location })
-					// 			.then(locationB => {
-					// 				if (!locationB.length === 0) {
-					// 					return 1;
-					// 				}
-					// 				if (order === -1) return locationB[0].name.localeCompare(locationA[0].name);
-					// 				return locationA[0].name.localeCompare(locationB[0].name);
-					// 			})
-					// 			.catch(err => {
-					// 				throw err;
-					// 			});
-					// 	})
-					// 	.catch(err => {
-					// 		throw err;
-					// 	});
-					
 				}
 				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 				return a[sortBy].localeCompare(b[sortBy]);

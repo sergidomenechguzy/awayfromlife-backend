@@ -12,9 +12,11 @@ require('../models/Event');
 const Event = mongoose.model('events');
 
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../config/dereference');
 
 // bands routes
 // get all bands
@@ -97,10 +99,10 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 			events.forEach(event => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
 			});
-			events.sort((a, b) => {
-				return a.title.localeCompare(b.title);
+			
+			dereference.eventObjectArray(events, 'startDate', 1, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
-			return res.status(200).json({ data: eventList, token: res.locals.token });
 		});
 });
 
