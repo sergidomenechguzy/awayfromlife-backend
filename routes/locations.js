@@ -143,7 +143,7 @@ router.get('/cities', token.checkToken(), (req, res) => {
 });
 
 // post location to database
-router.post('/', /*passport.authenticate('jwt', { session: false }),*/ params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
 		address: {
@@ -164,7 +164,7 @@ router.post('/', /*passport.authenticate('jwt', { session: false }),*/ params.ch
 	new Location(newLocation)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Location saved'/*, token: token.signJWT(req.user.id)*/ })
+			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
 		})
 		.catch(err => {
 			throw err;
