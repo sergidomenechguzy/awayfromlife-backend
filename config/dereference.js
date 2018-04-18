@@ -63,6 +63,10 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 			
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
+					if (sortBy === 'location') {
+						if (order === -1) return b[sortBy].name.localeCompare(a[sortBy].name);
+						return a[sortBy].name.localeCompare(b[sortBy].name);
+					}
 					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
