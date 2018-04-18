@@ -8,7 +8,7 @@ require('../models/Location');
 const Location = mongoose.model('unvalidated_locations');
 
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 
