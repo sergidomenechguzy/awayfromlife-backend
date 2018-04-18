@@ -74,18 +74,30 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 	console.log('_id: ', req.params._id);
 	console.log('typeof: ', typeof req.params._id);
 	
-	Location.findOne({ _id: req.params._id })
+	Location.find({ _id: req.params._id })
 		.then(location => {
 			console.log(location);
 			
-			if (!location) {
+			if (location.length === 0) {
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: location, token: res.locals.token });
+			return res.status(200).json({ data: location[0], token: res.locals.token });
 		})
 		.catch(err => {
 			throw err;
 		});
+	// Location.findOne({ _id: req.params._id })
+	// 	.then(location => {
+	// 		console.log(location);
+			
+	// 		if (!location) {
+	// 			return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
+	// 		}
+	// 		return res.status(200).json({ data: location, token: res.locals.token });
+	// 	})
+	// 	.catch(err => {
+	// 		throw err;
+	// 	});
 });
 
 // get locations by name
