@@ -134,22 +134,6 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 		});
 });
 
-// get events by location id
-router.get('/location/:_id', token.checkToken(), (req, res) => {
-	Event.find({ location: req.params._id })
-		.then(events => {
-			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
-			}
-			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
-				return res.status(200).json({ data: responseEvents, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			throw err;
-		});
-});
-
 // get events by city
 router.get('/city/:city', token.checkToken(), (req, res) => {
 	let cityEvents = [];
