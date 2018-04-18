@@ -8,7 +8,7 @@ require('../models/Band');
 const Band = mongoose.model('unvalidated_bands');
 
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 
@@ -21,7 +21,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
 			bands.sort((a, b) => {
-				return a.title.localeCompare(b.title);
+				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
 		})

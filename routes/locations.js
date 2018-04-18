@@ -7,10 +7,16 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+// load event model
+require('../models/Event');
+const Event = mongoose.model('events');
+
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../config/dereference');
 
 // locations routes
 // get all locations
@@ -77,6 +83,22 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			return res.status(200).json({ data: location, token: res.locals.token });
+		})
+		.catch(err => {
+			throw err;
+		});
+});
+
+// get events by location id
+router.get('/events/:_id', token.checkToken(), (req, res) => {
+	Event.find({ location: req.params._id })
+		.then(events => {
+			if (events.length === 0) {
+				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
+			}
+			dereference.eventObjectArray(events, 'startDate', 1, responseEvents => {
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			throw err;
