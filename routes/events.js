@@ -44,10 +44,14 @@ router.get('/', token.checkToken(), (req, res) => {
 
 // get paginated events
 router.get('/page', token.checkToken(), (req, res) => {
-	const perPage = (parseInt(req.query.perPage)) || 10;
-	const page = (parseInt(req.query.page)) || 1;
-	const sortBy = (req.query.sortBy) || 'title';
+	let page = 1;
 
+	let perPage = 20;
+	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
+	
+	let sortBy = ['title'];
+	if (req.query.sortBy  === 'startDate' || req.query.sortBy  === 'location') sortBy = req.query.sortBy;
+	
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
 
@@ -57,21 +61,62 @@ router.get('/page', token.checkToken(), (req, res) => {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
 
+			const count = events.length;
+			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+
 			events.sort((a, b) => {
+				if (sortBy === 'location') {
+					Location.findOne({ _id: a.location })
+						.then(locationA => {
+							if (!locationA) {
+								return 1;
+							}
+							Location.findOne({ _id: b.location })
+								.then(locationB => {
+									if (!locationB) {
+										return -1;
+									}
+									if (order === -1) return locationB.name.localeCompare(locationA.name);
+									return locationA.name.localeCompare(locationB.name);
+								})
+								.catch(err => {
+									throw err;
+								});
+						})
+						.catch(err => {
+							throw err;
+						});
+
+					// Location.find({ _id: a.location })
+					// 	.then(locationA => {
+					// 		if (locationA.length === 0) {
+					// 			return 1;
+					// 		}
+					// 		Location.find({ _id: b.location })
+					// 			.then(locationB => {
+					// 				if (!locationB.length === 0) {
+					// 					return 1;
+					// 				}
+					// 				if (order === -1) return locationB[0].name.localeCompare(locationA[0].name);
+					// 				return locationA[0].name.localeCompare(locationB[0].name);
+					// 			})
+					// 			.catch(err => {
+					// 				throw err;
+					// 			});
+					// 	})
+					// 	.catch(err => {
+					// 		throw err;
+					// 	});
+					
+				}
 				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 				return a[sortBy].localeCompare(b[sortBy]);
 			});
 			events = events.slice((perPage * page) - perPage, (perPage * page));
 
-			Event.count()
-				.then(count => {
-					dereference.eventObjectArray(events, sortBy, order, responseEvents => {
-						return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
-					});
-				})
-				.catch(err => {
-					throw err;
-				});
+			dereference.eventObjectArray(events, sortBy, order, responseEvents => {
+				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			throw err;
