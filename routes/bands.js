@@ -100,7 +100,7 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
 			});
 			
-			dereference.eventObjectArray(events, 'startDate', 1, responseEvents => {
+			dereference.eventObjectArray(eventList, 'startDate', 1, responseEvents => {
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		});
