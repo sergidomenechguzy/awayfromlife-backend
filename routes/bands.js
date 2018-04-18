@@ -98,7 +98,7 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
 			});
 			events.sort((a, b) => {
-				return a.name.localeCompare(b.name);
+				return a.title.localeCompare(b.title);
 			});
 			return res.status(200).json({ data: eventList, token: res.locals.token });
 		});
