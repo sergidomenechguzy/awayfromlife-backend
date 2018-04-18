@@ -8,7 +8,7 @@ require('../models/Band');
 const Band = mongoose.model('unvalidated_bands');
 
 // load params
-const params = require('../config/params.js');
+const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 
@@ -21,7 +21,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
 			bands.sort((a, b) => {
-				return a.title.localeCompare(b.title);
+				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
 		})
@@ -32,9 +32,13 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 
 // get paginated bands
 router.get('/page', passport.authenticate('jwt', { session: false }), (req, res) => {
-	const perPage = (parseInt(req.query.perPage)) || 10;
-	const page = (parseInt(req.query.page)) || 1;
-	const sortBy = (req.query.sortBy) || 'name';
+	let page = 1;
+
+	let perPage = 20;
+	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
+	
+	let sortBy = ['name'];
+	if (req.query.sortBy  === 'genre' || req.query.sortBy  === 'origin.name') sortBy = req.query.sortBy.split('.');
 	
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
@@ -45,19 +49,20 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
 			}
 
+			const count = bands.length;
+			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+
 			bands.sort((a, b) => {
-				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
-				return a[sortBy].localeCompare(b[sortBy]);
+				if (sortBy.length === 2) {
+					if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
+					return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
+				}
+				if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
+				return a[sortBy[0]].localeCompare(b[sortBy[0]]);
 			});
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
-			Band.count()
-				.then(count => {
-					return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
-				})
-				.catch(err => {
-					throw err;
-				});
+			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
 		})
 		.catch(err => {
 			throw err;
