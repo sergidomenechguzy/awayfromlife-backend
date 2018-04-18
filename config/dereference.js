@@ -15,6 +15,22 @@ const eventObject = module.exports.eventObject = (event, next) => {
 				location = 'Location not found';
 			}
 
+			if (event.bands.length === 0) {
+				const responseEvent = {
+					_id: event._id,
+					title: event.title,
+					description: event.description,
+					location: location,
+					startDate: event.startDate,
+					endDate: event.endDate,
+					time: event.time,
+					bands: [],
+					canceled: event.canceled,
+					ticketLink: event.ticketLink
+				};
+				next(responseEvent);
+			}
+			
 			let bandsArray = [];
 			event.bands.forEach((bandID, index, array) => {
 				Band.findOne({ _id: bandID })
