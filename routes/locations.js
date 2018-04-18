@@ -74,30 +74,18 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 	console.log('_id: ', req.params._id);
 	console.log('typeof: ', typeof req.params._id);
 	
-	Location.find({ _id: req.params._id })
+	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			console.log(location);
 			
-			if (location.length === 0) {
+			if (!location) {
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: location[0], token: res.locals.token });
+			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
 			throw err;
 		});
-	// Location.findOne({ _id: req.params._id })
-	// 	.then(location => {
-	// 		console.log(location);
-			
-	// 		if (!location) {
-	// 			return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-	// 		}
-	// 		return res.status(200).json({ data: location, token: res.locals.token });
-	// 	})
-	// 	.catch(err => {
-	// 		throw err;
-	// 	});
 });
 
 // get locations by name
@@ -160,7 +148,7 @@ router.get('/cities', token.checkToken(), (req, res) => {
 });
 
 // post location to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', /*passport.authenticate('jwt', { session: false }),*/ params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
 		address: {
@@ -181,7 +169,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Location(newLocation)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
+			return res.status(200).json({ message: 'Location saved'/*, token: token.signJWT(req.user.id)*/ })
 		})
 		.catch(err => {
 			throw err;
