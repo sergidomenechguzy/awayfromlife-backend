@@ -32,7 +32,8 @@ router.get('/', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -41,14 +42,14 @@ router.get('/page', token.checkToken(), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
-	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
-	
+	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+
 	let sortBy = ['name'];
-	if (req.query.sortBy  === 'address.street' || req.query.sortBy  === 'address.city') sortBy = req.query.sortBy.split('.');
-	
+	if (req.query.sortBy === 'address.street' || req.query.sortBy === 'address.city') sortBy = req.query.sortBy.split('.');
+
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
-	
+
 	Location.find()
 		.then(locations => {
 			if (locations.length === 0) {
@@ -71,7 +72,8 @@ router.get('/page', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -85,7 +87,8 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -96,12 +99,17 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, 'startDate', 1, responseEvents => {
+			dereference.eventObjectArray(events, 'startDate', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -119,7 +127,8 @@ router.get('/name/:name', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -137,7 +146,8 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -154,13 +164,14 @@ router.get('/cities', token.checkToken(), (req, res) => {
 					cities.push(location.address.city);
 				}
 			});
-			locations.sort((a, b) => {
-				return a.name.localeCompare(b.name);
+			cities.sort((a, b) => {
+				return a.localeCompare(b);
 			});
 			return res.status(200).json({ data: cities, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -189,7 +200,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -218,12 +230,16 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 				facebook_page_url: req.body.facebook_page_url
 			};
 			Location.findOneAndUpdate({ _id: req.params._id }, update, (err, location) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ message: 'Location updated', token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -235,12 +251,16 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
 			}
 			Location.remove({ _id: req.params._id }, (err, location) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 

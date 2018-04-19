@@ -21,7 +21,8 @@ router.get('/', (req, res) => {
 			return res.status(200).json(bugs);
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -40,14 +41,18 @@ router.post('/', params.checkParameters(['function']), (req, res) => {
 			return res.status(200).json({ message: 'Bug saved' })
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // delete bug by id
 router.delete('/:_id', (req, res) => {
 	Bug.remove({ _id: req.params._id }, (err, bug) => {
-		if (err) throw err;
+		if (err) {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		}
 		return res.status(200).json({ message: 'Bug deleted' });
 	});
 });

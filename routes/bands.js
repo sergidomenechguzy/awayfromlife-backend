@@ -32,7 +32,8 @@ router.get('/', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -41,14 +42,14 @@ router.get('/page', token.checkToken(), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
-	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
-	
+	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+
 	let sortBy = ['name'];
-	if (req.query.sortBy  === 'genre' || req.query.sortBy  === 'origin.name') sortBy = req.query.sortBy.split('.');
-	
+	if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy.split('.');
+
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
-	
+
 	Band.find()
 		.then(bands => {
 			if (bands.length === 0) {
@@ -69,10 +70,11 @@ router.get('/page', token.checkToken(), (req, res) => {
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
 			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
-			
+
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -86,7 +88,8 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: band, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -99,10 +102,18 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 			events.forEach(event => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
 			});
-			
-			dereference.eventObjectArray(eventList, 'startDate', 1, responseEvents => {
+
+			dereference.eventObjectArray(eventList, 'startDate', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -120,7 +131,8 @@ router.get('/genre/:genre', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -153,7 +165,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 			return res.status(200).json({ message: 'Band saved', token: token.signJWT(req.user.id) })
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -186,12 +199,16 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 				facebookUrl: req.body.facebookUrl
 			};
 			Band.findOneAndUpdate({ _id: req.params._id }, update, (err, band) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ message: 'Band updated', token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -203,7 +220,10 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 				return res.status(400).json({ message: 'No band found with this ID', token: token.signJWT(req.user.id) });
 			}
 			Band.remove({ _id: req.params._id }, (err, band) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 
 				Event.find()
 					.then(events => {
@@ -212,19 +232,24 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 							if (index > -1) {
 								event.bands.splice(index, 1);
 								Event.findOneAndUpdate({ _id: event._id }, event, (err, updatedEvent) => {
-									if (err) throw err;
+									if (err) {
+										console.log(err.name + ': ' + err.message);
+										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+									}
 								});
 							}
 						});
 						return res.status(200).json({ message: 'Band deleted', token: token.signJWT(req.user.id) });
 					})
 					.catch(err => {
-						throw err;
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 					});
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 

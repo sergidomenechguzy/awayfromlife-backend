@@ -36,15 +36,18 @@ router.get('/', token.checkToken(), (req, res) => {
 							return res.status(200).json({ data: responseList, token: res.locals.token });
 						})
 						.catch(err => {
-							throw err;
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 						});
 				})
 				.catch(err => {
-					throw err;
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -78,15 +81,18 @@ router.get('/:query', token.checkToken(), (req, res) => {
 							return res.status(200).json({ data: responseList, token: res.locals.token });
 						})
 						.catch(err => {
-							throw err;
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 						});
 				})
 				.catch(err => {
-					throw err;
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 

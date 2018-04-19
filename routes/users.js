@@ -20,26 +20,30 @@ router.post('/login', (req, res) => {
 	if (!req.body.token) {
 		return res.status(400).json({ message: 'Token missing' });
 	}
-	
+
 	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
 		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
 		User.findOne({ email: decodedToken.email })
-		.then(user => {
-			if (!user) {
-				return res.status(400).json({ message: 'Wrong email or password' });
-			}
-			bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
-				if (err) throw err;
-				if (!isMatch) {
+			.then(user => {
+				if (!user) {
 					return res.status(400).json({ message: 'Wrong email or password' });
 				}
-				res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
+				bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					if (!isMatch) {
+						return res.status(400).json({ message: 'Wrong email or password' });
+					}
+					res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
+				})
 			})
-		})
-		.catch(err => {
-			throw err;
-		});
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
 	});
 });
 
@@ -56,15 +60,19 @@ router.post('/register', (req, res) => {
 			email: decodedToken.email,
 			password: decodedToken.password
 		});
-	
+
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(newUser.password, salt, (err, hash) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				newUser.password = hash;
 				newUser.save()
 					.then(res.status(200).json({ message: 'User registered' }))
 					.catch(err => {
-						throw err;
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 					});
 			});
 		});
@@ -75,7 +83,7 @@ router.post('/register', (req, res) => {
 router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
 	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
 		if (err) return res.status(400).json({ message: 'Unvalid token' });
-	
+
 		if (!req.body.token) {
 			return res.status(400).json({ message: 'Password-token missing' });
 		}
@@ -85,20 +93,26 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 			if (decodedPasswordToken.newPassword.length < 8) {
 				return res.status(400).json({ message: 'Password must be at least 8 characters' });
 			}
-	
+
 			User.findOne({ _id: decodedAuthToken.id })
 				.then(user => {
 					if (!user) {
 						return res.status(400).json({ message: 'An error occurred. Please try again.' });
 					}
 					bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
-						if (err) throw err;
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
 						if (!isMatch) {
 							return res.status(400).json({ message: 'Wrong password' });
 						}
 						bcrypt.genSalt(10, (err, salt) => {
 							bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
-								if (err) throw err;
+								if (err) {
+									console.log(err.name + ': ' + err.message);
+									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+								}
 								updatedUser = {
 									_id: user._id,
 									name: user.name,
@@ -107,7 +121,10 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 									lastModified: Date.now()
 								}
 								User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
-									if (err) throw err;
+									if (err) {
+										console.log(err.name + ': ' + err.message);
+										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+									}
 									return res.status(200).json({ message: 'Password changed', token: token.signJWT(user.id) });
 								});
 							});
@@ -115,7 +132,8 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 					})
 				})
 				.catch(err => {
-					throw err;
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				});
 		});
 	});

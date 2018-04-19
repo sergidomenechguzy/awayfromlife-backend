@@ -29,16 +29,18 @@ router.get('/', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
-			// events.sort((a, b) => {
-			// 	return a.title.localeCompare(b.title);
-			// });
-			
-			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
+
+			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -47,11 +49,11 @@ router.get('/page', token.checkToken(), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
-	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
-	
+	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+
 	let sortBy = ['title'];
-	if (req.query.sortBy  === 'startDate' || req.query.sortBy  === 'location') sortBy = req.query.sortBy;
-	
+	if (req.query.sortBy === 'startDate' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
+
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
 
@@ -80,11 +82,13 @@ router.get('/page', token.checkToken(), (req, res) => {
 									return locationA.name.localeCompare(locationB.name);
 								})
 								.catch(err => {
-									throw err;
+									console.log(err.name + ': ' + err.message);
+									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 								});
 						})
 						.catch(err => {
-							throw err;
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 						});
 				}
 				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
@@ -92,12 +96,17 @@ router.get('/page', token.checkToken(), (req, res) => {
 			});
 			events = events.slice((perPage * page) - perPage, (perPage * page));
 
-			dereference.eventObjectArray(events, sortBy, order, responseEvents => {
+			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -108,12 +117,17 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 			if (!event) {
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
-			dereference.eventObject(event, responseEvent => {
+			dereference.eventObject(event, (err, responseEvent) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvent, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -125,12 +139,17 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No event found with this title', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
+			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -147,26 +166,32 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 			locations.forEach((location, index, array) => {
 				Event.find({ location: location._id })
 					.then(events => {
-						if(events.length > 0) {
+						if (events.length > 0) {
 							cityEvents = cityEvents.concat(events);
 						}
 
-						if(index === array.length - 1) {
+						if (index === array.length - 1) {
 							if (cityEvents.length === 0) {
 								return res.status(200).json({ message: 'No events found in this city', token: res.locals.token });
 							}
-							dereference.eventObjectArray(cityEvents, 'title', 1, responseEvents => {
+							dereference.eventObjectArray(cityEvents, 'title', 1, (err, responseEvents) => {
+								if (err) {
+									console.log(err.name + ': ' + err.message);
+									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+								}
 								return res.status(200).json({ data: responseEvents, token: res.locals.token });
 							});
 						}
 					})
 					.catch(err => {
-						throw err;
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 					});
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -178,12 +203,17 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
+			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -197,12 +227,17 @@ router.get('/similar', token.checkToken(), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, 'title', 1, responseEvents => {
+			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -225,7 +260,8 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 			return res.status(200).json({ message: 'Event saved', token: token.signJWT(req.user.id) })
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -249,12 +285,16 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 				lastModified: Date.now()
 			};
 			Event.findOneAndUpdate({ _id: req.params._id }, update, (err, event) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ message: 'Event updated', token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
@@ -266,12 +306,16 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 				return res.status(400).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
 			}
 			Event.remove({ _id: req.params._id }, (err, event) => {
-				if (err) throw err;
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
