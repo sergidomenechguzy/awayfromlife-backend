@@ -103,6 +103,8 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
 			});
 
+			if (eventList.length === 0) return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
+
 			dereference.eventObjectArray(eventList, 'startDate', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
