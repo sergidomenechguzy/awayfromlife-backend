@@ -75,10 +75,7 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
 		eventObject(event, (err, responseEvent) => {
-			if (err) {
-				console.log(err.name + ': ' + err.message);
-				next(err, null);
-			}
+			if (err) next(err, null);
 
 			responseEvents.push(responseEvent);
 			
