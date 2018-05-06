@@ -119,6 +119,25 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 		});
 });
 
+// get bands by name
+router.get('/name/:name', token.checkToken(), (req, res) => {
+	let regex = '.*' + req.params.name + '.*';
+	Band.find({ name: new RegExp(regex, 'gi') })
+		.then(bands => {
+			if (bands.length === 0) {
+				return res.status(200).json({ message: 'No band found with this name', token: res.locals.token });
+			}
+			bands.sort((a, b) => {
+				return a.name.localeCompare(b.name);
+			});
+			return res.status(200).json({ data: bands, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(), (req, res) => {
 	let regex = '.*' + req.params.genre + '.*';
