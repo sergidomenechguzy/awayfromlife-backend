@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const moment = require('moment');
 const router = express.Router();
 
@@ -25,7 +24,7 @@ moment.locale('de');
 
 // events routes
 // get all events
-router.get('/', token.checkToken(), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	Event.find()
 		.then(events => {
 			if (events.length === 0) {
@@ -47,7 +46,7 @@ router.get('/', token.checkToken(), (req, res) => {
 });
 
 // get paginated events
-router.get('/page', token.checkToken(), (req, res) => {
+router.get('/page', token.checkToken(false), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -113,7 +112,7 @@ router.get('/page', token.checkToken(), (req, res) => {
 });
 
 // get event by id
-router.get('/byid/:_id', token.checkToken(), (req, res) => {
+router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
@@ -134,7 +133,7 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 });
 
 // get events by title
-router.get('/title/:title', token.checkToken(), (req, res) => {
+router.get('/title/:title', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.title + '.*';
 	Event.find({ title: new RegExp(regex, 'gi') })
 		.then(events => {
@@ -156,7 +155,7 @@ router.get('/title/:title', token.checkToken(), (req, res) => {
 });
 
 // get events by city
-router.get('/city/:city', token.checkToken(), (req, res) => {
+router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let cityEvents = [];
 	let regex = '.*' + req.params.city + '.*';
 
@@ -198,7 +197,7 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 });
 
 // get events by date
-router.get('/date/:date', token.checkToken(), (req, res) => {
+router.get('/date/:date', token.checkToken(false), (req, res) => {
 	let regex = '^' + req.params.date;
 	Event.find({ startDate: new RegExp(regex, 'g') })
 		.then(events => {
@@ -220,7 +219,7 @@ router.get('/date/:date', token.checkToken(), (req, res) => {
 });
 
 // get similar events
-router.get('/similar', token.checkToken(), (req, res) => {
+router.get('/similar', token.checkToken(false), (req, res) => {
 	const time = moment(req.query.date);
 	let regex = '^' + time.format('YYYY-MM-DD');
 
@@ -244,18 +243,18 @@ router.get('/similar', token.checkToken(), (req, res) => {
 });
 
 // move old events to archived events collection
-router.get('/archive', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/archive', token.checkToken(true), (req, res) => {
 	archive.events((err, response) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		}
-		return res.status(200).json({ message: `${response.length} events moved to archive.`, token: token.signJWT(req.user.id) });
+		return res.status(200).json({ message: `${response.length} events moved to archive.`, token: res.locals.token });
 	});
 });
 
 // post event to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -270,7 +269,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: token.signJWT(req.user.id) });
+			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -279,11 +278,11 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 });
 
 // update event by id
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
-				return res.status(400).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
 			const update = {
 				title: req.body.title,
@@ -302,7 +301,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event updated', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Event updated', token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -312,18 +311,18 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 });
 
 // delete location by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
-				return res.status(400).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
 			Event.remove({ _id: req.params._id }, (err, event) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
 			});
 		})
 		.catch(err => {

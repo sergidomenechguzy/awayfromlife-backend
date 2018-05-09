@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const passport = require('passport');
 
 const app = express();
 
@@ -17,9 +16,6 @@ const users = require('./routes/users');
 const bugs = require('./routes/bugs');
 const search = require('./routes/search');
 
-// passport config
-require('./config/passport')(passport);
-
 // load secrets
 const secrets = require('./config/secrets');
 
@@ -28,9 +24,6 @@ mongoose.Promise = global.Promise;
 mongoose.connect(secrets.dbURL, { useMongoClient: true })
 	.then(() => console.log('MongoDB connected'))
 	.catch(err => console.log(err));
-
-// passport middleware
-app.use(passport.initialize());
 
 // body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));

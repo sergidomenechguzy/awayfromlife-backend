@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load event model
@@ -20,18 +19,18 @@ const dereference = require('../config/dereference');
 
 // unvalidated_events routes
 // get all events
-router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/', token.checkToken(true), (req, res) => {
 	Event.find()
 		.then(events => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ data: responseEvents, token: token.signJWT(req.user.id) });
+				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -41,7 +40,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated events
-router.get('/page', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/page', token.checkToken(true), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -56,7 +55,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 	Event.find()
 		.then(events => {
 			if (events.length === 0) {
-				return res.status(200).json({ message: 'No events found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
 
 			const count = events.length;
@@ -97,7 +96,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -107,7 +106,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 });
 
 // get event by id
-router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
@@ -118,7 +117,7 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ data: responseEvent, token: token.signJWT(req.user.id) });
+				return res.status(200).json({ data: responseEvent, token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -128,7 +127,7 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 });
 
 // post event to database
-router.post('/', token.checkToken(), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		description: req.body.description,
@@ -150,18 +149,18 @@ router.post('/', token.checkToken(), params.checkParameters(['title', 'location'
 });
 
 // delete location by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) {
-				return res.status(400).json({ message: 'No event found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			}
 			Event.remove({ _id: req.params._id }, (err, event) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event deleted', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
 			});
 		})
 		.catch(err => {

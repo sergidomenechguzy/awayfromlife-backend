@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
@@ -37,8 +36,60 @@ router.post('/login', (req, res) => {
 					if (!isMatch) {
 						return res.status(400).json({ message: 'Wrong email or password' });
 					}
-					res.status(200).json({ message: 'You are logged in', token: token.signJWT(user.id) });
+
+					const newToken = token.signJWT(user.id);
+					updatedUser = {
+						_id: user._id,
+						name: user.name,
+						email: user.email,
+						password: user.password,
+						validTokens: [newToken]
+					}
+					
+					User.findOneAndUpdate({ _id: user.id }, updatedUser, (err, doc) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						res.status(200).json({ message: 'You are logged in.', token: newToken });
+					});
 				})
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
+});
+
+// logout and clear current valid token
+router.get('/logout', (req, res) => {
+	if(!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') 
+		return res.status(401).json({ message: 'Unauthorized' });
+	
+	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
+		if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+		User.findOne({ _id: decodedAuthToken.id })
+			.then(user => {
+				if (!user) return res.status(401).json({ message: 'Unauthorized' });
+
+				if (!user.validTokens.includes(req.headers.authorization.split(' ')[1])) 
+					return res.status(401).json({ message: 'Unauthorized' });
+				updatedUser = {
+					_id: user._id,
+					name: user.name,
+					email: user.email,
+					password: user.password,
+					validTokens: []
+				}
+				User.findOneAndUpdate({ _id: user.id }, updatedUser, (err, doc) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					res.status(200).json({ message: 'Successfully logged out.' });
+				});
 			})
 			.catch(err => {
 				console.log(err.name + ': ' + err.message);
@@ -80,7 +131,7 @@ router.post('/register', (req, res) => {
 });
 
 // reset password by password-token in body
-router.post('/reset-password', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.post('/reset-password', token.checkToken(true), (req, res) => {
 	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
 		if (err) return res.status(400).json({ message: 'Unvalid token' });
 
@@ -113,19 +164,20 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 									console.log(err.name + ': ' + err.message);
 									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 								}
+								const newToken = token.signJWT(user.id);
 								updatedUser = {
 									_id: user._id,
 									name: user.name,
 									email: user.email,
 									password: hash,
-									lastModified: Date.now()
+									validTokens: [newToken]
 								}
 								User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
 									if (err) {
 										console.log(err.name + ': ' + err.message);
 										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 									}
-									return res.status(200).json({ message: 'Password changed', token: token.signJWT(user.id) });
+									return res.status(200).json({ message: 'Password changed', token: newToken });
 								});
 							});
 						});
@@ -140,8 +192,8 @@ router.post('/reset-password', passport.authenticate('jwt', { session: false }),
 });
 
 // check authentication
-router.get('/auth', passport.authenticate('jwt', { session: false }), (req, res) => {
-	return res.status(200).json({ message: 'You are authorized', token: token.signJWT(req.user.id) });
+router.get('/auth', token.checkToken(true), (req, res) => {
+	return res.status(200).json({ message: 'You are authorized', token: res.locals.token });
 });
 
 module.exports = router;

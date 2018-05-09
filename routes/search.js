@@ -21,7 +21,7 @@ const dereference = require('../config/dereference');
 
 // search routes
 // get all elements
-router.get('/', token.checkToken(), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	let responseList = [];
 
 	Event.find()
@@ -54,7 +54,7 @@ router.get('/', token.checkToken(), (req, res) => {
 });
 
 // get all search results
-router.get('/:query', token.checkToken(), (req, res) => {
+router.get('/:query', token.checkToken(false), (req, res) => {
 	const regex = RegExp('.*' + req.params.query + '.*', 'gi');
 	let responseList = [];
 

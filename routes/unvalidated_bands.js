@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load band model
@@ -14,16 +13,16 @@ const token = require('../config/token');
 
 // unvalidated_bands routes
 // get all bands
-router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/', token.checkToken(true), (req, res) => {
 	Band.find()
 		.then(bands => {
 			if (bands.length === 0) {
-				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 			}
 			bands.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
-			return res.status(200).json({ data: bands, token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -32,7 +31,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated bands
-router.get('/page', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/page', token.checkToken(true), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -47,7 +46,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 	Band.find()
 		.then(bands => {
 			if (bands.length === 0) {
-				return res.status(200).json({ message: 'No bands found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 			}
 
 			const count = bands.length;
@@ -63,7 +62,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 			});
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
-			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -72,13 +71,13 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 });
 
 // get band by id
-router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
-				return res.status(400).json({ message: 'No band found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: band, token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: band, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -87,7 +86,7 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 });
 
 // post band to database
-router.post('/', token.checkToken(), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
 		genre: req.body.genre,
@@ -121,18 +120,18 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'genre', 'o
 });
 
 // delete band by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
-				return res.status(400).json({ message: 'No band found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			}
 			Band.remove({ _id: req.params._id }, (err, band) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Band deleted', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Band deleted', token: res.locals.token });
 			});
 		})
 		.catch(err => {

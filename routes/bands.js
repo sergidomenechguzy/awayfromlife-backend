@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load band model
@@ -20,7 +19,7 @@ const dereference = require('../config/dereference');
 
 // bands routes
 // get all bands
-router.get('/', token.checkToken(), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	Band.find()
 		.then(bands => {
 			if (bands.length === 0) {
@@ -38,7 +37,7 @@ router.get('/', token.checkToken(), (req, res) => {
 });
 
 // get paginated bands
-router.get('/page', token.checkToken(), (req, res) => {
+router.get('/page', token.checkToken(false), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -79,7 +78,7 @@ router.get('/page', token.checkToken(), (req, res) => {
 });
 
 // get band by id
-router.get('/byid/:_id', token.checkToken(), (req, res) => {
+router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
@@ -94,7 +93,7 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 });
 
 // get all bands events
-router.get('/events/:_id', token.checkToken(), (req, res) => {
+router.get('/events/:_id', token.checkToken(false), (req, res) => {
 	let eventList = [];
 
 	Event.find()
@@ -120,7 +119,7 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 });
 
 // get bands by name
-router.get('/name/:name', token.checkToken(), (req, res) => {
+router.get('/name/:name', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Band.find({ name: new RegExp(regex, 'gi') })
 		.then(bands => {
@@ -139,7 +138,7 @@ router.get('/name/:name', token.checkToken(), (req, res) => {
 });
 
 // get bands by genre
-router.get('/genre/:genre', token.checkToken(), (req, res) => {
+router.get('/genre/:genre', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.genre + '.*';
 	Band.find({ genre: new RegExp(regex, 'gi') })
 		.then(bands => {
@@ -158,7 +157,7 @@ router.get('/genre/:genre', token.checkToken(), (req, res) => {
 });
 
 // post band to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
 		genre: req.body.genre,
@@ -183,7 +182,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Band(newBand)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: token.signJWT(req.user.id) })
+			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -192,11 +191,11 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 });
 
 // update band by id
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'genre']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
-				return res.status(400).json({ message: 'No band found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			}
 			const update = {
 				name: req.body.name,
@@ -224,7 +223,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Band updated', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Band updated', token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -234,11 +233,11 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 });
 
 // delete band by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) {
-				return res.status(400).json({ message: 'No band found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			}
 			Band.remove({ _id: req.params._id }, (err, band) => {
 				if (err) {
@@ -260,7 +259,7 @@ router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, r
 								});
 							}
 						});
-						return res.status(200).json({ message: 'Band deleted', token: token.signJWT(req.user.id) });
+						return res.status(200).json({ message: 'Band deleted', token: res.locals.token });
 					})
 					.catch(err => {
 						console.log(err.name + ': ' + err.message);

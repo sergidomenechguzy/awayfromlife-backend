@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load location model
@@ -20,7 +19,7 @@ const dereference = require('../config/dereference');
 
 // locations routes
 // get all locations
-router.get('/', token.checkToken(), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	Location.find()
 		.then(locations => {
 			if (locations.length === 0) {
@@ -38,7 +37,7 @@ router.get('/', token.checkToken(), (req, res) => {
 });
 
 // get paginated locations
-router.get('/page', token.checkToken(), (req, res) => {
+router.get('/page', token.checkToken(false), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -78,7 +77,7 @@ router.get('/page', token.checkToken(), (req, res) => {
 });
 
 // get location by id
-router.get('/byid/:_id', token.checkToken(), (req, res) => {
+router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
@@ -93,7 +92,7 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 });
 
 // get events by location id
-router.get('/events/:_id', token.checkToken(), (req, res) => {
+router.get('/events/:_id', token.checkToken(false), (req, res) => {
 	Event.find({ location: req.params._id })
 		.then(events => {
 			if (events.length === 0) {
@@ -114,7 +113,7 @@ router.get('/events/:_id', token.checkToken(), (req, res) => {
 });
 
 // get locations by name
-router.get('/name/:name', token.checkToken(), (req, res) => {
+router.get('/name/:name', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
 		.then(locations => {
@@ -133,7 +132,7 @@ router.get('/name/:name', token.checkToken(), (req, res) => {
 });
 
 // get all locations in one city
-router.get('/city/:city', token.checkToken(), (req, res) => {
+router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
 	Location.find({ 'address.city': new RegExp(regex, 'gi') })
 		.then(locations => {
@@ -152,7 +151,7 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 });
 
 // get all cities with saved locations
-router.get('/cities', token.checkToken(), (req, res) => {
+router.get('/cities', token.checkToken(false), (req, res) => {
 	let cities = [];
 	Location.find()
 		.then(locations => {
@@ -176,7 +175,7 @@ router.get('/cities', token.checkToken(), (req, res) => {
 });
 
 // post location to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
 		address: {
@@ -197,7 +196,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 	new Location(newLocation)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
+			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -206,11 +205,11 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 });
 
 // update location by id
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			const update = {
 				name: req.body.name,
@@ -234,7 +233,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location updated', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Location updated', token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -244,18 +243,18 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 });
 
 // delete location by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			Location.remove({ _id: req.params._id }, (err, location) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
 			});
 		})
 		.catch(err => {

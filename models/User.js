@@ -15,9 +15,9 @@ const UserSchema = new Schema({
 		type: String,
 		required: true
 	},
-	lastModified: {
-		type: Number,
-		default: Date.now()
+	validTokens: {
+		type: [String],
+		default: []
 	}
 });
 

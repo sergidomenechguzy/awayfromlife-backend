@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load location model
@@ -14,16 +13,16 @@ const token = require('../config/token');
 
 // unvalidated_locations routes
 // get all locations
-router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/', token.checkToken(true), (req, res) => {
 	Location.find()
 		.then(locations => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
-			return res.status(200).json({ data: locations, token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -32,7 +31,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 });
 
 // get paginated locations
-router.get('/page', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/page', token.checkToken(true), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
@@ -47,7 +46,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 	Location.find()
 		.then(locations => {
 			if (locations.length === 0) {
-				return res.status(200).json({ message: 'No locations found', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 			}
 
 			const count = locations.length;
@@ -63,7 +62,7 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 			});
 			locations = locations.slice((perPage * page) - perPage, (perPage * page));
 
-			return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -72,13 +71,13 @@ router.get('/page', passport.authenticate('jwt', { session: false }), (req, res)
 });
 
 // get location by id
-router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
-			return res.status(200).json({ data: location, token: token.signJWT(req.user.id) });
+			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -87,7 +86,7 @@ router.get('/byid/:_id', passport.authenticate('jwt', { session: false }), (req,
 });
 
 // post location to database
-router.post('/', token.checkToken(), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
 		address: {
@@ -117,18 +116,18 @@ router.post('/', token.checkToken(), params.checkParameters(['name', 'address.st
 });
 
 // delete location by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			Location.remove({ _id: req.params._id }, (err, location) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
+				return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
 			});
 		})
 		.catch(err => {
