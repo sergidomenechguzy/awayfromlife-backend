@@ -254,7 +254,14 @@ router.delete('/:_id', token.checkToken(true), (req, res) => {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
+
+				Event.remove({ location: req.params._id }, (err, location) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {

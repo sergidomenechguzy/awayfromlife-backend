@@ -55,8 +55,12 @@ router.get('/', token.checkToken(false), (req, res) => {
 
 // get all search results
 router.get('/:query', token.checkToken(false), (req, res) => {
-	const regex = RegExp('.*' + req.params.query + '.*', 'gi');
+	const regex = RegExp('.*' + req.params.query + '.*', 'i');
 	let responseList = [];
+
+	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
+	const locationSearchAttributes = ['name', 'address.street', 'address.city', 'address.country'];
+	const bandSearchAttributes = ['name', 'genre', 'origin.name', 'recordLabel', 'releases'];
 
 	Event.find()
 		.then(events => {
@@ -65,46 +69,117 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
+
 				responseEvents.forEach(event => {
-					if (regex.test(event.title) 
-						|| regex.test(event.location.name) 
-						|| regex.test(event.location.address.street) 
-						|| regex.test(event.location.address.city) 
-						|| regex.test(event.location.address.country)) 
-							responseList.push({category: 'Event', data: event});
-					else {
-						event.bands.some(band => {
-							if (regex.test(band.name)) {
-								responseList.push({category: 'Event', data: event});
-								return true;
-							}
-						});
-					}
+					eventSearchAttributes.some(attribute => {
+						let value = attribute.split('.').reduce((prev, curr) => {
+							return prev[curr];
+						}, event);
+
+						if (attribute === 'bands') {
+							let bandString = '';
+							const match = value.some(currentBand => {
+								if (regex.test(currentBand.name)) {
+									value.forEach((band, index, array) => {
+										bandString += band.name;
+										if (index < array.length - 1) bandString += ', ';
+									});
+									value = bandString;
+									responseList.push({
+										category: 'Event', 
+										data: event, 
+										match: {
+											attribute: 'event.' + attribute, 
+											value: value
+										}
+									});
+									return true;
+								}
+							});
+							return match;
+						}
+						else if (regex.test(value)) {
+							responseList.push({
+								category: 'Event', 
+								data: event, 
+								match: {
+									attribute: 'event.' + attribute, 
+									value: value
+								}
+							});
+							return true;
+						}
+						return false;
+					});
 				});
 
 				Location.find()
 					.then(locations => {
 						locations.forEach(location => {
-							if (regex.test(location.name) 
-								|| regex.test(location.address.street) 
-								|| regex.test(location.address.city) 
-								|| regex.test(location.address.country)) 
-									responseList.push({category: 'Location', data: location});
+							locationSearchAttributes.some(attribute => {
+								let value = attribute.split('.').reduce((prev, curr) => {
+									return prev[curr];
+								}, location);
+								
+								if (regex.test(value)) {
+									responseList.push({
+										category: 'Location', 
+										data: location, 
+										match: {
+											attribute: 'location.' + attribute, 
+											value: value
+										}
+									});
+									return true;
+								}
+								return false;
+							});
 						});
 
 						Band.find()
 							.then(bands => {
 								bands.forEach(band => {
-									if (regex.test(band.name) 
-										|| regex.test(band.genre) 
-										|| regex.test(band.origin.name) 
-										|| regex.test(band.origin.country)) 
-											responseList.push({category: 'Band', data: band});
+									bandSearchAttributes.some(attribute => {
+										let value = attribute.split('.').reduce((prev, curr) => {
+											return prev[curr];
+										}, band);
+				
+										if (attribute === 'releases') {
+											let releaseString = '';
+											const match = value.some(currentRelease => {
+												if (regex.test(currentRelease.releaseName)) {
+													value.forEach((release, index, array) => {
+														releaseString += release.releaseName;
+														if (index < array.length - 1) releaseString += ', ';
+													});
+													value = releaseString;
+													responseList.push({
+														category: 'Band', 
+														data: band, 
+														match: {
+															attribute: 'band.' + attribute, 
+															value: value
+														}
+													});
+													return true;
+												}
+											});
+											return match;
+										}
+										else if (regex.test(value)) {
+											responseList.push({
+												category: 'Band', 
+												data: band, 
+												match: {
+													attribute: 'band.' + attribute, 
+													value: value
+												}
+											});
+											return true;
+										}
+										return false;
+									});
 								});
-
-								// responseList.sort((a, b) => {
-								// 	return a.title.localeCompare(b.title);
-								// });
 	
 								return res.status(200).json({ data: responseList, token: res.locals.token });
 							})
