@@ -59,8 +59,13 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 	let responseList = [];
 
 	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
+	const eventAttributeStrings = ['title', 'date', 'location name', 'location address', 'location city', 'bands'];
+
 	const locationSearchAttributes = ['name', 'address.street', 'address.city', 'address.country'];
-	const bandSearchAttributes = ['name', 'genre', 'origin.name', 'recordLabel', 'releases'];
+	const locationAttributeStrings = ['name', 'address', 'city', 'country'];
+
+	const bandSearchAttributes = ['name', 'genre', 'origin.name', 'origin.country', 'recordLabel', 'releases'];
+	const bandAttributeStrings = ['name', 'genre', 'origin city', 'origin country', 'label', 'releases'];
 
 	Event.find()
 		.then(events => {
@@ -71,7 +76,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 				}
 
 				responseEvents.forEach(event => {
-					eventSearchAttributes.some(attribute => {
+					eventSearchAttributes.some((attribute, index) => {
 						let value = attribute.split('.').reduce((prev, curr) => {
 							return prev[curr];
 						}, event);
@@ -90,6 +95,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 										data: event, 
 										match: {
 											attribute: 'event.' + attribute, 
+											pretty: eventAttributeStrings[index],
 											value: value
 										}
 									});
@@ -104,6 +110,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 								data: event, 
 								match: {
 									attribute: 'event.' + attribute, 
+									pretty: eventAttributeStrings[index],
 									value: value
 								}
 							});
@@ -116,7 +123,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 				Location.find()
 					.then(locations => {
 						locations.forEach(location => {
-							locationSearchAttributes.some(attribute => {
+							locationSearchAttributes.some((attribute, index) => {
 								let value = attribute.split('.').reduce((prev, curr) => {
 									return prev[curr];
 								}, location);
@@ -127,6 +134,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 										data: location, 
 										match: {
 											attribute: 'location.' + attribute, 
+											pretty: locationAttributeStrings[index],
 											value: value
 										}
 									});
@@ -139,7 +147,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 						Band.find()
 							.then(bands => {
 								bands.forEach(band => {
-									bandSearchAttributes.some(attribute => {
+									bandSearchAttributes.some((attribute, index) => {
 										let value = attribute.split('.').reduce((prev, curr) => {
 											return prev[curr];
 										}, band);
@@ -158,6 +166,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 														data: band, 
 														match: {
 															attribute: 'band.' + attribute, 
+															pretty: bandAttributeStrings[index],
 															value: value
 														}
 													});
@@ -172,6 +181,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 												data: band, 
 												match: {
 													attribute: 'band.' + attribute, 
+													pretty: bandAttributeStrings[index],
 													value: value
 												}
 											});
