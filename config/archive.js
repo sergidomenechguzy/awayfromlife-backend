@@ -11,14 +11,8 @@ module.exports.events = (next) => {
 	let counter = 0;
 	Event.find()
 		.then(events => {
-			events.forEach(event => {
-				console.log(event.startDate);
-				console.log(Math.floor(moment(event.startDate).valueOf() / day));
-				console.log(Math.floor((Date.now() / day) - 25));
-				
-				if (Math.floor(moment(event.startDate).valueOf() / 86400000) < Math.floor((Date.now() / 86400000) - 30)) {
+			events.forEach(event => {if (Math.floor(moment(event.startDate).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1)) {
 					archiveEvents.push(event);
-					console.log(archiveEvents);
 				}
 			});
 			if (archiveEvents.length === 0) next(null, archiveEvents);

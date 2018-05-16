@@ -55,7 +55,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	let sortBy = ['title'];
 	if (req.query.sortBy === 'startDate' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
-	let order = 1
+	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
@@ -251,13 +251,13 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 });
 
 // move old events to archived events collection
-router.get('/archive', token.checkToken(true), (req, res) => {
+router.get('/archive', token.checkToken(false), (req, res) => {
 	archive.events((err, response) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		}
-		return res.status(200).json({ message: `${response.length} events moved to archive.`, token: res.locals.token });
+		return res.status(200).json({ message: `${response.length} event(s) moved to archive.`, token: res.locals.token });
 	});
 });
 

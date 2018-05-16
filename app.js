@@ -18,6 +18,8 @@ const search = require('./routes/search');
 
 // load secrets
 const secrets = require('./config/secrets');
+// load archive.js
+const archive = require('./config/archive');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
@@ -58,3 +60,13 @@ const port = secrets.port;
 app.listen(port, () => {
 	console.log(`Server startet on port ${port}`);
 });
+
+setInterval(() => {console.log('One day passed.');}, 86400000);
+
+// if (process.env.NODE_ENV === 'production') {
+// 	setInterval(archive.events((err, response) => {
+// 		if (err) {
+// 			console.log(err.name + ': ' + err.message);
+// 		}
+// 	}), 86400000);
+// }

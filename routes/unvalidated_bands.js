@@ -40,7 +40,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	let sortBy = ['name'];
 	if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy.split('.');
 
-	let order = 1
+	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};

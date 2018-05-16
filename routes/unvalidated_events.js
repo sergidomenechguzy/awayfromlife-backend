@@ -49,7 +49,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	let sortBy = ['title'];
 	if (req.query.sortBy === 'startDate' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
-	let order = 1
+	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
