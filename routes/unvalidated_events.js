@@ -52,7 +52,15 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	let order = 1
 	if (parseInt(req.query.order) === -1) order = -1;
 
-	Event.find()
+	let query = {};
+	if (req.query.start && /^[a-zA-Z]$/.test(req.query.start)) {
+		if (req.query.start === 'a' || req.query.start === 'A') query = { name: new RegExp('^[' + req.query.start + 'ä]', 'gi') };
+		else if (req.query.start === 'o' || req.query.start === 'O') query = { name: new RegExp('^[' + req.query.start + 'ö]', 'gi') };
+		else if (req.query.start === 'u' || req.query.start === 'U') query = { name: new RegExp('^[' + req.query.start + 'ü]', 'gi') };
+		else query = { name: new RegExp('^' + req.query.start, 'gi') };
+	}
+
+	Event.find(query)
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
