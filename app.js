@@ -61,7 +61,7 @@ app.listen(port, () => {
 	console.log(`Server startet on port ${port}`);
 });
 
-setInterval(() => {console.log('One day passed.');}, 86400000);
+setInterval(() => {console.log('One day passed.');}, 86400000/24);
 
 // if (process.env.NODE_ENV === 'production') {
 // 	setInterval(archive.events((err, response) => {
