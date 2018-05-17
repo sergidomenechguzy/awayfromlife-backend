@@ -1,6 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 
@@ -24,12 +27,21 @@ const archive = require('./config/archive');
 // connect to mongoose
 mongoose.Promise = global.Promise;
 mongoose.connect(secrets.dbURL, { useMongoClient: true })
-	.then(() => console.log('MongoDB connected'))
+	.then(() => console.log('> MongoDB connected'))
 	.catch(err => console.log(err));
 
 // body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// morgan logger setup
+app.use(morgan('combined', {
+	stream: fs.createWriteStream(path.join(__dirname, '/logs/access.log'), {flags: 'a'})
+}));
+app.use(morgan('combined', {
+	skip: (req, res) => { return res.statusCode < 400 },
+	stream: fs.createWriteStream(path.join(__dirname, '/logs/error.log'), {flags: 'a'})
+}));
 
 app.use(function (req, res, next) {
 	res.header('Access-Control-Allow-Origin', '*');
@@ -40,7 +52,7 @@ app.use(function (req, res, next) {
 
 // root route
 app.get('/', (req, res) => {
-	res.send('Backend Service for the Awayfromlife Event Calendar. API started...');
+	res.send('Backend Service for the Awayfromlife Event Application.');
 });
 
 // use routes
@@ -58,15 +70,13 @@ app.use('/api/search', search);
 const port = secrets.port;
 
 app.listen(port, () => {
-	console.log(`Server startet on port ${port}`);
+	console.log(`> Server startet on port ${port}`);
 });
 
-setInterval(() => {console.log('One day passed.');}, 86400000/24);
-
-// if (process.env.NODE_ENV === 'production') {
-// 	setInterval(archive.events((err, response) => {
-// 		if (err) {
-// 			console.log(err.name + ': ' + err.message);
-// 		}
-// 	}), 86400000);
-// }
+if (process.env.NODE_ENV === 'production') {
+	setInterval(archive.events((err, response) => {
+		if (err) {
+			console.log(err.name + ': ' + err.message);
+		}
+	}), 86400000);
+}
