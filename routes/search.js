@@ -19,44 +19,15 @@ const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
 
-// search routes
-// get all elements
-router.get('/', token.checkToken(false), (req, res) => {
-	let responseList = [];
-
-	Event.find()
-		.then(events => {
-			responseList.push(events);
-
-			Location.find()
-				.then(locations => {
-					responseList.push(locations);
-
-					Band.find()
-						.then(bands => {
-							responseList.push(bands);
-							return res.status(200).json({ data: responseList, token: res.locals.token });
-						})
-						.catch(err => {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
-});
-
+// search route
 // get all search results
 router.get('/:query', token.checkToken(false), (req, res) => {
 	const regex = RegExp('.*' + req.params.query + '.*', 'i');
-	let responseList = [];
+	let results = {
+		eventList: [],
+		locationList: [],
+		bandList: []
+	};
 
 	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
 	const eventAttributeStrings = ['title', 'date', 'location name', 'location address', 'location city', 'bands'];
@@ -90,7 +61,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 										if (index < array.length - 1) bandString += ', ';
 									});
 									value = bandString;
-									responseList.push({
+									results.eventList.push({
 										category: 'Event', 
 										data: event, 
 										match: {
@@ -105,7 +76,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 							return match;
 						}
 						else if (regex.test(value)) {
-							responseList.push({
+							results.eventList.push({
 								category: 'Event', 
 								data: event, 
 								match: {
@@ -129,7 +100,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 								}, location);
 								
 								if (regex.test(value)) {
-									responseList.push({
+									results.locationList.push({
 										category: 'Location', 
 										data: location, 
 										match: {
@@ -161,7 +132,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 														if (index < array.length - 1) releaseString += ', ';
 													});
 													value = releaseString;
-													responseList.push({
+													results.bandList.push({
 														category: 'Band', 
 														data: band, 
 														match: {
@@ -176,7 +147,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 											return match;
 										}
 										else if (regex.test(value)) {
-											responseList.push({
+											results.bandList.push({
 												category: 'Band', 
 												data: band, 
 												match: {
@@ -191,7 +162,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 									});
 								});
 	
-								return res.status(200).json({ data: responseList, token: res.locals.token });
+								return res.status(200).json({ data: results, token: res.locals.token });
 							})
 							.catch(err => {
 								console.log(err.name + ': ' + err.message);
