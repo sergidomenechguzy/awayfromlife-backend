@@ -24,9 +24,9 @@ const dereference = require('../config/dereference');
 router.get('/:query', token.checkToken(false), (req, res) => {
 	const regex = RegExp('.*' + req.params.query + '.*', 'i');
 	let results = {
-		eventList: [],
-		locationList: [],
-		bandList: []
+		events: [],
+		locations: [],
+		bands: []
 	};
 
 	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
@@ -61,7 +61,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 										if (index < array.length - 1) bandString += ', ';
 									});
 									value = bandString;
-									results.eventList.push({
+									results.events.push({
 										category: 'Event', 
 										data: event, 
 										match: {
@@ -76,7 +76,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 							return match;
 						}
 						else if (regex.test(value)) {
-							results.eventList.push({
+							results.events.push({
 								category: 'Event', 
 								data: event, 
 								match: {
@@ -100,7 +100,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 								}, location);
 								
 								if (regex.test(value)) {
-									results.locationList.push({
+									results.locations.push({
 										category: 'Location', 
 										data: location, 
 										match: {
@@ -132,7 +132,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 														if (index < array.length - 1) releaseString += ', ';
 													});
 													value = releaseString;
-													results.bandList.push({
+													results.bands.push({
 														category: 'Band', 
 														data: band, 
 														match: {
@@ -147,7 +147,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 											return match;
 										}
 										else if (regex.test(value)) {
-											results.bandList.push({
+											results.bands.push({
 												category: 'Band', 
 												data: band, 
 												match: {
