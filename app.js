@@ -74,7 +74,7 @@ app.listen(port, () => {
 });
 
 if (process.env.NODE_ENV === 'production') {
-	setInterval(archive.events((err, response) => {
+	setInterval(() => archive.events((err, response) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 		}
