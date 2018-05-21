@@ -101,6 +101,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
 			city: req.body.address.city,
+			county: req.body.address.county,
 			country: req.body.address.country,
 			postcode: req.body.address.postcode,
 			lat: req.body.address.lat,

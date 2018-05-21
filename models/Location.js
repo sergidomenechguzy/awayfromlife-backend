@@ -19,6 +19,9 @@ const LocationSchema = new Schema({
 			type: String,
 			required: true
 		},
+		county: {
+			type: String
+		},
 		country: {
 			type: String,
 			required: true

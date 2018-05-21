@@ -142,7 +142,7 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 // get all locations in one city
 router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
-	Location.find({ 'address.city': new RegExp(regex, 'gi') })
+	Location.find($or [{ 'address.city': new RegExp(regex, 'gi') }, { 'address.county': new RegExp(regex, 'gi') }])
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
@@ -190,6 +190,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
 			city: req.body.address.city,
+			county: req.body.address.county,
 			country: req.body.address.country,
 			postcode: req.body.address.postcode,
 			lat: req.body.address.lat,
@@ -225,6 +226,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 					street: req.body.address.street,
 					administrative: req.body.address.administrative,
 					city: req.body.address.city,
+					county: req.body.address.county,
 					country: req.body.address.country,
 					postcode: req.body.address.postcode,
 					lat: req.body.address.lat,

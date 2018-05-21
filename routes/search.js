@@ -32,8 +32,8 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
 	const eventAttributeStrings = ['title', 'date', 'location name', 'location address', 'location city', 'bands'];
 
-	const locationSearchAttributes = ['name', 'address.street', 'address.city', 'address.country'];
-	const locationAttributeStrings = ['name', 'address', 'city', 'country'];
+	const locationSearchAttributes = ['name', 'address.street', 'address.city', 'address.county', 'address.country'];
+	const locationAttributeStrings = ['name', 'address', 'city', 'county', 'country'];
 
 	const bandSearchAttributes = ['name', 'genre', 'origin.name', 'origin.country', 'recordLabel', 'releases'];
 	const bandAttributeStrings = ['name', 'genre', 'origin city', 'origin country', 'label', 'releases'];
