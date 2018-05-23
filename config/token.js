@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const uuidv4 = require('uuid/v4');
 
 // load user model
 require('../models/User');
@@ -12,8 +13,15 @@ const expTime = (20 * 60);
 module.exports.expTime = expTime;
 
 // signs jwt with given user id
-module.exports.signJWT = id => {
-	return jwt.sign({id: id, exp: Math.floor(Date.now() / 1000) + expTime}, secrets.authSecret);
+module.exports.signJWT = (userID, sessionID) => {
+	return jwt.sign({userID: userID, sessionID: sessionID, exp: Math.floor(Date.now() / 1000) + expTime}, secrets.authSecret);
+}
+
+module.exports.createSession = () => {
+	return {
+		sessionID: uuidv4(),
+		expireTime: Math.floor(Date.now() / 1000) + expTime
+	};
 }
 
 module.exports.checkToken = (forbidden) => {
@@ -28,37 +36,36 @@ module.exports.checkToken = (forbidden) => {
 				return next();
 			}
 
-			User.findOne({ _id: decodedAuthToken.id })
+			User.findOne({ _id: decodedAuthToken.userID })
 				.then(user => {
 					if (!user) {
 						if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
 						return next();
 					}
-					if (!user.validTokens.includes(req.headers.authorization.split(' ')[1])) {
+
+					let sessionIndex;
+					if (
+						!user.currentSessions.some((session, index, array) => {
+							if (session.sessionID === decodedAuthToken.sessionID && session.expireTime > Math.floor(Date.now() / 1000)) {
+								sessionIndex = index;
+								return true
+							};
+							return false;
+						})
+					) {
 						if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
 						return next();
 					}
-					
-					res.locals.token = jwt.sign({id: user.id, exp: Math.floor(Date.now() / 1000) + expTime}, secrets.authSecret);
-					let newValidTokens = user.validTokens;
-					if (!newValidTokens.includes(res.locals.token)) {
-						if(newValidTokens.length === 10) newValidTokens.shift();
-						newValidTokens.push(res.locals.token);
-					}
-					updatedUser = {
-						_id: user._id,
-						name: user.name,
-						email: user.email,
-						password: user.password,
-						validTokens: newValidTokens
-					}
-					
-					User.findOneAndUpdate({ _id: decodedAuthToken.id }, updatedUser, (err, doc) => {
+
+					const exp = Math.floor(Date.now() / 1000) + expTime;
+					user.currentSessions[sessionIndex].expireTime = exp;
+					User.findOneAndUpdate({ _id: decodedAuthToken.userID }, user, (err, doc) => {
 						if (err) {
 							console.log(err.name + ': ' + err.message);
 							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 						}
-						next();
+						res.locals.token = jwt.sign({userID: decodedAuthToken.userID, sessionID: decodedAuthToken.sessionID, exp: exp}, secrets.authSecret);
+						return next();
 					});
 				})
 				.catch(err => {
