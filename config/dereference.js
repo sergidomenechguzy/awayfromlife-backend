@@ -28,7 +28,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 					canceled: event.canceled,
 					ticketLink: event.ticketLink
 				};
-				next(null, responseEvent);
+				return next(null, responseEvent);
 			}
 			
 			let bandsArray = [];
@@ -58,24 +58,25 @@ const eventObject = module.exports.eventObject = (event, next) => {
 								canceled: event.canceled,
 								ticketLink: event.ticketLink
 							};
-							next(null, responseEvent);
+							return next(null, responseEvent);
 						}
 					})
 					.catch(err => {
-						next(err, null);
+						return next(err, null);
 					});
 			});
 		})
 		.catch(err => {
-			next(err, null);
+			return next(err, null);
 		});
 }
 
 module.exports.eventObjectArray = (events, sortBy, order, next) => {
+	if (events.length === 0) return next(null, []);
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
 		eventObject(event, (err, responseEvent) => {
-			if (err) next(err, null);
+			if (err) return next(err, null);
 
 			responseEvents.push(responseEvent);
 			
@@ -88,7 +89,7 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
-				next(null, responseEvents);
+				return next(null, responseEvents);
 			}
 		});
 	});

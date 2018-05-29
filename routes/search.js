@@ -22,163 +22,307 @@ const dereference = require('../config/dereference');
 // search route
 // get all search results
 router.get('/:query', token.checkToken(false), (req, res) => {
-	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+	let categories = ['events', 'locations', 'bands'];
+	if (req.query.categories) {
+		let queryCategories = req.query.categories.split(',');
+		let finalCategories = [];
+		queryCategories.forEach(category => {
+			if ((category === 'events' || category === 'locations' || category === 'bands') && !finalCategories.includes(category)) {
+				finalCategories.push(category);
+			}
+		});
+		if (finalCategories.length > 0) categories = finalCategories;
+	}
+
+	const eventSearchAttributes = [
+		['title', 'title'],
+		['startDate', 'date'],
+		['location.name', 'location name'],
+		['location.address.street', 'location address'],
+		['location.address.city', 'location city'],
+		['location.address.county', 'location county'],
+		['bands', 'bands']
+	];
+
+	const locationSearchAttributes = [
+		['name', 'name'],
+		['address.street', 'address'],
+		['address.city', 'city'],
+		['address.county', 'county'],
+		['address.country', 'country']
+	];
+
+	const bandSearchAttributes = [
+		['name', 'name'],
+		['genre', 'genre'],
+		['origin.name', 'origin city'],
+		['origin.country', 'origin country'],
+		['recordLabel', 'label'],
+		['releases', 'releases']
+	];
+
 	let results = {
 		events: [],
 		locations: [],
 		bands: []
 	};
+	let counter = 0;
 
-	const eventSearchAttributes = ['title', 'startDate', 'location.name', 'location.address.street', 'location.address.city', 'bands'];
-	const eventAttributeStrings = ['title', 'date', 'location name', 'location address', 'location city', 'bands'];
+	categories.forEach((category, index, array) => {
+		if(category === 'events') eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
+			if (err) {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			}
+			results.events = eventResults;
+			counter++;
+			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
+		});
+		else if(category === 'locations') locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
+			if (err) {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			}
+			results.locations = locationResults;
+			counter++;
+			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
+		});
+		else if(category === 'bands') bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
+			if (err) {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			}
+			results.bands = bandResults;
+			counter++;
+			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
+		});
+	});
+});
 
-	const locationSearchAttributes = ['name', 'address.street', 'address.city', 'address.county', 'address.country'];
-	const locationAttributeStrings = ['name', 'address', 'city', 'county', 'country'];
+const eventFind = (req, res, eventSearchAttributes, next) => {
+	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+	eventResults = [];
 
-	const bandSearchAttributes = ['name', 'genre', 'origin.name', 'origin.country', 'recordLabel', 'releases'];
-	const bandAttributeStrings = ['name', 'genre', 'origin city', 'origin country', 'label', 'releases'];
+	let eventQuery = {
+		attributes: [],
+		values: [],
+		genre: ''
+	};
+	if (req.query.city) {
+		if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
+		eventQuery.attributes.push('location.address.city');
+		eventQuery.values.push(new RegExp(req.query.city, 'i'));
+		eventQuery.attributes.push('location.address.county');
+		eventQuery.values.push(new RegExp(req.query.city, 'i'));
+	}
+	else if (req.query.country) {
+		if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
+		eventQuery.attributes.push('location.address.country');
+		eventQuery.values.push(new RegExp(req.query.country, 'i'));
+	}
+	else if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
 
 	Event.find()
 		.then(events => {
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					return next(err, null);
 				}
 
 				responseEvents.forEach(event => {
-					eventSearchAttributes.some((attribute, index) => {
-						let value = attribute.split('.').reduce((prev, curr) => {
-							return prev[curr];
-						}, event);
-
-						if (attribute === 'bands') {
-							let bandString = '';
-							const match = value.some(currentBand => {
-								if (regex.test(currentBand.name)) {
-									value.forEach((band, index, array) => {
-										bandString += band.name;
-										if (index < array.length - 1) bandString += ', ';
-									});
-									value = bandString;
-									results.events.push({
-										category: 'Event', 
-										data: event, 
-										match: {
-											attribute: 'event.' + attribute, 
-											pretty: eventAttributeStrings[index],
-											value: value
-										}
-									});
-									return true;
-								}
-							});
-							return match;
-						}
-						else if (regex.test(value)) {
-							results.events.push({
-								category: 'Event', 
-								data: event, 
-								match: {
-									attribute: 'event.' + attribute, 
-									pretty: eventAttributeStrings[index],
-									value: value
-								}
-							});
-							return true;
-						}
-						return false;
-					});
-				});
-
-				Location.find()
-					.then(locations => {
-						locations.forEach(location => {
-							locationSearchAttributes.some((attribute, index) => {
+					if (
+						(
+							eventQuery.attributes.length === 0
+							||
+							eventQuery.attributes.some((attribute, index) => {
 								let value = attribute.split('.').reduce((prev, curr) => {
 									return prev[curr];
-								}, location);
-								
-								if (regex.test(value)) {
-									results.locations.push({
-										category: 'Location', 
-										data: location, 
-										match: {
-											attribute: 'location.' + attribute, 
-											pretty: locationAttributeStrings[index],
-											value: value
-										}
-									});
-									return true;
-								}
+								}, event);
+								if (eventQuery.values[index].test(value)) return true;
 								return false;
-							});
-						});
-
-						Band.find()
-							.then(bands => {
-								bands.forEach(band => {
-									bandSearchAttributes.some((attribute, index) => {
-										let value = attribute.split('.').reduce((prev, curr) => {
-											return prev[curr];
-										}, band);
-				
-										if (attribute === 'releases') {
-											let releaseString = '';
-											const match = value.some(currentRelease => {
-												if (regex.test(currentRelease.releaseName)) {
-													value.forEach((release, index, array) => {
-														releaseString += release.releaseName;
-														if (index < array.length - 1) releaseString += ', ';
-													});
-													value = releaseString;
-													results.bands.push({
-														category: 'Band', 
-														data: band, 
-														match: {
-															attribute: 'band.' + attribute, 
-															pretty: bandAttributeStrings[index],
-															value: value
-														}
-													});
-													return true;
-												}
-											});
-											return match;
-										}
-										else if (regex.test(value)) {
-											results.bands.push({
-												category: 'Band', 
-												data: band, 
-												match: {
-													attribute: 'band.' + attribute, 
-													pretty: bandAttributeStrings[index],
-													value: value
-												}
-											});
-											return true;
-										}
-										return false;
-									});
-								});
-	
-								return res.status(200).json({ data: results, token: res.locals.token });
 							})
-							.catch(err => {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							});
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
+						)
+						&&
+						(
+							eventQuery.genre.length === 0
+							||
+							event.bands.some(band => {
+								if (eventQuery.genre.test(band.genre)) return true;
+								return false;
+							})
+						)
+					) {
+						
+						eventSearchAttributes.some((attribute, index) => {
+							let value = attribute[0].split('.').reduce((prev, curr) => {
+								return prev[curr];
+							}, event);
+
+							if (attribute[0] === 'bands') {
+								let bandString = '';
+								const match = value.some(currentBand => {
+									if (regex.test(currentBand.name)) {
+										value.forEach((band, index, array) => {
+											bandString += band.name;
+											if (index < array.length - 1) bandString += ', ';
+										});
+										value = bandString;
+										eventResults.push({
+											category: 'Event', 
+											data: event, 
+											match: {
+												attribute: 'event.' + attribute[0], 
+												pretty: attribute[1],
+												value: value
+											}
+										});
+										return true;
+									}
+								});
+								return match;
+							}
+							else if (regex.test(value)) {
+								eventResults.push({
+									category: 'Event', 
+									data: event, 
+									match: {
+										attribute: 'event.' + attribute[0], 
+										pretty: attribute[1],
+										value: value
+									}
+								});
+								return true;
+							}
+							return false;
+						});
+					}
+				});
+				return next(null, eventResults);
 			});
 		})
 		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			return next(err, null);
 		});
-});
+}
+
+const locationFind = (req, res, locationSearchAttributes, next) => {
+	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+	locationResults = [];
+
+	console.log(req.query.genre);
+		
+	let locationQuery = {};
+	if (req.query.genre) {
+		console.log('genre ist da');
+		
+		return next(null, locationResults);
+	}
+	else {
+		if (req.query.city) {
+			locationQuery = { $or: [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }] };
+		}
+		else if (req.query.country) {
+			locationQuery = {'address.country': RegExp(req.query.country, 'i')};
+		}
+	}
+
+	Location.find(locationQuery)
+		.then(locations => {
+			locations.forEach(location => {
+				locationSearchAttributes.some((attribute, index) => {
+					let value = attribute[0].split('.').reduce((prev, curr) => {
+						return prev[curr];
+					}, location);
+					
+					if (regex.test(value)) {
+						locationResults.push({
+							category: 'Location', 
+							data: location, 
+							match: {
+								attribute: 'location.' + attribute[0], 
+								pretty: attribute[1],
+								value: value
+							}
+						});
+						return true;
+					}
+					return false;
+				});
+			});
+			return next(null, locationResults);
+		})
+		.catch(err => {
+			return next(err, null);
+		});
+}
+
+const bandFind = (req, res, bandSearchAttributes, next) => {
+	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+	bandResults = [];
+
+	let bandQuery = {};
+	if (req.query.city) {
+		if (req.query.genre) bandQuery = { 'origin.name': RegExp(req.query.city, 'i'), 'genre': RegExp(req.query.genre, 'i') };
+		else bandQuery = { 'origin.name': RegExp(req.query.city, 'i') };
+	}
+	else if (req.query.country) {
+		if (req.query.genre) bandQuery = { 'origin.country': RegExp(req.query.country, 'i'), 'genre': RegExp(req.query.genre, 'i') };
+		else bandQuery = { 'origin.country': RegExp(req.query.country, 'i') };
+	}
+	else if (req.query.genre) bandQuery = { 'genre': RegExp(req.query.genre, 'i') };
+
+	Band.find(bandQuery)
+		.then(bands => {
+			bands.forEach(band => {
+				bandSearchAttributes.some((attribute, index) => {
+					let value = attribute[0].split('.').reduce((prev, curr) => {
+						return prev[curr];
+					}, band);
+
+					if (attribute[0] === 'releases') {
+						let releaseString = '';
+						const match = value.some(currentRelease => {
+							if (regex.test(currentRelease.releaseName)) {
+								value.forEach((release, index, array) => {
+									releaseString += release.releaseName;
+									if (index < array.length - 1) releaseString += ', ';
+								});
+								value = releaseString;
+								bandResults.push({
+									category: 'Band', 
+									data: band, 
+									match: {
+										attribute: 'band.' + attribute[0], 
+										pretty: attribute[1],
+										value: value
+									}
+								});
+								return true;
+							}
+						});
+						return match;
+					}
+					else if (regex.test(value)) {
+						bandResults.push({
+							category: 'Band', 
+							data: band, 
+							match: {
+								attribute: 'band.' + attribute[0], 
+								pretty: attribute[1],
+								value: value
+							}
+						});
+						return true;
+					}
+					return false;
+				});
+			});
+
+			return next(null, bandResults);
+		})
+		.catch(err => {
+			return next(err, null);
+		});
+}
 
 module.exports = router;

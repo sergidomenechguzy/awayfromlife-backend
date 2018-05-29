@@ -142,7 +142,7 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 // get all locations in one city
 router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
-	Location.find($or [{ 'address.city': new RegExp(regex, 'gi') }, { 'address.county': new RegExp(regex, 'gi') }])
+	Location.find({ $or: [{ 'address.city': new RegExp(regex, 'gi') }, { 'address.county': new RegExp(regex, 'gi') }] })
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
