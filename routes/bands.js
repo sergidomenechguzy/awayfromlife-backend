@@ -174,6 +174,25 @@ router.get('/genre/:genre', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get all genres
+router.get('/genres', token.checkToken(false), (req, res) => {
+	let genreList = [];
+	Band.find()
+		.then(bands => {
+			bands.forEach(band => {
+				if (band.genre && !genreList.includes(band.genre)) genreList.push(band.genre);
+			});
+			genreList.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			return res.status(200).json({ data: genreList, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get all labels
 router.get('/labels', token.checkToken(false), (req, res) => {
 	let labelList = [];
