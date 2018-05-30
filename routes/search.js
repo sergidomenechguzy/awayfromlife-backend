@@ -106,7 +106,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 	let eventQuery = {
 		attributes: [],
 		values: [],
-		genre: ''
+		genre: []
 	};
 	if (req.query.city) {
 		eventQuery.attributes.push('location.address.city');
@@ -118,7 +118,12 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 		eventQuery.attributes.push('location.address.country');
 		eventQuery.values.push(new RegExp(req.query.country, 'i'));
 	}
-	if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
+	if (req.query.genre) {
+		const genres = req.query.genre.split(',');
+		genres.forEach(genre => {
+			eventQuery.genre.push(new RegExp(genre, 'i'));
+		});
+	}
 
 	Event.find()
 		.then(events => {
@@ -145,7 +150,10 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 							eventQuery.genre.length === 0
 							||
 							event.bands.some(band => {
-								if (eventQuery.genre.test(band.genre)) return true;
+								if (eventQuery.genre.some(currentGenre => {
+									if(currentGenre.test(band.genre)) return true;
+									return false;
+								})) return true;
 								return false;
 							})
 						)
@@ -260,7 +268,13 @@ const bandFind = (req, res, bandSearchAttributes, next) => {
 		const countryString = 'origin.country';
 		bandQuery[countryString] = RegExp(req.query.country, 'i');
 	}
-	if (req.query.genre) bandQuery.genre = RegExp(req.query.genre, 'i');
+	if (req.query.genre) {
+		const genres = req.query.genre.split(',');
+		bandQuery.$or = [];
+		genres.forEach(genre => {
+			bandQuery.$or.push({'genre': RegExp('^' + genre + '$', 'i')});
+		});
+	}
 
 	Band.find(bandQuery)
 		.then(bands => {
