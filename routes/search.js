@@ -109,18 +109,16 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 		genre: ''
 	};
 	if (req.query.city) {
-		if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
 		eventQuery.attributes.push('location.address.city');
 		eventQuery.values.push(new RegExp(req.query.city, 'i'));
 		eventQuery.attributes.push('location.address.county');
 		eventQuery.values.push(new RegExp(req.query.city, 'i'));
 	}
 	else if (req.query.country) {
-		if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
 		eventQuery.attributes.push('location.address.country');
 		eventQuery.values.push(new RegExp(req.query.country, 'i'));
 	}
-	else if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
+	if (req.query.genre) eventQuery.genre = new RegExp(req.query.genre, 'i');
 
 	Event.find()
 		.then(events => {
@@ -208,22 +206,15 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 const locationFind = (req, res, locationSearchAttributes, next) => {
 	const regex = RegExp('.*' + req.params.query + '.*', 'i');
 	locationResults = [];
-
-	console.log(req.query.genre);
 		
 	let locationQuery = {};
-	if (req.query.genre) {
-		console.log('genre ist da');
-		
-		return next(null, locationResults);
+	if (req.query.genre) return next(null, locationResults);
+	
+	if (req.query.city) {
+		locationQuery = { $or: [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }] };
 	}
-	else {
-		if (req.query.city) {
-			locationQuery = { $or: [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }] };
-		}
-		else if (req.query.country) {
-			locationQuery = {'address.country': RegExp(req.query.country, 'i')};
-		}
+	else if (req.query.country) {
+		locationQuery = {'address.country': RegExp(req.query.country, 'i')};
 	}
 
 	Location.find(locationQuery)
@@ -262,14 +253,14 @@ const bandFind = (req, res, bandSearchAttributes, next) => {
 
 	let bandQuery = {};
 	if (req.query.city) {
-		if (req.query.genre) bandQuery = { 'origin.name': RegExp(req.query.city, 'i'), 'genre': RegExp(req.query.genre, 'i') };
-		else bandQuery = { 'origin.name': RegExp(req.query.city, 'i') };
+		const cityString = 'origin.name';
+		bandQuery[cityString] = RegExp(req.query.city, 'i');
 	}
 	else if (req.query.country) {
-		if (req.query.genre) bandQuery = { 'origin.country': RegExp(req.query.country, 'i'), 'genre': RegExp(req.query.genre, 'i') };
-		else bandQuery = { 'origin.country': RegExp(req.query.country, 'i') };
+		const countryString = 'origin.country';
+		bandQuery[countryString] = RegExp(req.query.country, 'i');
 	}
-	else if (req.query.genre) bandQuery = { 'genre': RegExp(req.query.genre, 'i') };
+	if (req.query.genre) bandQuery.genre = RegExp(req.query.genre, 'i');
 
 	Band.find(bandQuery)
 		.then(bands => {

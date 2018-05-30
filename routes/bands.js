@@ -50,12 +50,22 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
-	if (req.query.start && /^[a-zA-Z]$/.test(req.query.start)) {
-		if (req.query.start === 'a' || req.query.start === 'A') query = { name: new RegExp('^[' + req.query.start + 'ä]', 'gi') };
-		else if (req.query.start === 'o' || req.query.start === 'O') query = { name: new RegExp('^[' + req.query.start + 'ö]', 'gi') };
-		else if (req.query.start === 'u' || req.query.start === 'U') query = { name: new RegExp('^[' + req.query.start + 'ü]', 'gi') };
-		else query = { name: new RegExp('^' + req.query.start, 'gi') };
+	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
+		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
+		else query.name = new RegExp('^' + req.query.startWith, 'gi');
 	}
+	if (req.query.city) {
+		const cityString = 'origin.name';
+		query[cityString] = RegExp(req.query.city, 'i');
+	}
+	else if (req.query.country) {
+		const countryString = 'origin.country';
+		query[countryString] = RegExp(req.query.country, 'i');
+	}
+	if (req.query.genre) query.genre = RegExp(req.query.genre, 'i');
+	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
 	Band.find(query)
 		.then(bands => {
@@ -157,6 +167,25 @@ router.get('/genre/:genre', token.checkToken(false), (req, res) => {
 				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: bands, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all labels
+router.get('/labels', token.checkToken(false), (req, res) => {
+	let labelList = [];
+	Band.find()
+		.then(bands => {
+			bands.forEach(band => {
+				if (band.recordLabel && !labelList.includes(band.recordLabel)) labelList.push(band.recordLabel);
+			});
+			labelList.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			return res.status(200).json({ data: labelList, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

@@ -50,18 +50,18 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	let perPage = 20;
 	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = ['title'];
+	let sortBy = 'title';
 	if (req.query.sortBy === 'startDate' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
 	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
-	if (req.query.start && /^[a-zA-Z]$/.test(req.query.start)) {
-		if (req.query.start === 'a' || req.query.start === 'A') query = { title: new RegExp('^[' + req.query.start + 'ä]', 'gi') };
-		else if (req.query.start === 'o' || req.query.start === 'O') query = { title: new RegExp('^[' + req.query.start + 'ö]', 'gi') };
-		else if (req.query.start === 'u' || req.query.start === 'U') query = { title: new RegExp('^[' + req.query.start + 'ü]', 'gi') };
-		else query = { title: new RegExp('^' + req.query.start, 'gi') };
+	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
+		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
+		else query.name = new RegExp('^' + req.query.startWith, 'gi');
 	}
 
 	Event.find(query)
@@ -70,44 +70,60 @@ router.get('/page', token.checkToken(false), (req, res) => {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
 
-			const count = events.length;
-			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
-
-			events.sort((a, b) => {
-				if (sortBy === 'location') {
-					Location.findOne({ _id: a.location })
-						.then(locationA => {
-							if (!locationA) {
-								return 1;
-							}
-							Location.findOne({ _id: b.location })
-								.then(locationB => {
-									if (!locationB) {
-										return -1;
-									}
-									if (order === -1) return locationB.name.localeCompare(locationA.name);
-									return locationA.name.localeCompare(locationB.name);
-								})
-								.catch(err => {
-									console.log(err.name + ': ' + err.message);
-									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-								});
-						})
-						.catch(err => {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						});
-				}
-				if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
-				return a[sortBy].localeCompare(b[sortBy]);
-			});
-			events = events.slice((perPage * page) - perPage, (perPage * page));
-
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
+
+				if (req.query.city || req.query.country || req.query.genre || req.query.date) {
+					finalEvents = [];
+					responseEvents.forEach(responseEvent => {
+						let result = [];
+						if (req.query.city) {
+							const cityRegex = RegExp(req.query.city, 'i');
+							if (cityRegex.test(responseEvent.location.address.city) || cityRegex.test(responseEvent.location.address.county)) 
+								result.push(true);
+							else result.push(false);
+						}
+						else if (req.query.country) {
+							const countryRegex = RegExp(req.query.country, 'i');
+							if (countryRegex.test(responseEvent.location.address.country)) 
+								result.push(true);
+							else result.push(false);
+						}
+						if (req.query.genre) {
+							const genreRegex = RegExp(req.query.genre, 'i');
+							result.push(
+								responseEvent.bands.some(band => {
+									return genreRegex.test(band.genre);
+								})
+							);
+						}
+						if (req.query.date) {
+							const dateList = req.query.date.split('--');
+							if (dateList.length === 1) {
+								if (Math.floor(moment(dateList[0]).valueOf() / 86400000) === Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) result.push(true);
+								else result.push(false);
+							}
+							else if (dateList.length === 2) {
+								if (
+									Math.floor(moment(dateList[0]).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+									&&
+									Math.floor(moment(dateList[1]).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+								) result.push(true);
+								else result.push(false);
+							}
+						}
+						if (result.reduce((acc, current) => acc && current, true)) finalEvents.push(responseEvent);
+					});
+					responseEvents = finalEvents;
+				}
+
+				const count = responseEvents.length;
+				if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+
+				responseEvents = responseEvents.slice((perPage * page) - perPage, (perPage * page));
 				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 			});
 		})
@@ -204,8 +220,10 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 
 // get events by date
 router.get('/date/:date', token.checkToken(false), (req, res) => {
-	let regex = '^' + req.params.date;
-	Event.find({ startDate: new RegExp(regex, 'g') })
+	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
+
+	// let regex = '^' + req.params.date;
+	Event.find({ startDate: regex })
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
@@ -226,10 +244,9 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 
 // get similar events
 router.get('/similar', token.checkToken(false), (req, res) => {
-	const time = moment(req.query.date);
-	let regex = '^' + time.format('YYYY-MM-DD');
+	const regex = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
 
-	Event.find({ location: req.query.location, startDate: new RegExp(regex, 'g') })
+	Event.find({ location: req.query.location, startDate: regex })
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
