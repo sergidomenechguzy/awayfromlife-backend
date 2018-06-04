@@ -45,11 +45,11 @@ router.post('/login', (req, res) => {
 							expiredSessions.push(index);
 						}
 					});
-					expiredSessions.forEach(index=> {
+					expiredSessions.forEach(index => {
 						user.currentSessions.splice(index, 1);
 					});
 					user.currentSessions.push(session);
-					
+
 					User.findOneAndUpdate({ _id: user.id }, user, (err, doc) => {
 						if (err) {
 							console.log(err.name + ': ' + err.message);
@@ -68,9 +68,9 @@ router.post('/login', (req, res) => {
 
 // logout and clear current valid token
 router.get('/logout', (req, res) => {
-	if(!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') 
+	if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT')
 		return res.status(401).json({ message: 'Unauthorized' });
-	
+
 	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
 		if (err) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -170,7 +170,7 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 								}
 								const session = token.createSession();
 								const newToken = token.signJWT(user.id, session.sessionID);
-								
+
 								let sessionIndex;
 								user.currentSessions.some((session, index, array) => {
 									if (session.sessionID === decodedAuthToken.sessionID) {

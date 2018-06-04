@@ -40,7 +40,6 @@ const LocationSchema = new Schema({
 		value: {
 			type: String,
 		}
-		
 	},
 	status: {
 		type: String,

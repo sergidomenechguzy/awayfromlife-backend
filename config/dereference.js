@@ -30,7 +30,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 				};
 				return next(null, responseEvent);
 			}
-			
+
 			let bandsArray = [];
 			event.bands.forEach((bandID, index, array) => {
 				Band.findOne({ _id: bandID })
@@ -38,7 +38,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 						if (!band) {
 							band = 'Band not found';
 						}
-						bandsArray.push({band: band, index: index});
+						bandsArray.push({ band: band, index: index });
 
 						if (bandsArray.length === array.length) {
 							let bandsArraySorted = [];
@@ -79,7 +79,7 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 			if (err) return next(err, null);
 
 			responseEvents.push(responseEvent);
-			
+
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
 					if (sortBy === 'location') {

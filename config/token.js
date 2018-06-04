@@ -14,7 +14,7 @@ module.exports.expTime = expTime;
 
 // signs jwt with given user id
 module.exports.signJWT = (userID, sessionID) => {
-	return jwt.sign({userID: userID, sessionID: sessionID, exp: Math.floor(Date.now() / 1000) + expTime}, secrets.authSecret);
+	return jwt.sign({ userID: userID, sessionID: sessionID, exp: Math.floor(Date.now() / 1000) + expTime }, secrets.authSecret);
 }
 
 module.exports.createSession = () => {
@@ -26,7 +26,7 @@ module.exports.createSession = () => {
 
 module.exports.checkToken = (forbidden) => {
 	return (req, res, next) => {
-		if(!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') {
+		if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') {
 			if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
 			return next();
 		}
@@ -64,7 +64,7 @@ module.exports.checkToken = (forbidden) => {
 							console.log(err.name + ': ' + err.message);
 							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 						}
-						res.locals.token = jwt.sign({userID: decodedAuthToken.userID, sessionID: decodedAuthToken.sessionID, exp: exp}, secrets.authSecret);
+						res.locals.token = jwt.sign({ userID: decodedAuthToken.userID, sessionID: decodedAuthToken.sessionID, exp: exp }, secrets.authSecret);
 						return next();
 					});
 				})

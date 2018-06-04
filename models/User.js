@@ -16,14 +16,14 @@ const UserSchema = new Schema({
 		required: true
 	},
 	currentSessions: [{
-			sessionID: {
-				type: String
-			},
-			expireTime: {
-				type: Number
-			}
-		}]
-	
+		sessionID: {
+			type: String
+		},
+		expireTime: {
+			type: Number
+		}
+	}]
+
 });
 
 mongoose.model('users', UserSchema);

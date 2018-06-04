@@ -82,13 +82,13 @@ router.get('/page', token.checkToken(false), (req, res) => {
 						let result = [];
 						if (req.query.city) {
 							const cityRegex = RegExp(req.query.city, 'i');
-							if (cityRegex.test(responseEvent.location.address.city) || cityRegex.test(responseEvent.location.address.county)) 
+							if (cityRegex.test(responseEvent.location.address.city) || cityRegex.test(responseEvent.location.address.county))
 								result.push(true);
 							else result.push(false);
 						}
 						else if (req.query.country) {
 							const countryRegex = RegExp(req.query.country, 'i');
-							if (countryRegex.test(responseEvent.location.address.country)) 
+							if (countryRegex.test(responseEvent.location.address.country))
 								result.push(true);
 							else result.push(false);
 						}

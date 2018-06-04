@@ -11,7 +11,8 @@ module.exports.events = (next) => {
 	let counter = 0;
 	Event.find()
 		.then(events => {
-			events.forEach(event => {if (Math.floor(moment(event.startDate).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1)) {
+			events.forEach(event => {
+				if (Math.floor(moment(event.startDate).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1)) {
 					archiveEvents.push(event);
 				}
 			});
@@ -23,7 +24,7 @@ module.exports.events = (next) => {
 
 					const newEvent = {
 						title: archiveEvent.title,
-						description:archiveEvent.description,
+						description: archiveEvent.description,
 						location: archiveEvent.location,
 						startDate: archiveEvent.startDate,
 						endDate: archiveEvent.endDate,
@@ -32,7 +33,7 @@ module.exports.events = (next) => {
 						canceled: archiveEvent.canceled,
 						ticketLink: archiveEvent.ticketLink
 					};
-					
+
 					new ArchivedEvent(newEvent)
 						.save()
 						.then(() => {
