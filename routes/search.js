@@ -69,7 +69,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 	let counter = 0;
 
 	categories.forEach((category, index, array) => {
-		if (category === 'events') eventFind(req, res, eventSearchAttributes, 0, (err, eventResults) => {
+		if (category === 'events') eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
 			if (err) {
 				console.log(err.name + ': ' + err.message);
 				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -78,7 +78,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 			counter++;
 			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
 		});
-		else if (category === 'locations') locationFind(req, res, locationSearchAttributes, 0, (err, locationResults) => {
+		else if (category === 'locations') locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
 			if (err) {
 				console.log(err.name + ': ' + err.message);
 				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -87,7 +87,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 			counter++;
 			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
 		});
-		else if (category === 'bands') bandFind(req, res, bandSearchAttributes, 0, (err, bandResults) => {
+		else if (category === 'bands') bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
 			if (err) {
 				console.log(err.name + ': ' + err.message);
 				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -128,46 +128,38 @@ router.get('/simple/:query', token.checkToken(false), (req, res) => {
 		['releases', 'releases']
 	];
 
-	let results = {
-		events: [],
-		locations: [],
-		bands: []
-	};
+	let results = [];
 
-	eventFind(req, res, eventSearchAttributes, 6, (err, eventResults) => {
+	eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		}
-		locationFind(req, res, locationSearchAttributes, 6, (err, locationResults) => {
+		locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
 			if (err) {
 				console.log(err.name + ': ' + err.message);
 				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 			}
-			bandFind(req, res, bandSearchAttributes, 6, (err, bandResults) => {
+			bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-
-				let added = 0;
+				
 				let counter = 0;
 
-				while (added < 6) {
-					const prev = added;
-					if (eventResults.length > counter && added < 6) {
-						results.events.push(eventResults[counter]);
-						added++;
+				while (results.length < 6) {
+					const prev = results.length;
+					if (eventResults.length > counter && results.length < 6) {
+						results.push(eventResults[counter]);
 					}
-					if (locationResults.length > counter && added < 6) {
-						results.locations.push(locationResults[counter]);
-						added++;
+					if (locationResults.length > counter && results.length < 6) {
+						results.push(locationResults[counter]);
 					}
-					if (bandResults.length > counter && added < 6) {
-						results.bands.push(bandResults[counter]);
-						added++;
+					if (bandResults.length > counter && results.length < 6) {
+						results.push(bandResults[counter]);
 					}
-					if (prev === added) break;
+					if (prev === results.length) break;
 					counter++;
 				}
 
@@ -177,8 +169,8 @@ router.get('/simple/:query', token.checkToken(false), (req, res) => {
 	});
 });
 
-const eventFind = (req, res, eventSearchAttributes, limit, next) => {
-	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+const eventFind = (req, res, eventSearchAttributes, next) => {
+	const regex = RegExp(req.params.query, 'i');
 	eventResults = [];
 
 	let eventQuery = {
@@ -204,7 +196,6 @@ const eventFind = (req, res, eventSearchAttributes, limit, next) => {
 	}
 
 	Event.find()
-		.limit(limit)
 		.then(events => {
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -290,8 +281,8 @@ const eventFind = (req, res, eventSearchAttributes, limit, next) => {
 		});
 }
 
-const locationFind = (req, res, locationSearchAttributes, limit, next) => {
-	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+const locationFind = (req, res, locationSearchAttributes, next) => {
+	const regex = RegExp(req.params.query, 'i');
 	locationResults = [];
 
 	let locationQuery = {};
@@ -305,7 +296,6 @@ const locationFind = (req, res, locationSearchAttributes, limit, next) => {
 	}
 
 	Location.find(locationQuery)
-		.limit(limit)
 		.then(locations => {
 			locations.forEach(location => {
 				locationSearchAttributes.some((attribute, index) => {
@@ -335,8 +325,8 @@ const locationFind = (req, res, locationSearchAttributes, limit, next) => {
 		});
 }
 
-const bandFind = (req, res, bandSearchAttributes, limit, next) => {
-	const regex = RegExp('.*' + req.params.query + '.*', 'i');
+const bandFind = (req, res, bandSearchAttributes, next) => {
+	const regex = RegExp(req.params.query, 'i');
 	bandResults = [];
 
 	let bandQuery = {};
@@ -357,7 +347,6 @@ const bandFind = (req, res, bandSearchAttributes, limit, next) => {
 	}
 
 	Band.find(bandQuery)
-		.limit(limit)
 		.then(bands => {
 			bands.forEach(band => {
 				bandSearchAttributes.some((attribute, index) => {
