@@ -163,6 +163,14 @@ router.get('/simple/:query', token.checkToken(false), (req, res) => {
 					counter++;
 				}
 
+				results.sort((a, b) => {
+					if (a.category === 'Event') return -1;
+					if (a.category === 'Location') {
+						if (b.category === 'Event') return 1;
+						else return -1;
+					}
+					if (a.category === 'Band') return 1;
+				});
 				return res.status(200).json({ data: results, token: res.locals.token });
 			});
 		});
