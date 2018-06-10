@@ -87,7 +87,6 @@ router.get('/page', token.checkToken(false), (req, res) => {
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
 			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
-
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

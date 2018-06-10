@@ -44,12 +44,22 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
-	if (req.query.start && /^[a-zA-Z]$/.test(req.query.start)) {
-		if (req.query.start === 'a' || req.query.start === 'A') query = { name: new RegExp('^[' + req.query.start + 'ä]', 'gi') };
-		else if (req.query.start === 'o' || req.query.start === 'O') query = { name: new RegExp('^[' + req.query.start + 'ö]', 'gi') };
-		else if (req.query.start === 'u' || req.query.start === 'U') query = { name: new RegExp('^[' + req.query.start + 'ü]', 'gi') };
-		else query = { name: new RegExp('^' + req.query.start, 'gi') };
+	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
+		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
+		else query.name = new RegExp('^' + req.query.startWith, 'gi');
 	}
+	if (req.query.city) {
+		const cityString = 'origin.name';
+		query[cityString] = RegExp(req.query.city, 'i');
+	}
+	else if (req.query.country) {
+		const countryString = 'origin.country';
+		query[countryString] = RegExp(req.query.country, 'i');
+	}
+	if (req.query.genre) query.genre = RegExp(req.query.genre, 'i');
+	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
 	Band.find(query)
 		.then(bands => {

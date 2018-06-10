@@ -60,10 +60,10 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	let query = {};
 	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
-		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
-		else query.name = new RegExp('^' + req.query.startWith, 'gi');
+		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.title = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.title = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.title = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
+		else query.title = new RegExp('^' + req.query.startWith, 'gi');
 	}
 
 	Event.find(query)
