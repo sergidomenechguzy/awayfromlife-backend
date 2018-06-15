@@ -211,6 +211,42 @@ router.get('/labels', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		genres: [],
+		labels: [],
+		cities: [],
+		countries: []
+	};
+	Band.find()
+		.then(bands => {
+			bands.forEach(band => {
+				if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
+				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) filters.labels.push(band.recordLabel);
+				if (band.origin.name && !filters.cities.includes(band.origin.name)) filters.cities.push(band.origin.name);
+				if (band.origin.country && !filters.countries.includes(band.origin.country)) filters.countries.push(band.origin.country);
+			});
+			filters.genres.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.labels.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.cities.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.countries.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			return res.status(200).json({ data: filters, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post band to database
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {

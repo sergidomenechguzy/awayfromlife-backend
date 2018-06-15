@@ -189,6 +189,32 @@ router.get('/cities', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		cities: [],
+		countries: []
+	};
+	Location.find()
+		.then(locations => {
+			locations.forEach(location => {
+				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);
+				if (location.address.country && !filters.countries.includes(location.address.country)) filters.countries.push(location.address.country);
+			});
+			filters.cities.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.countries.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			return res.status(200).json({ data: filters, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post location to database
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {

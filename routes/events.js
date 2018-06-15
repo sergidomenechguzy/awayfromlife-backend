@@ -265,6 +265,51 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		cities: [],
+		countries: [],
+		genres: [],
+		firstDate: '',
+		lastDate: ''
+	};
+	Event.find()
+		.then(events => {
+			dereference.eventObjectArray(events, 'startDate', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+
+				filters.firstDate = responseEvents[0].startDate;
+				filters.lastDate = responseEvents[responseEvents.length - 1].startDate;
+				
+				responseEvents.forEach(event => {
+					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) filters.cities.push(event.location.address.city);
+					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) filters.countries.push(event.location.address.country);
+					event.bands.forEach(band => {
+						if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
+					});
+				});
+				filters.cities.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.countries.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.genres.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post event to database
 router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
