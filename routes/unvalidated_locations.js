@@ -44,11 +44,12 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
-	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
-		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
-		else query.name = new RegExp('^' + req.query.startWith, 'gi');
+	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
 	if (req.query.city) {
 		query.$or = [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }];
@@ -120,7 +121,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
 						if (!filters.startWith.includes('U')) filters.startWith.push('U');
 					}
-					else if (/[A-Z]$/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
+					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
 					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
 				}
 				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);

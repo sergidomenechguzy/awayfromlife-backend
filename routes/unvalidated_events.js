@@ -49,11 +49,12 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	if (parseInt(req.query.order) === -1) order = -1;
 
 	let query = {};
-	if (req.query.startWith && /^[a-zA-Z]$/.test(req.query.startWith)) {
-		if (req.query.startWith === 'a' || req.query.startWith === 'A') query.title = new RegExp('^[' + req.query.startWith + 'ä]', 'gi');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.title = new RegExp('^[' + req.query.startWith + 'ö]', 'gi');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.title = new RegExp('^[' + req.query.startWith + 'ü]', 'gi');
-		else query.title = new RegExp('^' + req.query.startWith, 'gi');
+	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+		if (req.query.startWith === '#') query.title = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.title = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.title = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.title = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+		else query.title = new RegExp('^' + req.query.startWith, 'i');
 	}
 
 	Event.find(query)
@@ -178,7 +179,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 						else if (event.title.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]$/.test(event.title.charAt(0).toUpperCase())) filters.startWith.push(event.title.charAt(0).toUpperCase());
+						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) filters.startWith.push(event.title.charAt(0).toUpperCase());
 						else if (!filters.startWith.includes('#')) filters.startWith.push('#');
 					}
 					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) filters.cities.push(event.location.address.city);
