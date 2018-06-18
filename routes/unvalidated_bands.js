@@ -106,6 +106,7 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 // get all filter data
 router.get('/filters', token.checkToken(false), (req, res) => {
 	let filters = {
+		startWith: [],
 		genres: [],
 		labels: [],
 		cities: [],
@@ -114,10 +115,26 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 	Band.find()
 		.then(bands => {
 			bands.forEach(band => {
+				if (band.name && !filters.startWith.includes(band.name.charAt(0).toUpperCase())) {
+					if (band.name.charAt(0).toUpperCase() === 'Ä') {
+						if (!filters.startWith.includes('A')) filters.startWith.push('A');
+					}
+					else if (band.name.charAt(0).toUpperCase() === 'Ö') {
+						if (!filters.startWith.includes('O')) filters.startWith.push('O');
+					}
+					else if (band.name.charAt(0).toUpperCase() === 'Ü') {
+						if (!filters.startWith.includes('U')) filters.startWith.push('U');
+					}
+					else if (/[A-Z]$/.test(band.name.charAt(0).toUpperCase())) filters.startWith.push(band.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+				}
 				if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
 				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) filters.labels.push(band.recordLabel);
 				if (band.origin.name && !filters.cities.includes(band.origin.name)) filters.cities.push(band.origin.name);
 				if (band.origin.country && !filters.countries.includes(band.origin.country)) filters.countries.push(band.origin.country);
+			});
+			filters.startWith.sort((a, b) => {
+				return a.localeCompare(b);
 			});
 			filters.genres.sort((a, b) => {
 				return a.localeCompare(b);

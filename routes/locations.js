@@ -192,14 +192,31 @@ router.get('/cities', token.checkToken(false), (req, res) => {
 // get all filter data
 router.get('/filters', token.checkToken(false), (req, res) => {
 	let filters = {
+		startWith: [],
 		cities: [],
 		countries: []
 	};
 	Location.find()
 		.then(locations => {
 			locations.forEach(location => {
+				if (location.name && !filters.startWith.includes(location.name.charAt(0).toUpperCase())) {
+					if (location.name.charAt(0).toUpperCase() === 'Ä') {
+						if (!filters.startWith.includes('A')) filters.startWith.push('A');
+					}
+					else if (location.name.charAt(0).toUpperCase() === 'Ö') {
+						if (!filters.startWith.includes('O')) filters.startWith.push('O');
+					}
+					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
+						if (!filters.startWith.includes('U')) filters.startWith.push('U');
+					}
+					else if (/[A-Z]$/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+				}
 				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);
 				if (location.address.country && !filters.countries.includes(location.address.country)) filters.countries.push(location.address.country);
+			});
+			filters.startWith.sort((a, b) => {
+				return a.localeCompare(b);
 			});
 			filters.cities.sort((a, b) => {
 				return a.localeCompare(b);

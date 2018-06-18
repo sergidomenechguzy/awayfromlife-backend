@@ -149,6 +149,7 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 // get all filter data
 router.get('/filters', token.checkToken(false), (req, res) => {
 	let filters = {
+		startWith: [],
 		cities: [],
 		countries: [],
 		genres: [],
@@ -167,11 +168,27 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 				filters.lastDate = responseEvents[responseEvents.length - 1].startDate;
 				
 				responseEvents.forEach(event => {
+					if (event.title && !filters.startWith.includes(event.title.charAt(0).toUpperCase())) {
+						if (event.title.charAt(0).toUpperCase() === 'Ä') {
+							if (!filters.startWith.includes('A')) filters.startWith.push('A');
+						}
+						else if (event.title.charAt(0).toUpperCase() === 'Ö') {
+							if (!filters.startWith.includes('O')) filters.startWith.push('O');
+						}
+						else if (event.title.charAt(0).toUpperCase() === 'Ü') {
+							if (!filters.startWith.includes('U')) filters.startWith.push('U');
+						}
+						else if (/[A-Z]$/.test(event.title.charAt(0).toUpperCase())) filters.startWith.push(event.title.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+					}
 					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) filters.cities.push(event.location.address.city);
 					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) filters.countries.push(event.location.address.country);
 					event.bands.forEach(band => {
 						if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
 					});
+				});
+				filters.startWith.sort((a, b) => {
+					return a.localeCompare(b);
 				});
 				filters.cities.sort((a, b) => {
 					return a.localeCompare(b);
