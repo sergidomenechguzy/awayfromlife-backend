@@ -77,7 +77,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
 
-				if (req.query.city || req.query.country || req.query.genre || req.query.date) {
+				if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
 					finalEvents = [];
 					responseEvents.forEach(responseEvent => {
 						let result = [];
@@ -101,20 +101,23 @@ router.get('/page', token.checkToken(false), (req, res) => {
 								})
 							);
 						}
-						if (req.query.date) {
-							const dateList = req.query.date.split('--');
-							if (dateList.length === 1) {
-								if (Math.floor(moment(dateList[0]).valueOf() / 86400000) === Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) result.push(true);
-								else result.push(false);
-							}
-							else if (dateList.length === 2) {
-								if (
-									Math.floor(moment(dateList[0]).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
-									&&
-									Math.floor(moment(dateList[1]).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
-								) result.push(true);
-								else result.push(false);
-							}
+						if (req.query.startDate && req.query.endDate) {
+							if (
+								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+								&&
+								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+							) result.push(true);
+							else result.push(false);
+						}
+						else if (req.query.startDate) {
+							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) 
+								result.push(true);
+							else result.push(false);
+						}
+						else if (req.query.endDate) {
+							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) 
+								result.push(true);
+							else result.push(false);
 						}
 						if (result.reduce((acc, current) => acc && current, true)) finalEvents.push(responseEvent);
 					});
