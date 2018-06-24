@@ -5,7 +5,7 @@ const router = express.Router();
 
 // load event model
 require('../models/Event');
-const Event = mongoose.model('events');
+const Event = mongoose.model('archived_events');
 
 // load location model
 require('../models/Location');
@@ -17,6 +17,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load archive.js
+const archive = require('../config/archive');
 
 moment.locale('de');
 
@@ -328,6 +330,17 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// move old events to archived events collection
+router.get('/archive', token.checkToken(false), (req, res) => {
+	archive.events((err, response) => {
+		if (err) {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		}
+		return res.status(200).json({ message: `${response.length} event(s) moved to archive.`, token: res.locals.token });
+	});
 });
 
 // post event to database

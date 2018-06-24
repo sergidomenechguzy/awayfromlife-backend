@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const passport = require('passport');
 const router = express.Router();
 
 // load location model
@@ -11,7 +10,7 @@ const Location = mongoose.model('locations');
 require('../models/Event');
 const Event = mongoose.model('events');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
@@ -20,7 +19,7 @@ const dereference = require('../config/dereference');
 
 // locations routes
 // get all locations
-router.get('/', token.checkToken(), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	Location.find()
 		.then(locations => {
 			if (locations.length === 0) {
@@ -32,24 +31,41 @@ router.get('/', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get paginated locations
-router.get('/page', token.checkToken(), (req, res) => {
+router.get('/page', token.checkToken(false), (req, res) => {
 	let page = 1;
 
 	let perPage = 20;
-	if (parseInt(req.query.perPage)  === 5 || parseInt(req.query.perPage)  === 10 || parseInt(req.query.perPage)  === 50) perPage = parseInt(req.query.perPage);
-	
+	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+
 	let sortBy = ['name'];
-	if (req.query.sortBy  === 'address.street' || req.query.sortBy  === 'address.city') sortBy = req.query.sortBy.split('.');
-	
-	let order = 1
+	if (req.query.sortBy === 'address.street' || req.query.sortBy === 'address.city') sortBy = req.query.sortBy.split('.');
+
+	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
-	
-	Location.find()
+
+	let query = {};
+	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+		else query.name = new RegExp('^' + req.query.startWith, 'i');
+	}
+	if (req.query.city) {
+		query.$or = [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }];
+	}
+	else if (req.query.country) {
+		const countryString = 'address.country';
+		query[countryString] = RegExp(req.query.country, 'i');
+	}
+
+	Location.find(query)
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
@@ -71,12 +87,13 @@ router.get('/page', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get location by id
-router.get('/byid/:_id', token.checkToken(), (req, res) => {
+router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
@@ -85,28 +102,34 @@ router.get('/byid/:_id', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get events by location id
-router.get('/events/:_id', token.checkToken(), (req, res) => {
+router.get('/events/:_id', token.checkToken(false), (req, res) => {
 	Event.find({ location: req.params._id })
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
 			}
-			dereference.eventObjectArray(events, 'startDate', 1, responseEvents => {
+			dereference.eventObjectArray(events, 'startDate', 1, (err, responseEvents) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get locations by name
-router.get('/name/:name', token.checkToken(), (req, res) => {
+router.get('/name/:name', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
 		.then(locations => {
@@ -119,14 +142,15 @@ router.get('/name/:name', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get all locations in one city
-router.get('/city/:city', token.checkToken(), (req, res) => {
+router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
-	Location.find({ 'address.city': new RegExp(regex, 'gi') })
+	Location.find({ $or: [{ 'address.city': new RegExp(regex, 'gi') }, { 'address.county': new RegExp(regex, 'gi') }] })
 		.then(locations => {
 			if (locations.length === 0) {
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
@@ -137,12 +161,13 @@ router.get('/city/:city', token.checkToken(), (req, res) => {
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // get all cities with saved locations
-router.get('/cities', token.checkToken(), (req, res) => {
+router.get('/cities', token.checkToken(false), (req, res) => {
 	let cities = [];
 	Location.find()
 		.then(locations => {
@@ -154,24 +179,69 @@ router.get('/cities', token.checkToken(), (req, res) => {
 					cities.push(location.address.city);
 				}
 			});
-			locations.sort((a, b) => {
-				return a.name.localeCompare(b.name);
+			cities.sort((a, b) => {
+				return a.localeCompare(b);
 			});
 			return res.status(200).json({ data: cities, token: res.locals.token });
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		startWith: [],
+		cities: [],
+		countries: []
+	};
+	Location.find()
+		.then(locations => {
+			locations.forEach(location => {
+				if (location.name && !filters.startWith.includes(location.name.charAt(0).toUpperCase())) {
+					if (location.name.charAt(0).toUpperCase() === 'Ä') {
+						if (!filters.startWith.includes('A')) filters.startWith.push('A');
+					}
+					else if (location.name.charAt(0).toUpperCase() === 'Ö') {
+						if (!filters.startWith.includes('O')) filters.startWith.push('O');
+					}
+					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
+						if (!filters.startWith.includes('U')) filters.startWith.push('U');
+					}
+					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+				}
+				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);
+				if (location.address.country && !filters.countries.includes(location.address.country)) filters.countries.push(location.address.country);
+			});
+			filters.startWith.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.cities.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			filters.countries.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+			return res.status(200).json({ data: filters, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // post location to database
-router.post('/', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
 			city: req.body.address.city,
+			county: req.body.address.county,
 			country: req.body.address.country,
 			postcode: req.body.address.postcode,
 			lat: req.body.address.lat,
@@ -181,24 +251,25 @@ router.post('/', passport.authenticate('jwt', { session: false }), params.checkP
 		status: req.body.status,
 		information: req.body.information,
 		website: req.body.website,
-		facebook_page_url: req.body.facebook_page_url
+		facebookUrl: req.body.facebookUrl
 	};
 	new Location(newLocation)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: token.signJWT(req.user.id) })
+			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // update location by id
-router.put('/:_id', passport.authenticate('jwt', { session: false }), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			const update = {
 				name: req.body.name,
@@ -206,6 +277,7 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 					street: req.body.address.street,
 					administrative: req.body.address.administrative,
 					city: req.body.address.city,
+					county: req.body.address.county,
 					country: req.body.address.country,
 					postcode: req.body.address.postcode,
 					lat: req.body.address.lat,
@@ -215,32 +287,47 @@ router.put('/:_id', passport.authenticate('jwt', { session: false }), params.che
 				status: req.body.status,
 				information: req.body.information,
 				website: req.body.website,
-				facebook_page_url: req.body.facebook_page_url
+				facebookUrl: req.body.facebookUrl
 			};
 			Location.findOneAndUpdate({ _id: req.params._id }, update, (err, location) => {
-				if (err) throw err;
-				return res.status(200).json({ message: 'Location updated', token: token.signJWT(req.user.id) });
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Location updated', token: res.locals.token });
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 
 // delete location by id
-router.delete('/:_id', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) {
-				return res.status(400).json({ message: 'No location found with this ID', token: token.signJWT(req.user.id) });
+				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			}
 			Location.remove({ _id: req.params._id }, (err, location) => {
-				if (err) throw err;
-				return res.status(200).json({ message: 'Location deleted', token: token.signJWT(req.user.id) });
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+
+				Event.remove({ location: req.params._id }, (err, location) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {
-			throw err;
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
 });
 

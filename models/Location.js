@@ -19,6 +19,9 @@ const LocationSchema = new Schema({
 			type: String,
 			required: true
 		},
+		county: {
+			type: String
+		},
 		country: {
 			type: String,
 			required: true
@@ -37,7 +40,6 @@ const LocationSchema = new Schema({
 		value: {
 			type: String,
 		}
-		
 	},
 	status: {
 		type: String,
@@ -49,7 +51,7 @@ const LocationSchema = new Schema({
 	website: {
 		type: String
 	},
-	facebook_page_url: {
+	facebookUrl: {
 		type: String
 	}
 });

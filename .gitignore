@@ -2,3 +2,6 @@ node_modules
 secrets.js
 npm-debug.log
 package-lock.json
+
+logs/*
+!logs/.gitkeep

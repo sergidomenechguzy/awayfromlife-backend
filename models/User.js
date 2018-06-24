@@ -15,10 +15,15 @@ const UserSchema = new Schema({
 		type: String,
 		required: true
 	},
-	lastModified: {
-		type: Number,
-		default: Date.now()
-	}
+	currentSessions: [{
+		sessionID: {
+			type: String
+		},
+		expireTime: {
+			type: Number
+		}
+	}]
+
 });
 
 mongoose.model('users', UserSchema);

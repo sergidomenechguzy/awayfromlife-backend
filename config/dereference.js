@@ -28,9 +28,9 @@ const eventObject = module.exports.eventObject = (event, next) => {
 					canceled: event.canceled,
 					ticketLink: event.ticketLink
 				};
-				next(responseEvent);
+				return next(null, responseEvent);
 			}
-			
+
 			let bandsArray = [];
 			event.bands.forEach((bandID, index, array) => {
 				Band.findOne({ _id: bandID })
@@ -38,7 +38,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 						if (!band) {
 							band = 'Band not found';
 						}
-						bandsArray.push({band: band, index: index});
+						bandsArray.push({ band: band, index: index });
 
 						if (bandsArray.length === array.length) {
 							let bandsArraySorted = [];
@@ -58,25 +58,28 @@ const eventObject = module.exports.eventObject = (event, next) => {
 								canceled: event.canceled,
 								ticketLink: event.ticketLink
 							};
-							next(responseEvent);
+							return next(null, responseEvent);
 						}
 					})
 					.catch(err => {
-						throw err;
+						return next(err, null);
 					});
 			});
 		})
 		.catch(err => {
-			throw err;
+			return next(err, null);
 		});
 }
 
 module.exports.eventObjectArray = (events, sortBy, order, next) => {
+	if (events.length === 0) return next(null, []);
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
-		eventObject(event, responseEvent => {
+		eventObject(event, (err, responseEvent) => {
+			if (err) return next(err, null);
+
 			responseEvents.push(responseEvent);
-			
+
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
 					if (sortBy === 'location') {
@@ -86,7 +89,7 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
-				next(responseEvents);
+				return next(null, responseEvents);
 			}
 		});
 	});
