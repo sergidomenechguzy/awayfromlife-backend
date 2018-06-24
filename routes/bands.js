@@ -10,7 +10,7 @@ const Band = mongoose.model('bands');
 require('../models/Event');
 const Event = mongoose.model('events');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');

@@ -10,7 +10,7 @@ const Location = mongoose.model('locations');
 require('../models/Event');
 const Event = mongoose.model('events');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
@@ -251,7 +251,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 		status: req.body.status,
 		information: req.body.information,
 		website: req.body.website,
-		facebook_page_url: req.body.facebook_page_url
+		facebookUrl: req.body.facebookUrl
 	};
 	new Location(newLocation)
 		.save()
@@ -287,7 +287,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 				status: req.body.status,
 				information: req.body.information,
 				website: req.body.website,
-				facebook_page_url: req.body.facebook_page_url
+				facebookUrl: req.body.facebookUrl
 			};
 			Location.findOneAndUpdate({ _id: req.params._id }, update, (err, location) => {
 				if (err) {

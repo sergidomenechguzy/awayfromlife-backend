@@ -6,7 +6,7 @@ const router = express.Router();
 require('../models/Band');
 const Band = mongoose.model('unvalidated_bands');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
@@ -105,7 +105,7 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(false), (req, res) => {
+router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
 		startWith: [],
 		genres: [],

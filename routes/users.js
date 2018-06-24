@@ -203,7 +203,7 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 	});
 });
 
-// check authentication
+// check authorization
 router.get('/auth', token.checkToken(true), (req, res) => {
 	return res.status(200).json({ message: 'You are authorized', token: res.locals.token });
 });

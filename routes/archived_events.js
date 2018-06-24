@@ -79,7 +79,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
 
-				if (req.query.city || req.query.country || req.query.genre || req.query.startate || req.query.endDate) {
+				if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
 					finalEvents = [];
 					responseEvents.forEach(responseEvent => {
 						let result = [];
@@ -226,8 +226,9 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 
 // get events by date
 router.get('/date/:date', token.checkToken(false), (req, res) => {
-	let regex = '^' + req.params.date;
-	Event.find({ startDate: new RegExp(regex, 'g') })
+	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
+
+	Event.find({ startDate: regex })
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
@@ -248,10 +249,9 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 
 // get similar events
 router.get('/similar', token.checkToken(false), (req, res) => {
-	const time = moment(req.query.date);
-	let regex = '^' + time.format('YYYY-MM-DD');
+	const regex = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
 
-	Event.find({ location: req.query.location, startDate: new RegExp(regex, 'g') })
+	Event.find({ location: req.query.location, startDate: regex })
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });

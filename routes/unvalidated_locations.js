@@ -6,7 +6,7 @@ const router = express.Router();
 require('../models/Location');
 const Location = mongoose.model('unvalidated_locations');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
@@ -102,7 +102,7 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(false), (req, res) => {
+router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
 		startWith: [],
 		cities: [],
@@ -162,7 +162,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 		status: req.body.status,
 		information: req.body.information,
 		website: req.body.website,
-		facebook_page_url: req.body.facebook_page_url
+		facebookUrl: req.body.facebookUrl
 	};
 	new Location(newLocation)
 		.save()

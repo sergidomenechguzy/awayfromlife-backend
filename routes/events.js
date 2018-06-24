@@ -226,7 +226,6 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 router.get('/date/:date', token.checkToken(false), (req, res) => {
 	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
 
-	// let regex = '^' + req.params.date;
 	Event.find({ startDate: regex })
 		.then(events => {
 			if (events.length === 0) {
@@ -347,7 +346,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token })
+			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

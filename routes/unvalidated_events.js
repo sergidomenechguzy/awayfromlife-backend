@@ -6,7 +6,7 @@ const router = express.Router();
 require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
 
-// load params
+// load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
@@ -21,6 +21,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 			}
+
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -151,7 +152,7 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(false), (req, res) => {
+router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
 		startWith: [],
 		cities: [],
@@ -221,12 +222,14 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		startDate: req.body.startDate,
 		endDate: req.body.endDate,
 		time: req.body.time,
-		bands: req.body.bands
-	}
+		bands: req.body.bands,
+		canceled: req.body.canceled,
+		ticketLink: req.body.ticketLink
+	};
 	new Event(newEvent)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token })
+			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

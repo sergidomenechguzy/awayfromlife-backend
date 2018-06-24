@@ -6,12 +6,14 @@ const router = express.Router();
 require('../models/Bug');
 const Bug = mongoose.model('bugs');
 
-// load params
+// load params.js
 const params = require('../config/params.js');
+// load token.js
+const token = require('../config/token.js');
 
 // bugs routes
 // get all bugs
-router.get('/', (req, res) => {
+router.get('/', token.checkToken(true), (req, res) => {
 	Bug.find()
 		.then(bugs => {
 			if (bugs.length === 0) {
@@ -26,7 +28,7 @@ router.get('/', (req, res) => {
 });
 
 // post bug to database
-router.post('/', params.checkParameters(['function']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['function']), (req, res) => {
 	const newBug = {
 		function: req.body.function,
 		description: req.body.description,
@@ -46,7 +48,7 @@ router.post('/', params.checkParameters(['function']), (req, res) => {
 });
 
 // delete bug by id
-router.delete('/:_id', (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Bug.remove({ _id: req.params._id }, (err, bug) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
