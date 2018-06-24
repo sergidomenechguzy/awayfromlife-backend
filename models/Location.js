@@ -51,7 +51,7 @@ const LocationSchema = new Schema({
 	website: {
 		type: String
 	},
-	facebook_page_url: {
+	facebookUrl: {
 		type: String
 	}
 });
