@@ -247,9 +247,16 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 
 // get similar events
 router.get('/similar', token.checkToken(false), (req, res) => {
-	const regex = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
+	if(!req.query.location || !req.query.date)
+		return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
+	let query = {};
+	query.location = req.query.location;
+	// query.location = new RegExp('^' + req.query.location + '$', 'i');
+	query.startDate = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
+	console.log(query);
+	
 
-	Event.find({ location: req.query.location, startDate: regex })
+	Event.find(query)
 		.then(events => {
 			if (events.length === 0) {
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });

@@ -212,6 +212,28 @@ router.get('/labels', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get similar bands
+router.get('/similar', token.checkToken(false), (req, res) => {
+	if(!req.query.name || !req.query.country)
+		return res.status(400).json({ message: 'Parameter(s) missing: name and country are required.' });
+	let query = {};
+	query.name = new RegExp('^' + req.query.name + '$', 'i');
+	const countryString = 'origin.country';
+	query[countryString] = new RegExp('^' + req.query.country + '$', 'i');
+
+	Band.find(query)
+		.then(bands => {
+			if (bands.length === 0) {
+				return res.status(200).json({ message: 'No bands found with this name from this country.', token: res.locals.token });
+			}
+			return res.status(200).json({ data: bands, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get all filter data
 router.get('/filters', token.checkToken(false), (req, res) => {
 	let filters = {
