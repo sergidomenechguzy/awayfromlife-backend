@@ -55,7 +55,7 @@
 
 **`api/events/similar`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get events in the same location and the same date
+	get events in the same location on the same date
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `?location` - searched event location query
@@ -153,7 +153,7 @@
 
 **`api/archived-events/similar`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get archived events in the same location and the same date
+	get archived events in the same location or the same date
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `?location` - searched archived event location query
@@ -316,6 +316,15 @@
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 
+**`api/locations/similar`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	get locations with the same address or in the same city with the same name or both
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **no**
+- `?address` - searched location address query
+- `?name` - searched location name query
+- `?city` - searched location city query
+
 **`api/locations/filters`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	get the possible values for pagination filters
@@ -471,6 +480,14 @@
 	get all labels
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
+
+**`api/bands/similar`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	get bands with the same name from the same country
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **no**
+- `?name` - searched band name query
+- `?country` - searched band origin country query
 
 **`api/bands/filters`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;

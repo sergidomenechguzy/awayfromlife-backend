@@ -190,6 +190,48 @@ router.get('/cities', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get similar locations
+router.get('/similar', token.checkToken(false), (req, res) => {
+	let query = {};
+	if (req.query.name && req.query.city) {
+		if (req.query.address) {
+			query = { $or: [
+				{
+					name: new RegExp('^' + req.query.name + '$', 'i'),
+					'address.city': new RegExp('^' + req.query.city + '$', 'i')
+				},
+				{ 'address.street': new RegExp('^' + req.query.address + '$', 'i') }
+			] };
+		}
+		else {
+			query.name = new RegExp('^' + req.query.name + '$', 'i');
+			const cityString = 'address.city';
+			query[cityString] = new RegExp('^' + req.query.city + '$', 'i');
+		}
+	}
+	else {
+		if (req.query.address) {
+			const addressString = 'address.street';
+			query[addressString] = new RegExp('^' + req.query.address + '$', 'i');
+		}
+		else {
+			return res.status(400).json({ message: 'Parameter(s) missing: address or name and city are required.' });
+		}
+	}
+
+	Location.find(query)
+		.then(locations => {
+			if (locations.length === 0) {
+				return res.status(200).json({ message: 'No locations found with this name from this country.', token: res.locals.token });
+			}
+			return res.status(200).json({ data: locations, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get all filter data
 router.get('/filters', token.checkToken(false), (req, res) => {
 	let filters = {
