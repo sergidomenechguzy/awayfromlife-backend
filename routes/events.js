@@ -253,8 +253,6 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 	query.location = req.query.location;
 	// query.location = new RegExp('^' + req.query.location + '$', 'i');
 	query.startDate = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
-	console.log(query);
-	
 
 	Event.find(query)
 		.then(events => {
