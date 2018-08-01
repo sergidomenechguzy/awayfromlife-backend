@@ -75,7 +75,7 @@
 	authorization needed: **yes**
 - `request-body` - event object
 	- required attributes: `title, location, startDate`
-	- optional attributes: `description, endDate, time, bands, canceled, ticketLink`
+	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## put
 **`api/events/:_id`**
@@ -86,7 +86,7 @@
 - `:_id` - event collection unique ID
 - `request-body` - event object
 	- required attributes: `title, location, startDate`
-	- optional attributes: `description, endDate, time, bands, canceled, ticketLink`
+	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## delete
 **`api/events/:_id`**
@@ -179,7 +179,7 @@
 	authorization needed: **yes**
 - `request-body` - event object
 	- required attributes: `title, location, startDate`
-	- optional attributes: `description, endDate, time, bands, canceled, ticketLink`
+	- optional attributes: `description,  bands, canceled, ticketLink`
 
 ## put
 **`api/archived-events/:_id`**
@@ -190,7 +190,7 @@
 - `:_id` - archived-event collection unique ID
 - `request-body` - event object
 	- required attributes: `title, location, startDate`
-	- optional attributes: `description, endDate, time, bands, canceled, ticketLink`
+	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## delete
 **`api/archived-events/:_id`**
@@ -248,7 +248,7 @@
 	authorization needed: **no**
 - `request-body` - event object
 	- required attributes: `title, location, startDate`
-	- optional attributes: `description, endDate, time, bands, canceled, ticketLink`
+	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## delete
 **`api/unvalidated-events/:_id`**
@@ -625,7 +625,7 @@
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `request-body` - bug object
-	- required attributes: `function`
+	- required attributes: `error`
 	- optional attributes: `description, loggedIn, component, email`
 
 ## delete
@@ -634,7 +634,65 @@
 	delete bug
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **yes**
-- `:_id` - band collection unique ID
+- `:_id` - bug collection unique ID
+
+<br>
+
+# Reports
+
+## get
+**`api/reports/`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	get all reports
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **yes**
+
+## post
+**`api/reports/`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	save new report
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **no**
+- `request-body` - report object
+	- required attributes: `category, item`
+	- optional attributes: `description`
+
+## delete
+**`api/reports/:_id`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	delete report
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **yes**
+- `:_id` - report collection unique ID
+
+<br>
+
+# Feedback
+
+## get
+**`api/feedback/`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	get all feedback
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **yes**
+
+## post
+**`api/feedback/`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	save new feedback
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **no**
+- `request-body` - feedback object
+	- required attributes: `text`
+	- optional attributes: `email`
+
+## delete
+**`api/feedback/:_id`**
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	delete feedback
+<br>&nbsp;&nbsp;&nbsp;&nbsp;
+	authorization needed: **yes**
+- `:_id` - feedback collection unique ID
 
 <br>
 
