@@ -4,15 +4,15 @@ const router = express.Router();
 
 // load feedback model
 require('../models/Feedback');
-const Feedback = mongoose.model('feedbacks');
+const Feedback = mongoose.model('feedback');
 
 // load params.js
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
 
-// feedbacks routes
-// get all feedbacks
+// feedback routes
+// get all feedback
 router.get('/', token.checkToken(true), (req, res) => {
 	Feedback.find()
 		.then(feedbacks => {

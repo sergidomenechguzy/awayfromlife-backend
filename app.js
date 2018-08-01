@@ -17,7 +17,7 @@ const unvalidated_bands = require('./routes/unvalidated_bands');
 const archived_events = require('./routes/archived_events');
 const users = require('./routes/users');
 const bugs = require('./routes/bugs');
-const feedbacks = require('./routes/feedbacks');
+const feedback = require('./routes/feedback');
 const reports = require('./routes/reports');
 const search = require('./routes/search');
 
@@ -67,7 +67,7 @@ app.use('/api/unvalidated-bands', unvalidated_bands);
 app.use('/api/archived-events', archived_events);
 app.use('/api/users', users);
 app.use('/api/bugs', bugs);
-app.use('/api/feedbacks', feedbacks);
+app.use('/api/feedback', feedback);
 app.use('/api/reports', reports);
 app.use('/api/search', search);
 

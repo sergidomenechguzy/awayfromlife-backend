@@ -12,4 +12,4 @@ const FeedbackSchema = new Schema({
 	}
 });
 
-mongoose.model('feedbacks', FeedbackSchema);
+mongoose.model('feedback', FeedbackSchema);
