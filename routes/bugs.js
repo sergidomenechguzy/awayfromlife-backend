@@ -16,9 +16,9 @@ const token = require('../config/token.js');
 router.get('/', token.checkToken(true), (req, res) => {
 	Bug.find()
 		.then(bugs => {
-			if (bugs.length === 0) {
+			if (bugs.length === 0) 
 				return res.status(200).json({ message: 'No bugs found' });
-			}
+			
 			return res.status(200).json(bugs);
 		})
 		.catch(err => {
@@ -28,9 +28,9 @@ router.get('/', token.checkToken(true), (req, res) => {
 });
 
 // post bug to database
-router.post('/', token.checkToken(false), params.checkParameters(['function']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['error']), (req, res) => {
 	const newBug = {
-		function: req.body.function,
+		error: req.body.error,
 		description: req.body.description,
 		loggedIn: req.body.loggedIn,
 		component: req.body.component,

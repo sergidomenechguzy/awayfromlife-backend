@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // create event schema
 const BugSchema = new Schema({
-	function: {
+	error: {
 		type: String,
 		required: true
 	},
