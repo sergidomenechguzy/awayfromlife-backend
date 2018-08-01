@@ -27,9 +27,8 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 		let queryCategories = req.query.categories.split(',');
 		let finalCategories = [];
 		queryCategories.forEach(category => {
-			if ((category === 'events' || category === 'locations' || category === 'bands') && !finalCategories.includes(category)) {
+			if ((category === 'events' || category === 'locations' || category === 'bands') && !finalCategories.includes(category)) 
 				finalCategories.push(category);
-			}
 		});
 		if (finalCategories.length > 0) categories = finalCategories;
 	}
@@ -150,15 +149,12 @@ router.get('/simple/:query', token.checkToken(false), (req, res) => {
 
 				while (results.length < 6) {
 					const prev = results.length;
-					if (eventResults.length > counter && results.length < 6) {
+					if (eventResults.length > counter && results.length < 6) 
 						results.push(eventResults[counter]);
-					}
-					if (locationResults.length > counter && results.length < 6) {
+					if (locationResults.length > counter && results.length < 6) 
 						results.push(locationResults[counter]);
-					}
-					if (bandResults.length > counter && results.length < 6) {
+					if (bandResults.length > counter && results.length < 6) 
 						results.push(bandResults[counter]);
-					}
 					if (prev === results.length) break;
 					counter++;
 				}
@@ -206,9 +202,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 	Event.find()
 		.then(events => {
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
-				if (err) {
-					return next(err, null);
-				}
+				if (err) return next(err, null);
 
 				responseEvents.forEach(event => {
 					if (
@@ -296,12 +290,15 @@ const locationFind = (req, res, locationSearchAttributes, next) => {
 	let locationQuery = {};
 	if (req.query.genre) return next(null, locationResults);
 
-	if (req.query.city) {
-		locationQuery = { $or: [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }] };
-	}
-	else if (req.query.country) {
+	if (req.query.city) 
+		locationQuery = { 
+			$or: [
+				{ 'address.city': new RegExp(req.query.city, 'i') }, 
+				{ 'address.county': new RegExp(req.query.city, 'i') }
+			] 
+		};
+	else if (req.query.country) 
 		locationQuery = { 'address.country': RegExp(req.query.country, 'i') };
-	}
 
 	Location.find(locationQuery)
 		.then(locations => {
