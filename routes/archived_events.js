@@ -27,9 +27,8 @@ moment.locale('de');
 router.get('/', token.checkToken(false), (req, res) => {
 	Event.find()
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			}
 
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -69,9 +68,8 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	Event.find(query)
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			}
 
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
@@ -143,9 +141,9 @@ router.get('/page', token.checkToken(false), (req, res) => {
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
-			if (!event) {
+			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			}
+
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -165,9 +163,9 @@ router.get('/title/:title', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.title + '.*';
 	Event.find({ title: new RegExp(regex, 'gi') })
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No event found with this title', token: res.locals.token });
-			}
+
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -189,20 +187,19 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 
 	Location.find({ 'address.city': new RegExp(regex, 'gi') })
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
-			}
+
 			locations.forEach((location, index, array) => {
 				Event.find({ location: location._id })
 					.then(events => {
-						if (events.length > 0) {
+						if (events.length > 0) 
 							cityEvents = cityEvents.concat(events);
-						}
 
 						if (index === array.length - 1) {
-							if (cityEvents.length === 0) {
+							if (cityEvents.length === 0) 
 								return res.status(200).json({ message: 'No events found in this city', token: res.locals.token });
-							}
+							
 							dereference.eventObjectArray(cityEvents, 'title', 1, (err, responseEvents) => {
 								if (err) {
 									console.log(err.name + ': ' + err.message);
@@ -230,9 +227,9 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 
 	Event.find({ startDate: regex })
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
-			}
+			
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -258,9 +255,9 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 	
 	Event.find(query)
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
-			}
+			
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -307,11 +304,16 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 						else if (event.title.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) filters.startWith.push(event.title.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) 
+							filters.startWith.push(event.title.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#')) 
+							filters.startWith.push('#');
 					}
-					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) filters.cities.push(event.location.address.city);
-					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) filters.countries.push(event.location.address.country);
+					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) 
+						filters.cities.push(event.location.address.city);
+					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) 
+						filters.countries.push(event.location.address.country);
+					
 					event.bands.forEach(band => {
 						if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
 					});
@@ -355,8 +357,6 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
-		endDate: req.body.endDate,
-		time: req.body.time,
 		bands: req.body.bands,
 		canceled: req.body.canceled,
 		ticketLink: req.body.ticketLink
@@ -376,16 +376,14 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
-			if (!event) {
+			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			}
+			
 			const update = {
 				title: req.body.title,
 				description: req.body.description,
 				location: req.body.location,
 				startDate: req.body.startDate,
-				endDate: req.body.endDate,
-				time: req.body.time,
 				bands: req.body.bands,
 				canceled: req.body.canceled,
 				ticketLink: req.body.ticketLink,
@@ -409,9 +407,9 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
-			if (!event) {
+			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			}
+			
 			Event.remove({ _id: req.params._id }, (err, event) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

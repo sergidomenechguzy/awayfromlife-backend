@@ -11,9 +11,7 @@ const Band = mongoose.model('bands');
 const eventObject = module.exports.eventObject = (event, next) => {
 	Location.findOne({ _id: event.location })
 		.then(location => {
-			if (!location) {
-				location = 'Location not found';
-			}
+			if (!location) location = 'Location not found';
 
 			if (event.bands.length === 0) {
 				const responseEvent = {
@@ -22,8 +20,6 @@ const eventObject = module.exports.eventObject = (event, next) => {
 					description: event.description,
 					location: location,
 					startDate: event.startDate,
-					endDate: event.endDate,
-					time: event.time,
 					bands: [],
 					canceled: event.canceled,
 					ticketLink: event.ticketLink
@@ -35,9 +31,8 @@ const eventObject = module.exports.eventObject = (event, next) => {
 			event.bands.forEach((bandID, index, array) => {
 				Band.findOne({ _id: bandID })
 					.then(band => {
-						if (!band) {
-							band = 'Band not found';
-						}
+						if (!band) band = 'Band not found';
+						
 						bandsArray.push({ band: band, index: index });
 
 						if (bandsArray.length === array.length) {
@@ -52,8 +47,6 @@ const eventObject = module.exports.eventObject = (event, next) => {
 								description: event.description,
 								location: location,
 								startDate: event.startDate,
-								endDate: event.endDate,
-								time: event.time,
 								bands: bandsArraySorted,
 								canceled: event.canceled,
 								ticketLink: event.ticketLink
