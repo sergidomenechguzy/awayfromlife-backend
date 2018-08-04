@@ -213,8 +213,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 								let value = attribute.split('.').reduce((prev, curr) => {
 									return prev[curr];
 								}, event);
-								if (eventQuery.values[index].test(value)) return true;
-								return false;
+								return eventQuery.values[index].test(value);
 							})
 						)
 						&&
@@ -222,11 +221,11 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 							eventQuery.genre.length === 0
 							||
 							event.bands.some(band => {
-								if (eventQuery.genre.some(currentGenre => {
-									if (currentGenre.test(band.genre)) return true;
-									return false;
-								})) return true;
-								return false;
+								return eventQuery.genre.some(currentGenre => {
+									return band.genre.some(genre => {
+										return currentGenre.test(genre);
+									});
+								});
 							})
 						)
 					) {

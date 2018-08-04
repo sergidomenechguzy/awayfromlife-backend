@@ -75,8 +75,14 @@ router.get('/page', token.checkToken(true), (req, res) => {
 					if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
 					return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
 				}
-				if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-				return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				else if (sortBy[0] === 'genre') {
+					if (order === -1) return b.genre.reduce((x,y) => x < y ? x : y).localeCompare(a.genre.reduce((x,y) => x < y ? x : y));
+					return a.genre.reduce((x,y) => x < y ? x : y).localeCompare(b.genre.reduce((x,y) => x < y ? x : y));
+				}
+				else {
+					if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
+					return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				}
 			});
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
@@ -130,8 +136,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 					else if (!filters.startWith.includes('#')) 
 						filters.startWith.push('#');
 				}
-				if (band.genre && !filters.genres.includes(band.genre)) 
-					filters.genres.push(band.genre);
+				band.genre.forEach(genre => {
+					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+				});
 				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) 
 					filters.labels.push(band.recordLabel);
 				if (band.origin.name && !filters.cities.includes(band.origin.name)) 

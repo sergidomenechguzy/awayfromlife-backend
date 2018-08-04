@@ -88,7 +88,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 							const genreRegex = RegExp(req.query.genre, 'i');
 							result.push(
 								responseEvent.bands.some(band => {
-									return genreRegex.test(band.genre);
+									return band.genre.some(genre => {
+										return genreRegex.test(genre);
+									});
 								})
 							);
 						}
@@ -192,7 +194,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 						filters.countries.push(event.location.address.country);
 
 					event.bands.forEach(band => {
-						if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
+						band.genre.forEach(genre => {
+							if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+						});
 					});
 				});
 				filters.startWith.sort((a, b) => {

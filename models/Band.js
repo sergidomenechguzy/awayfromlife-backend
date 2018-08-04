@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// create user schema
+// create band schema
 const BandSchema = new Schema({
 	name: {
 		type: String,
 		required: true
 	},
-	genre: {
-		type: String,
-		required: true
-	},
+	genre: [{
+		type: String
+	}],
 	origin: {
 		name: {
 			type: String,

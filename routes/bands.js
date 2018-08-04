@@ -81,8 +81,14 @@ router.get('/page', token.checkToken(false), (req, res) => {
 					if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
 					return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
 				}
-				if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-				return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				else if (sortBy[0] === 'genre') {
+					if (order === -1) return b.genre.reduce((x,y) => x < y ? x : y).localeCompare(a.genre.reduce((x,y) => x < y ? x : y));
+					return a.genre.reduce((x,y) => x < y ? x : y).localeCompare(b.genre.reduce((x,y) => x < y ? x : y));
+				}
+				else {
+					if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
+					return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				}
 			});
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
@@ -156,11 +162,11 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(false), (req, res) => {
-	let regex = '.*' + req.params.genre + '.*';
-	Band.find({ genre: new RegExp(regex, 'gi') })
+	let regex = new RegExp(req.params.genre, 'gi');
+	Band.find({ genre: regex })
 		.then(bands => {
 			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found with this genre', token: res.locals.token });
+				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 			
 			bands.sort((a, b) => {
 				return a.name.localeCompare(b.name);
@@ -179,7 +185,9 @@ router.get('/genres', token.checkToken(false), (req, res) => {
 	Band.find()
 		.then(bands => {
 			bands.forEach(band => {
-				if (band.genre && !genreList.includes(band.genre)) genreList.push(band.genre);
+				band.genre.forEach(genre => {
+					if (genre && !genreList.includes(genre)) genreList.push(genre);
+				});
 			});
 			genreList.sort((a, b) => {
 				return a.localeCompare(b);
@@ -260,8 +268,9 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 					else if (!filters.startWith.includes('#')) 
 						filters.startWith.push('#');
 				}
-				if (band.genre && !filters.genres.includes(band.genre)) 
-					filters.genres.push(band.genre);
+				band.genre.forEach(genre => {
+					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+				});
 				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) 
 					filters.labels.push(band.recordLabel);
 				if (band.origin.name && !filters.cities.includes(band.origin.name)) 
@@ -327,7 +336,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre']), (req, res) => {
+router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'genre']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 
