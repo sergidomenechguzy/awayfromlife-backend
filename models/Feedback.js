@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// create event schema
+// create feedback schema
 const FeedbackSchema = new Schema({
 	text: {
 		type: String,

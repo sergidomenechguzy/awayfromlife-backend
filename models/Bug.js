@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// create event schema
+// create bug schema
 const BugSchema = new Schema({
 	error: {
 		type: String,
