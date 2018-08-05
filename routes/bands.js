@@ -16,6 +16,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 // bands routes
 // get all bands
@@ -103,6 +105,21 @@ router.get('/page', token.checkToken(false), (req, res) => {
 // get band by id
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Band.findOne({ _id: req.params._id })
+		.then(band => {
+			if (!band) 
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+			
+			return res.status(200).json({ data: band, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get band by name-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Band.findOne({ url: req.params.url })
 		.then(band => {
 			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
@@ -302,9 +319,10 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
+		url: req.body.name.split(' ').join('-'),
 		genre: req.body.genre,
 		origin: {
 			name: req.body.origin.name,
@@ -324,15 +342,22 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 		soundcloudUrl: req.body.soundcloudUrl,
 		facebookUrl: req.body.facebookUrl
 	};
-	new Band(newBand)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
-		})
-		.catch(err => {
+
+	url.generateUrl(newBand, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Band(responseBand)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Band saved', token: res.locals.token })
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update band by id
@@ -343,7 +368,9 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'ge
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			
 			const update = {
+				_id: req.params._id,
 				name: req.body.name,
+				url: req.body.name.split(' ').join('-'),
 				genre: req.body.genre,
 				origin: {
 					name: req.body.origin.name,
@@ -363,12 +390,19 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'ge
 				soundcloudUrl: req.body.soundcloudUrl,
 				facebookUrl: req.body.facebookUrl
 			};
-			Band.findOneAndUpdate({ _id: req.params._id }, update, (err, band) => {
+
+			url.generateUrl(update, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+				Band.findOneAndUpdate({ _id: req.params._id }, responseBand, (err, band) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {
@@ -378,7 +412,7 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'ge
 });
 
 // delete band by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
+router.delete('/:_id', token.checkToken(false), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 

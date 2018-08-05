@@ -16,6 +16,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 // locations routes
 // get all locations
@@ -100,6 +102,21 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		.then(location => {
 			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
+			
+			return res.status(200).json({ data: location, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get location by name-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Location.findOne({ url: req.params.url })
+		.then(location => {
+			if (!location) 
+				return res.status(400).json({ message: 'No location found with this URL', token: res.locals.token });
 			
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
@@ -284,6 +301,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
+		url: req.body.name.split(' ').join('-'),
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
@@ -300,15 +318,22 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 		website: req.body.website,
 		facebookUrl: req.body.facebookUrl
 	};
-	new Location(newLocation)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
-		})
-		.catch(err => {
+
+	url.generateUrl(newLocation, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Location(responseLocation)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Location saved', token: res.locals.token })
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update location by id
@@ -319,7 +344,9 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 			
 			const update = {
+				_id: req.params._id,
 				name: req.body.name,
+				url: req.body.name.split(' ').join('-'),
 				address: {
 					street: req.body.address.street,
 					administrative: req.body.address.administrative,
@@ -336,12 +363,19 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 				website: req.body.website,
 				facebookUrl: req.body.facebookUrl
 			};
-			Location.findOneAndUpdate({ _id: req.params._id }, update, (err, location) => {
+
+			url.generateUrl(update, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location updated', token: res.locals.token });
+				Location.findOneAndUpdate({ _id: req.params._id }, responseLocation, (err, location) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Location updated', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {

@@ -17,6 +17,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 				const responseEvent = {
 					_id: event._id,
 					title: event.title,
+					url: event.url,
 					description: event.description,
 					location: location,
 					startDate: event.startDate,
@@ -44,6 +45,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 							const responseEvent = {
 								_id: event._id,
 								title: event.title,
+								url: event.url,
 								description: event.description,
 								location: location,
 								startDate: event.startDate,

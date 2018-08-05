@@ -10,6 +10,8 @@ const Location = mongoose.model('unvalidated_locations');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load url.js
+const url = require('../config/url');
 
 // unvalidated_locations routes
 // get all locations
@@ -103,6 +105,21 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 		});
 });
 
+// get location by name-url
+router.get('/byurl/:url', token.checkToken(true), (req, res) => {
+	Location.findOne({ url: req.params.url })
+		.then(location => {
+			if (!location) 
+				return res.status(400).json({ message: 'No location found with this URL', token: res.locals.token });
+			
+			return res.status(200).json({ data: location, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get all filter data
 router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
@@ -154,6 +171,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
+		url: req.body.name.split(' ').join('-'),
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
@@ -170,15 +188,22 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 		website: req.body.website,
 		facebookUrl: req.body.facebookUrl
 	};
-	new Location(newLocation)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
-		})
-		.catch(err => {
+	
+	url.generateUrl(newLocation, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Location(responseLocation)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Location saved', token: res.locals.token })
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // delete location by id

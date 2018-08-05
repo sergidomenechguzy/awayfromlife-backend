@@ -17,6 +17,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 moment.locale('de');
 
@@ -145,6 +147,27 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		.then(event => {
 			if (!event) 
 				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
+			
+			dereference.eventObject(event, (err, responseEvent) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseEvent, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get event by title-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Event.findOne({ url: req.params.url })
+		.then(event => {
+			if (!event) 
+				return res.status(200).json({ message: 'No event found with this URL', token: res.locals.token });
 			
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
@@ -368,6 +391,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
+		url: req.body.title.split(' ').join('-'),
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
@@ -375,15 +399,22 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 		canceled: req.body.canceled,
 		ticketLink: req.body.ticketLink
 	};
-	new Event(newEvent)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
-		})
-		.catch(err => {
+
+	url.generateEventUrl(newEvent, 'event', req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Event(responseEvent)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update event by id
@@ -394,7 +425,9 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			
 			const update = {
+				_id: req.params._id,
 				title: req.body.title,
+				url: req.body.title.split(' ').join('-'),
 				description: req.body.description,
 				location: req.body.location,
 				startDate: req.body.startDate,
@@ -403,12 +436,19 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 				ticketLink: req.body.ticketLink,
 				lastModified: Date.now()
 			};
-			Event.findOneAndUpdate({ _id: req.params._id }, update, (err, event) => {
+
+			url.generateEventUrl(update, 'event', req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event updated', token: res.locals.token });
+				Event.findOneAndUpdate({ _id: req.params._id }, responseEvent, (err, event) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Event updated', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {
@@ -417,7 +457,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 		});
 });
 
-// update event by id
+// cancel event by id
 router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
@@ -426,6 +466,7 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 			
 			const update = {
 				title: event.title,
+				url: event.url,
 				description: event.description,
 				location:event.location,
 				startDate: event.startDate,

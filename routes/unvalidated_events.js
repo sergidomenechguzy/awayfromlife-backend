@@ -12,6 +12,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 // unvalidated_events routes
 // get all events
@@ -151,6 +153,27 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 		});
 });
 
+// get event by title-url
+router.get('/byurl/:url', token.checkToken(true), (req, res) => {
+	Event.findOne({ url: req.params.url })
+		.then(event => {
+			if (!event) 
+				return res.status(200).json({ message: 'No event found with this URL', token: res.locals.token });
+			
+			dereference.eventObject(event, (err, responseEvent) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseEvent, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // get all filter data
 router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
@@ -224,6 +247,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
+		url: req.body.title.split(' ').join('-'),
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
@@ -231,15 +255,22 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		canceled: req.body.canceled,
 		ticketLink: req.body.ticketLink
 	};
-	new Event(newEvent)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
-		})
-		.catch(err => {
+
+	url.generateUrl(newEvent, Event, req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Event(responseEvent)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // delete location by id
