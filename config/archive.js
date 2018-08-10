@@ -23,6 +23,7 @@ module.exports.events = (next) => {
 
 					const newEvent = {
 						title: archiveEvent.title,
+						url: archiveEvent.url,
 						description: archiveEvent.description,
 						location: archiveEvent.location,
 						startDate: archiveEvent.startDate,
