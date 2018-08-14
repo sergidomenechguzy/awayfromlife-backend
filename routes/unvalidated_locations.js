@@ -16,9 +16,9 @@ const token = require('../config/token');
 router.get('/', token.checkToken(true), (req, res) => {
 	Location.find()
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			}
+			
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -51,9 +51,12 @@ router.get('/page', token.checkToken(true), (req, res) => {
 		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
 		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
-	if (req.query.city) {
-		query.$or = [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }];
-	}
+	if (req.query.city) 
+		query.$or = [
+			{ 'address.city': new RegExp(req.query.city, 'i') }, 
+			{ 'address.county': new RegExp(req.query.city, 'i') }
+		];
+	
 	else if (req.query.country) {
 		const countryString = 'address.country';
 		query[countryString] = RegExp(req.query.country, 'i');
@@ -61,9 +64,8 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 	Location.find(query)
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			}
 
 			const count = locations.length;
 			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
@@ -90,9 +92,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) {
+			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			}
+			
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
@@ -121,11 +123,15 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
 						if (!filters.startWith.includes('U')) filters.startWith.push('U');
 					}
-					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
-					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) 
+						filters.startWith.push(location.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) 
+						filters.startWith.push('#');
 				}
-				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);
-				if (location.address.country && !filters.countries.includes(location.address.country)) filters.countries.push(location.address.country);
+				if (location.address.city && !filters.cities.includes(location.address.city)) 
+					filters.cities.push(location.address.city);
+				if (location.address.country && !filters.countries.includes(location.address.country)) 
+					filters.countries.push(location.address.country);
 			});
 			filters.startWith.sort((a, b) => {
 				return a.localeCompare(b);
@@ -148,6 +154,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
+		url: '',
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
@@ -164,6 +171,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 		website: req.body.website,
 		facebookUrl: req.body.facebookUrl
 	};
+	
 	new Location(newLocation)
 		.save()
 		.then(() => {
@@ -179,9 +187,9 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) {
+			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			}
+			
 			Location.remove({ _id: req.params._id }, (err, location) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

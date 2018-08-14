@@ -18,9 +18,8 @@ const dereference = require('../config/dereference');
 router.get('/', token.checkToken(true), (req, res) => {
 	Event.find()
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			}
 
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -60,9 +59,8 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 	Event.find(query)
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			}
 
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
@@ -90,7 +88,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 							const genreRegex = RegExp(req.query.genre, 'i');
 							result.push(
 								responseEvent.bands.some(band => {
-									return genreRegex.test(band.genre);
+									return band.genre.some(genre => {
+										return genreRegex.test(genre);
+									});
 								})
 							);
 						}
@@ -134,9 +134,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
-			if (!event) {
+			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			}
+			
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -183,13 +183,20 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 						else if (event.title.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) filters.startWith.push(event.title.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) 
+							filters.startWith.push(event.title.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#')) 
+							filters.startWith.push('#');
 					}
-					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) filters.cities.push(event.location.address.city);
-					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) filters.countries.push(event.location.address.country);
+					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) 
+						filters.cities.push(event.location.address.city);
+					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) 
+						filters.countries.push(event.location.address.country);
+
 					event.bands.forEach(band => {
-						if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
+						band.genre.forEach(genre => {
+							if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+						});
 					});
 				});
 				filters.startWith.sort((a, b) => {
@@ -217,15 +224,15 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
+		url: '',
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
-		endDate: req.body.endDate,
-		time: req.body.time,
 		bands: req.body.bands,
 		canceled: req.body.canceled,
 		ticketLink: req.body.ticketLink
 	};
+
 	new Event(newEvent)
 		.save()
 		.then(() => {
@@ -237,13 +244,13 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		});
 });
 
-// delete location by id
+// delete event by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
-			if (!event) {
+			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			}
+			
 			Event.remove({ _id: req.params._id }, (err, event) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

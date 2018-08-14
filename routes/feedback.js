@@ -2,24 +2,24 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 
-// load bug model
-require('../models/Bug');
-const Bug = mongoose.model('bugs');
+// load feedback model
+require('../models/Feedback');
+const Feedback = mongoose.model('feedback');
 
 // load params.js
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
 
-// bugs routes
-// get all bugs
+// feedback routes
+// get all feedback
 router.get('/', token.checkToken(true), (req, res) => {
-	Bug.find()
-		.then(bugs => {
-			if (bugs.length === 0) 
-				return res.status(200).json({ message: 'No bugs found' });
+	Feedback.find()
+		.then(feedbacks => {
+			if (feedbacks.length === 0) 
+				return res.status(200).json({ message: 'No feedback found' });
 			
-			return res.status(200).json({ data: bugs, token: res.locals.token });
+			return res.status(200).json({ data: feedbacks, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -27,19 +27,16 @@ router.get('/', token.checkToken(true), (req, res) => {
 		});
 });
 
-// post bug to database
-router.post('/', token.checkToken(false), params.checkParameters(['error']), (req, res) => {
-	const newBug = {
-		error: req.body.error,
-		description: req.body.description,
-		loggedIn: req.body.loggedIn,
-		component: req.body.component,
+// post feedback to database
+router.post('/', token.checkToken(false), params.checkParameters(['text']), (req, res) => {
+	const newFeedback = {
+		text: req.body.text,
 		email: req.body.email
 	};
-	new Bug(newBug)
+	new Feedback(newFeedback)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Bug saved' })
+			return res.status(200).json({ message: 'Feedback saved' })
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -47,14 +44,14 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), (re
 		});
 });
 
-// delete bug by id
+// delete feedback by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Bug.remove({ _id: req.params._id }, (err, bug) => {
+	Feedback.remove({ _id: req.params._id }, (err, feedback) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		}
-		return res.status(200).json({ message: 'Bug deleted' });
+		return res.status(200).json({ message: 'Feedback deleted' });
 	});
 });
 

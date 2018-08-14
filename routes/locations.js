@@ -16,15 +16,17 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 // locations routes
 // get all locations
 router.get('/', token.checkToken(false), (req, res) => {
 	Location.find()
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			}
+			
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -58,7 +60,10 @@ router.get('/page', token.checkToken(false), (req, res) => {
 		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
 	if (req.query.city) {
-		query.$or = [{ 'address.city': new RegExp(req.query.city, 'i') }, { 'address.county': new RegExp(req.query.city, 'i') }];
+		query.$or = [
+			{ 'address.city': new RegExp(req.query.city, 'i') }, 
+			{ 'address.county': new RegExp(req.query.city, 'i') }
+		];
 	}
 	else if (req.query.country) {
 		const countryString = 'address.country';
@@ -67,9 +72,8 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	Location.find(query)
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			}
 
 			const count = locations.length;
 			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
@@ -96,9 +100,24 @@ router.get('/page', token.checkToken(false), (req, res) => {
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) {
+			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			}
+			
+			return res.status(200).json({ data: location, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get location by name-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Location.findOne({ url: req.params.url })
+		.then(location => {
+			if (!location) 
+				return res.status(400).json({ message: 'No location found with this URL', token: res.locals.token });
+			
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
@@ -111,9 +130,9 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 router.get('/events/:_id', token.checkToken(false), (req, res) => {
 	Event.find({ location: req.params._id })
 		.then(events => {
-			if (events.length === 0) {
+			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
-			}
+			
 			dereference.eventObjectArray(events, 'startDate', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -133,9 +152,9 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Location.find({ name: new RegExp(regex, 'gi') })
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No location found with this name', token: res.locals.token });
-			}
+			
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -152,9 +171,9 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.city + '.*';
 	Location.find({ $or: [{ 'address.city': new RegExp(regex, 'gi') }, { 'address.county': new RegExp(regex, 'gi') }] })
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
-			}
+			
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -171,13 +190,12 @@ router.get('/cities', token.checkToken(false), (req, res) => {
 	let cities = [];
 	Location.find()
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			}
+			
 			locations.forEach(location => {
-				if (cities.indexOf(location.address.city) === -1) {
+				if (cities.indexOf(location.address.city) === -1) 
 					cities.push(location.address.city);
-				}
 			});
 			cities.sort((a, b) => {
 				return a.localeCompare(b);
@@ -221,9 +239,9 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 
 	Location.find(query)
 		.then(locations => {
-			if (locations.length === 0) {
+			if (locations.length === 0) 
 				return res.status(200).json({ message: 'No locations found with this name from this country.', token: res.locals.token });
-			}
+			
 			return res.status(200).json({ data: locations, token: res.locals.token });
 		})
 		.catch(err => {
@@ -252,11 +270,15 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
 						if (!filters.startWith.includes('U')) filters.startWith.push('U');
 					}
-					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) filters.startWith.push(location.name.charAt(0).toUpperCase());
-					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) 
+						filters.startWith.push(location.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) 
+						filters.startWith.push('#');
 				}
-				if (location.address.city && !filters.cities.includes(location.address.city)) filters.cities.push(location.address.city);
-				if (location.address.country && !filters.countries.includes(location.address.country)) filters.countries.push(location.address.country);
+				if (location.address.city && !filters.cities.includes(location.address.city)) 
+					filters.cities.push(location.address.city);
+				if (location.address.country && !filters.countries.includes(location.address.country)) 
+					filters.countries.push(location.address.country);
 			});
 			filters.startWith.sort((a, b) => {
 				return a.localeCompare(b);
@@ -279,6 +301,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
+		url: req.body.name.split(' ').join('-'),
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
@@ -295,26 +318,35 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 		website: req.body.website,
 		facebookUrl: req.body.facebookUrl
 	};
-	new Location(newLocation)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
-		})
-		.catch(err => {
+
+	url.generateUrl(newLocation, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Location(responseLocation)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Location saved', token: res.locals.token })
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update location by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) {
+			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			}
+			
 			const update = {
+				_id: req.params._id,
 				name: req.body.name,
+				url: req.body.name.split(' ').join('-'),
 				address: {
 					street: req.body.address.street,
 					administrative: req.body.address.administrative,
@@ -331,12 +363,19 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 				website: req.body.website,
 				facebookUrl: req.body.facebookUrl
 			};
-			Location.findOneAndUpdate({ _id: req.params._id }, update, (err, location) => {
+
+			url.generateUrl(update, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Location updated', token: res.locals.token });
+				Location.findOneAndUpdate({ _id: req.params._id }, responseLocation, (err, location) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Location updated', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {
@@ -349,9 +388,9 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) {
+			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			}
+			
 			Location.remove({ _id: req.params._id }, (err, location) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

@@ -7,6 +7,10 @@ const EventSchema = new Schema({
 		type: String,
 		required: true
 	},
+	url: {
+		type: String,
+		required: true
+	},
 	description: {
 		type: String
 	},
@@ -18,18 +22,12 @@ const EventSchema = new Schema({
 		type: String,
 		required: true
 	},
-	endDate: {
-		type: String
-	},
-	time: {
-		type: String
-	},
 	bands: {
 		type: [String]
 	},
 	canceled: {
-		type: Boolean,
-		default: false
+		type: Number,
+		default: 0
 	},
 	ticketLink: {
 		type: String

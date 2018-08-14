@@ -16,15 +16,17 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load url.js
+const url = require('../config/url');
 
 // bands routes
 // get all bands
 router.get('/', token.checkToken(false), (req, res) => {
 	Band.find()
 		.then(bands => {
-			if (bands.length === 0) {
+			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
-			}
+			
 			bands.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -70,9 +72,8 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	Band.find(query)
 		.then(bands => {
-			if (bands.length === 0) {
+			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
-			}
 
 			const count = bands.length;
 			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
@@ -82,8 +83,14 @@ router.get('/page', token.checkToken(false), (req, res) => {
 					if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
 					return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
 				}
-				if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-				return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				else if (sortBy[0] === 'genre') {
+					if (order === -1) return b.genre.reduce((x,y) => x < y ? x : y).localeCompare(a.genre.reduce((x,y) => x < y ? x : y));
+					return a.genre.reduce((x,y) => x < y ? x : y).localeCompare(b.genre.reduce((x,y) => x < y ? x : y));
+				}
+				else {
+					if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
+					return a[sortBy[0]].localeCompare(b[sortBy[0]]);
+				}
 			});
 			bands = bands.slice((perPage * page) - perPage, (perPage * page));
 
@@ -99,9 +106,24 @@ router.get('/page', token.checkToken(false), (req, res) => {
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
-			if (!band) {
+			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			}
+			
+			return res.status(200).json({ data: band, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get band by name-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Band.findOne({ url: req.params.url })
+		.then(band => {
+			if (!band) 
+				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+			
 			return res.status(200).json({ data: band, token: res.locals.token });
 		})
 		.catch(err => {
@@ -141,9 +163,9 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 	let regex = '.*' + req.params.name + '.*';
 	Band.find({ name: new RegExp(regex, 'gi') })
 		.then(bands => {
-			if (bands.length === 0) {
+			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No band found with this name', token: res.locals.token });
-			}
+			
 			bands.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -157,12 +179,12 @@ router.get('/name/:name', token.checkToken(false), (req, res) => {
 
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(false), (req, res) => {
-	let regex = '.*' + req.params.genre + '.*';
-	Band.find({ genre: new RegExp(regex, 'gi') })
+	let regex = new RegExp(req.params.genre, 'gi');
+	Band.find({ genre: regex })
 		.then(bands => {
-			if (bands.length === 0) {
-				return res.status(200).json({ message: 'No bands found with this genre', token: res.locals.token });
-			}
+			if (bands.length === 0) 
+				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+			
 			bands.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -180,7 +202,9 @@ router.get('/genres', token.checkToken(false), (req, res) => {
 	Band.find()
 		.then(bands => {
 			bands.forEach(band => {
-				if (band.genre && !genreList.includes(band.genre)) genreList.push(band.genre);
+				band.genre.forEach(genre => {
+					if (genre && !genreList.includes(genre)) genreList.push(genre);
+				});
 			});
 			genreList.sort((a, b) => {
 				return a.localeCompare(b);
@@ -223,9 +247,9 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 
 	Band.find(query)
 		.then(bands => {
-			if (bands.length === 0) {
+			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found with this name from this country.', token: res.locals.token });
-			}
+			
 			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
@@ -256,13 +280,20 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 					else if (band.name.charAt(0).toUpperCase() === 'Ü') {
 						if (!filters.startWith.includes('U')) filters.startWith.push('U');
 					}
-					else if (/[A-Z]/.test(band.name.charAt(0).toUpperCase())) filters.startWith.push(band.name.charAt(0).toUpperCase());
-					else if (!filters.startWith.includes('#')) filters.startWith.push('#');
+					else if (/[A-Z]/.test(band.name.charAt(0).toUpperCase())) 
+						filters.startWith.push(band.name.charAt(0).toUpperCase());
+					else if (!filters.startWith.includes('#')) 
+						filters.startWith.push('#');
 				}
-				if (band.genre && !filters.genres.includes(band.genre)) filters.genres.push(band.genre);
-				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) filters.labels.push(band.recordLabel);
-				if (band.origin.name && !filters.cities.includes(band.origin.name)) filters.cities.push(band.origin.name);
-				if (band.origin.country && !filters.countries.includes(band.origin.country)) filters.countries.push(band.origin.country);
+				band.genre.forEach(genre => {
+					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+				});
+				if (band.recordLabel && !filters.labels.includes(band.recordLabel)) 
+					filters.labels.push(band.recordLabel);
+				if (band.origin.name && !filters.cities.includes(band.origin.name)) 
+					filters.cities.push(band.origin.name);
+				if (band.origin.country && !filters.countries.includes(band.origin.country)) 
+					filters.countries.push(band.origin.country);
 			});
 			filters.startWith.sort((a, b) => {
 				return a.localeCompare(b);
@@ -291,6 +322,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
+		url: req.body.name.split(' ').join('-'),
 		genre: req.body.genre,
 		origin: {
 			name: req.body.origin.name,
@@ -310,26 +342,35 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 		soundcloudUrl: req.body.soundcloudUrl,
 		facebookUrl: req.body.facebookUrl
 	};
-	new Band(newBand)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
-		})
-		.catch(err => {
+
+	url.generateUrl(newBand, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		new Band(responseBand)
+			.save()
+			.then(() => {
+				return res.status(200).json({ message: 'Band saved', token: res.locals.token })
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update band by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
-			if (!band) {
+			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			}
+			
 			const update = {
+				_id: req.params._id,
 				name: req.body.name,
+				url: req.body.name.split(' ').join('-'),
 				genre: req.body.genre,
 				origin: {
 					name: req.body.origin.name,
@@ -349,12 +390,19 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 				soundcloudUrl: req.body.soundcloudUrl,
 				facebookUrl: req.body.facebookUrl
 			};
-			Band.findOneAndUpdate({ _id: req.params._id }, update, (err, band) => {
+
+			url.generateUrl(update, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+				Band.findOneAndUpdate({ _id: req.params._id }, responseBand, (err, band) => {
+					if (err) {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					}
+					return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+				});
 			});
 		})
 		.catch(err => {
@@ -367,9 +415,9 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
-			if (!band) {
+			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			}
+			
 			Band.remove({ _id: req.params._id }, (err, band) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
