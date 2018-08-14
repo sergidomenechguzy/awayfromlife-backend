@@ -274,7 +274,7 @@ router.get('/canceled', token.checkToken(true), (req, res) => {
 	Event.find({ canceled: 1 })
 		.then(events => {
 			if (events.length === 0) 
-				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
+				return res.status(200).json({ message: 'No canceled events found.', token: res.locals.token });
 			
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -489,7 +489,7 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
-// delete location by id
+// delete event by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {

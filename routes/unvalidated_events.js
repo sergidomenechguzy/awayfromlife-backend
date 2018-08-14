@@ -273,7 +273,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 	});
 });
 
-// delete location by id
+// delete event by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {

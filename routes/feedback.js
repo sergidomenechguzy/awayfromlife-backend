@@ -19,7 +19,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 			if (feedbacks.length === 0) 
 				return res.status(200).json({ message: 'No feedback found' });
 			
-			return res.status(200).json(feedbacks);
+			return res.status(200).json({ data: feedbacks, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
