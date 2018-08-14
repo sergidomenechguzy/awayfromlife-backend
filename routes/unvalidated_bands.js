@@ -10,8 +10,6 @@ const Band = mongoose.model('unvalidated_bands');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
-// load url.js
-const url = require('../config/url');
 
 // unvalidated_bands routes
 // get all bands
@@ -111,21 +109,6 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 		});
 });
 
-// get band by name-url
-router.get('/byurl/:url', token.checkToken(true), (req, res) => {
-	Band.findOne({ url: req.params.url })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			return res.status(200).json({ data: band, token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
-});
-
 // get all filter data
 router.get('/filters', token.checkToken(true), (req, res) => {
 	let filters = {
@@ -190,7 +173,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
-		url: req.body.name.split(' ').join('-'),
+		url: '',
 		genre: req.body.genre,
 		origin: {
 			name: req.body.origin.name,
@@ -211,21 +194,15 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 		facebookUrl: req.body.facebookUrl
 	};
 	
-	url.generateUrl(newBand, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
-		if (err) {
+	new Band(newBand)
+		.save()
+		.then(() => {
+			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
+		})
+		.catch(err => {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
-		new Band(responseBand)
-			.save()
-			.then(() => {
-				return res.status(200).json({ message: 'Band saved', token: res.locals.token })
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+		});
 });
 
 // delete band by id
