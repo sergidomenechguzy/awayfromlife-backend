@@ -319,7 +319,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
 		url: req.body.name.split(' ').join('-'),
@@ -361,7 +361,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'genre']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 
@@ -412,7 +412,7 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'ge
 });
 
 // delete band by id
-router.delete('/:_id', token.checkToken(false), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 
