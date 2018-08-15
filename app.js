@@ -82,3 +82,9 @@ if (process.env.NODE_ENV === 'production') {
 		if (err) console.log(err.name + ': ' + err.message);
 	}), 86400000);
 }
+
+const update = require('./config/update');
+update.updateLocations();
+update.updateBands();
+update.updateEvents();
+update.updateArchivedEvents();
