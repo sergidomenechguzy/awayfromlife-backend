@@ -361,35 +361,44 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			const update = {
-				_id: req.params._id,
-				name: req.body.name,
-				url: req.body.name.split(' ').join('-'),
-				genre: req.body.genre,
-				origin: {
-					name: req.body.origin.name,
-					administrative: req.body.origin.administrative,
-					country: req.body.origin.country,
-					postcode: req.body.origin.postcode,
-					lat: req.body.origin.lat,
-					lng: req.body.origin.lng,
-					value: req.body.origin.value
-				},
-				history: req.body.history,
-				recordLabel: req.body.recordLabel,
-				releases: req.body.releases,
-				foundingDate: req.body.foundingDate,
-				websiteUrl: req.body.websiteUrl,
-				bandcampUrl: req.body.bandcampUrl,
-				soundcloudUrl: req.body.soundcloudUrl,
-				facebookUrl: req.body.facebookUrl
-			};
+
+			let update = {};
+			update._id = req.params._id,
+			update.name = req.body.name;
+			update.url = req.body.name.split(' ').join('-');
+			update.genre = req.body.genre ? req.body.genre : band.genre;
+			update.origin = {};
+			update.origin.name = req.body.origin.name;
+			if (req.body.origin.administrative) update.origin.administrative = req.body.origin.administrative;
+			else if (band.origin.administrative) update.origin.administrative = band.origin.administrative;
+			update.origin.country = req.body.origin.country;
+			if (req.body.origin.postcode) update.origin.postcode = req.body.origin.postcode;
+			else if (band.origin.postcode) update.origin.postcode = band.origin.postcode;
+			update.origin.lat = req.body.origin.lat;
+			update.origin.lng = req.body.origin.lng;
+			if (req.body.origin.value) update.origin.value = req.body.origin.value;
+			else if (band.origin.value) update.origin.value = band.origin.value;
+			if (req.body.history) update.history = req.body.history;
+			else if (band.history) update.history = band.history;
+			if (req.body.recordLabel) update.recordLabel = req.body.recordLabel;
+			else if (band.recordLabel) update.recordLabel = band.recordLabel;
+			if (req.body.releases) update.releases = req.body.releases;
+			else if (band.releases) update.releases = band.releases;
+			if (req.body.foundingDate) update.foundingDate = req.body.foundingDate;
+			else if (band.foundingDate) update.foundingDate = band.foundingDate;
+			if (req.body.websiteUrl) update.websiteUrl = req.body.websiteUrl;
+			else if (band.websiteUrl) update.websiteUrl = band.websiteUrl;
+			if (req.body.bandcampUrl) update.bandcampUrl = req.body.bandcampUrl;
+			else if (band.bandcampUrl) update.bandcampUrl = band.bandcampUrl;
+			if (req.body.soundcloudUrl) update.soundcloudUrl = req.body.soundcloudUrl;
+			else if (band.soundcloudUrl) update.soundcloudUrl = band.soundcloudUrl;
+			if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
+			else if (band.facebookUrl) update.facebookUrl = band.facebookUrl;
 
 			url.generateUrl(update, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
 				if (err) {

@@ -342,27 +342,34 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 		.then(location => {
 			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			
-			const update = {
-				_id: req.params._id,
-				name: req.body.name,
-				url: req.body.name.split(' ').join('-'),
-				address: {
-					street: req.body.address.street,
-					administrative: req.body.address.administrative,
-					city: req.body.address.city,
-					county: req.body.address.county,
-					country: req.body.address.country,
-					postcode: req.body.address.postcode,
-					lat: req.body.address.lat,
-					lng: req.body.address.lng,
-					value: req.body.address.value,
-				},
-				status: req.body.status,
-				information: req.body.information,
-				website: req.body.website,
-				facebookUrl: req.body.facebookUrl
-			};
+
+			let update = {};
+			update._id = req.params._id,
+			update.name = req.body.name;
+			update.url = req.body.name.split(' ').join('-');
+			update.address = {};
+			update.address.street = req.body.address.street;
+			if (req.body.address.administrative) update.address.administrative = req.body.address.administrative;
+			else if (location.address.administrative) update.address.administrative = location.address.administrative;
+			update.address.city = req.body.address.city;
+			if (req.body.address.county) update.address.county = req.body.address.county;
+			else if (location.address.county) update.address.county = location.address.county;
+			update.address.country = req.body.address.country;
+			if (req.body.address.postcode) update.address.postcode = req.body.address.postcode;
+			else if (location.address.postcode) update.address.postcode = location.address.postcode;
+			update.address.lat = req.body.address.lat;
+			update.address.lng = req.body.address.lng;
+			if (req.body.address.value) update.address.value = req.body.address.value;
+			else if (location.address.value) update.address.value = location.address.value;
+			if (req.body.status) update.status = req.body.status;
+			else if (location.status) update.status = location.status;
+			else update.status = 'opened';
+			if (req.body.information) update.information = req.body.information;
+			else if (location.information) update.information = location.information;
+			if (req.body.website) update.website = req.body.website;
+			else if (location.website) update.website = location.website;
+			if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
+			else if (location.facebookUrl) update.facebookUrl = location.facebookUrl;
 
 			url.generateUrl(update, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
 				if (err) {

@@ -37,46 +37,46 @@ const generateEventUrl = module.exports.generateEventUrl = (object, model, url, 
 
 	Event.findOne({ url: url })
 		.then(savedObject1 => {
-			ArchivedEvent.findOne({ url: url })
-				.then(savedObject2 => {
-					if (!savedObject1 && !savedObject2) {
-						object.url = url;
-						return next(null, object);
-					}
-					let savedObject;
-					if (!savedObject1) {
-						savedObject = { obj: savedObject2, model: 'archive' };
-					}
-					else {
-						savedObject = { obj: savedObject1, model: 'event' };
-					}
-					
-					if (model == savedObject.model) {
-						if (object._id == savedObject.obj._id) {
+			if (!!savedObject1) {
+				if (model == 'event' && object._id == savedObject1._id) {
+					object.url = url;
+					return next(null, object);
+				}
+				else {
+					url = object.url + '-' + counter;
+					counter++;
+					generateEventUrl(object, model, url, counter, (err, responseObject) => {
+						if (err) return next(err, null);
+						return next(null, responseObject);
+					});
+				}
+			}
+			else {
+				ArchivedEvent.findOne({ url: url })
+					.then(savedObject2 => {
+						if (!!savedObject2) {
+							if (model == 'archive' && object._id == savedObject2._id) {
+								object.url = url;
+								return next(null, object);
+							}
+							else {
+								url = object.url + '-' + counter;
+								counter++;
+								generateEventUrl(object, model, url, counter, (err, responseObject) => {
+									if (err) return next(err, null);
+									return next(null, responseObject);
+								});
+							}
+						}
+						else {
 							object.url = url;
 							return next(null, object);
 						}
-						else {
-							url = object.url + '-' + counter;
-							counter++;
-							generateEventUrl(object, model, url, counter, (err, responseObject) => {
-								if (err) return next(err, null);
-								return next(null, responseObject);
-							});
-						}
-					}
-					else {
-						url = object.url + '-' + counter;
-						counter++;
-						generateEventUrl(object, model, url, counter, (err, responseObject) => {
-							if (err) return next(err, null);
-							return next(null, responseObject);
-						});
-					}
-				})
-				.catch(err => {
-					return next(err, null);
-				});
+					})
+					.catch(err => {
+						return next(err, null);
+					});
+			}
 		})
 		.catch(err => {
 			return next(err, null);

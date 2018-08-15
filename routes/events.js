@@ -424,18 +424,19 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 			if (!event) 
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 			
-			const update = {
-				_id: req.params._id,
-				title: req.body.title,
-				url: req.body.title.split(' ').join('-'),
-				description: req.body.description,
-				location: req.body.location,
-				startDate: req.body.startDate,
-				bands: req.body.bands,
-				canceled: req.body.canceled,
-				ticketLink: req.body.ticketLink,
-				lastModified: Date.now()
-			};
+			let update = {};
+			update._id = req.params._id;
+			update.title = req.body.title;
+			update.url = req.body.title.split(' ').join('-');
+			if (req.body.description) update.description = req.body.description;
+			else if (event.description) update.description = event.description;
+			update.location = req.body.location;
+			update.startDate = req.body.startDate;
+			update.bands = req.body.bands ? req.body.bands : event.bands;
+			update.canceled = req.body.canceled ? req.body.canceled : event.canceled;
+			if (req.body.ticketLink) update.ticketLink = req.body.ticketLink;
+			else if (event.ticketLink) update.ticketLink = event.ticketLink;
+			update.lastModified = Date.now();
 
 			url.generateEventUrl(update, 'event', req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
 				if (err) {
