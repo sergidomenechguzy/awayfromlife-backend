@@ -22,6 +22,8 @@ const Band = mongoose.model('bands');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
+// load dereference.js
+const dereference = require('../config/dereference');
 
 // reports routes
 // get all reports
@@ -31,7 +33,14 @@ router.get('/', token.checkToken(true), (req, res) => {
 			if (reports.length === 0) 
 				return res.status(200).json({ message: 'No reports found' });
 			
-			return res.status(200).json({ data: reports, token: res.locals.token });
+			dereference.reportObjectArray(reports, 1, (err, responseReports) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseReports, token: res.locals.token });
+			});
+			// return res.status(200).json({ data: reports, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

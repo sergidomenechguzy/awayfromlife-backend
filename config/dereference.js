@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 // load location model
+require('../models/Event');
+const Event = mongoose.model('events');
+
+// load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
 
@@ -85,6 +89,74 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
 				return next(null, responseEvents);
+			}
+		});
+	});
+}
+
+const reportObject = module.exports.reportObject = (report, model, next) => {
+	model.findOne({ _id: report.item })
+		.then(item => {
+			if (!item) item = 'Item not found';
+			if (report.category === 'event') {
+				eventObject(item, (err, responseItem) => {
+					if (err) return next(err, null);
+					responseReport = {
+						category: report.category,
+						item: responseItem,
+						description: report.description
+					}
+					return next(null, responseReport);
+				});
+			}
+			else {
+				responseReport = {
+					category: report.category,
+					item: item,
+					description: report.description
+				}
+				return next(null, responseReport);
+			}
+		})
+		.catch(err => {
+			return next(err, null);
+		});
+}
+
+module.exports.reportObjectArray = (reports, order, next) => {
+	if (reports.length === 0) return next(null, []);
+	let responseReports = [];
+	let reportList = {
+		event: [],
+		location: [],
+		band: []
+	}
+	reports.forEach((report, index, array) => {
+		let model = Event;
+		if(report.category == 'location') model = Location;
+		else if(report.category == 'band') model = Band;
+
+		reportObject(report, model, (err, responseReport) => {
+			if (err) return next(err, null);
+
+			reportList[responseReport.category].push(responseReport);
+
+			if ((reportList.event.length + reportList.location.length + reportList.band.length) == array.length) {
+				reportList.event.sort((a, b) => {
+					if (order === -1) return b.item.title.localeCompare(a.item.title);
+					return a.item.title.localeCompare(b.item.title);
+				});
+				reportList.location.sort((a, b) => {
+					if (order === -1) return b.item.name.localeCompare(a.item.name);
+					return a.item.name.localeCompare(b.item.name);
+				});
+				reportList.band.sort((a, b) => {
+					if (order === -1) return b.item.name.localeCompare(a.item.name);
+					return a.item.name.localeCompare(b.item.name);
+				});
+				responseReports = responseReports.concat(reportList.band).concat(reportList.event).concat(reportList.location);
+
+				return next(null, responseReports);
 			}
 		});
 	});

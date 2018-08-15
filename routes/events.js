@@ -29,7 +29,6 @@ router.get('/', token.checkToken(false), (req, res) => {
 		.then(events => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			
 
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
