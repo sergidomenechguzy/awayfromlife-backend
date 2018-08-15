@@ -14,7 +14,7 @@ const generateUrl = module.exports.generateUrl = (object, model, url, counter, n
 				object.url = url;
 				return next(null, object);
 			}
-			else if (object._id == savedObject._id) {
+			else if (object._id.toString() == savedObject._id.toString()) {
 				object.url = url;
 				return next(null, object);
 			}
@@ -38,7 +38,7 @@ const generateEventUrl = module.exports.generateEventUrl = (object, model, url, 
 	Event.findOne({ url: url })
 		.then(savedObject1 => {
 			if (!!savedObject1) {
-				if (model == 'event' && object._id == savedObject1._id) {
+				if (model == 'event' && object._id.toString() == savedObject1._id.toString()) {
 					object.url = url;
 					return next(null, object);
 				}
@@ -55,7 +55,7 @@ const generateEventUrl = module.exports.generateEventUrl = (object, model, url, 
 				ArchivedEvent.findOne({ url: url })
 					.then(savedObject2 => {
 						if (!!savedObject2) {
-							if (model == 'archive' && object._id == savedObject2._id) {
+							if (model == 'archive' && object._id.toString() == savedObject2._id.toString()) {
 								object.url = url;
 								return next(null, object);
 							}
