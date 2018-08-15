@@ -37,7 +37,7 @@ const itEvents = (events) => {
 		location: event.location,
 		startDate: event.startDate,
 		bands: (event.bands.length > 0) ? event.bands : [],
-		canceled: event.canceled,
+		canceled: event.canceled ? event.canceled : 0,
 		ticketLink: event.ticketLink ? event.ticketLink : '',
 		lastModified: Date.now()
 	};
@@ -80,7 +80,7 @@ const itArchEvents = (events) => {
 		location: event.location,
 		startDate: event.startDate,
 		bands: (event.bands.length > 0) ? event.bands : [],
-		canceled: event.canceled,
+		canceled: event.canceled ? event.canceled : 0,
 		ticketLink: event.ticketLink ? event.ticketLink : '',
 		lastModified: Date.now()
 	};
@@ -130,7 +130,7 @@ const itLocations = (locations) => {
 			lng: location.address.lng,
 			value: location.address.value ? location.address.value : ''
 		},
-		status: location.status,
+		status: location.status ? location.status : 'opened',
 		information: location.information ? location.information : '',
 		website: location.website ? location.website : '',
 		facebookUrl: location.facebookUrl ? location.facebookUrl : ''
