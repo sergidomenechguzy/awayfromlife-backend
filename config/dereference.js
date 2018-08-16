@@ -102,6 +102,7 @@ const reportObject = module.exports.reportObject = (report, model, next) => {
 				eventObject(item, (err, responseItem) => {
 					if (err) return next(err, null);
 					responseReport = {
+						_id: report._id,
 						category: report.category,
 						item: responseItem,
 						description: report.description
@@ -111,6 +112,7 @@ const reportObject = module.exports.reportObject = (report, model, next) => {
 			}
 			else {
 				responseReport = {
+					_id: report._id,
 					category: report.category,
 					item: item,
 					description: report.description
