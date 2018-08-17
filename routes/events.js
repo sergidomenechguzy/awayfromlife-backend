@@ -268,7 +268,7 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 		});
 });
 
-// get events by date
+// get canceled events
 router.get('/canceled', token.checkToken(true), (req, res) => {
 	Event.find({ canceled: 1 })
 		.then(events => {
