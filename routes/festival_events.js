@@ -111,7 +111,7 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 's
 				startDate: req.body.startDate,
 				endDate: req.body.endDate,
 				bands: req.body.bands ? req.body.bands : event.bands,
-				canceled: req.body.canceled ? req.body.canceled : event.canceled
+				canceled: (req.body.canceled || req.body.canceled == 0) ? req.body.canceled : event.canceled
 			};
 
 			Event.findOneAndUpdate({ _id: req.params._id }, update, (err, event) => {

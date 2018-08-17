@@ -423,7 +423,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 			update.location = req.body.location;
 			update.startDate = req.body.startDate;
 			update.bands = req.body.bands ? req.body.bands : event.bands;
-			update.canceled = req.body.canceled ? req.body.canceled : event.canceled;
+			update.canceled = (req.body.canceled || req.body.canceled == 0) ? req.body.canceled : event.canceled;
 			if (req.body.ticketLink) update.ticketLink = req.body.ticketLink;
 			else if (event.ticketLink) update.ticketLink = event.ticketLink;
 			update.lastModified = Date.now();
