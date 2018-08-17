@@ -224,7 +224,6 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
-		url: '',
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
