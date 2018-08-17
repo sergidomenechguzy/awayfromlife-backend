@@ -17,7 +17,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 	Bug.find()
 		.then(bugs => {
 			if (bugs.length === 0) 
-				return res.status(200).json({ message: 'No bugs found' });
+				return res.status(200).json({ message: 'No bugs found', token: res.locals.token });
 			
 			return res.status(200).json({ data: bugs, token: res.locals.token });
 		})
@@ -39,7 +39,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), (re
 	new Bug(newBug)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Bug saved' })
+			return res.status(200).json({ message: 'Bug saved', token: res.locals.token })
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -49,13 +49,22 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), (re
 
 // delete bug by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Bug.remove({ _id: req.params._id }, (err, bug) => {
-		if (err) {
+	Bug.findOne({ _id: req.params._id })
+		.then(bug => {
+			if (!bug) 
+				return res.status(400).json({ message: 'No bug found with this ID', token: res.locals.token });
+			Bug.remove({ _id: req.params._id }, (err, bug) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Bug deleted', token: res.locals.token });
+			});
+		})
+		.catch(err => {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
-		return res.status(200).json({ message: 'Bug deleted' });
-	});
+		});
 });
 
 module.exports = router;
