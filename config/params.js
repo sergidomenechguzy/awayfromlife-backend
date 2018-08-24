@@ -9,3 +9,22 @@ module.exports.checkParameters = params => {
 		return res.status(400).json({ message: 'Parameter(s) missing: ' + missingParams.join(', ') });
 	}
 }
+
+module.exports.checkListParameters = params => {
+	return (req, res, next) => {
+		if (!req.body.list) return res.status(400).json({ message: 'Parameter(s) missing: list' });
+
+		let missingParams = [];
+		if (
+			req.body.list.some(object => {
+				params.forEach((param) => {
+					if (!eval('object.' + param)) missingParams.push(param);
+				});
+				if (missingParams.length > 0) return true;
+				return false;
+			})
+		)
+			return res.status(400).json({ message: 'At least one object has the missing parameter(s): ' + missingParams.join(', ') });
+		return next();
+	}
+}
