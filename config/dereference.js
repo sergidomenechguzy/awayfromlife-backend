@@ -12,9 +12,78 @@ const Location = mongoose.model('locations');
 require('../models/Band');
 const Band = mongoose.model('bands');
 
+// load genre model
+require('../models/Genre');
+const Genre = mongoose.model('genres');
+
 // load festival event model
 require('../models/Festival_Event');
 const FestivalEvents = mongoose.model('festival_events');
+
+const bandObject = module.exports.bandObject = (band, next) => {
+	let genreList = [];
+	band.genre.forEach(genreID => {
+		Genre.findOne({ _id: genreID })
+			.then(genre => {
+				genreList.push(genre.name);
+
+				if (band.genre.length === genreList.length) {
+					genreList.sort((a, b) => {
+						return a.localeCompare(b);
+					});
+					const responseBand = {
+						_id: band._id,
+						name: band.name,
+						url: band.url,
+						genre: genreList,
+						origin: band.origin,
+						history: band.history,
+						recordLabel: band.recordLabel,
+						releases: band.releases,
+						foundingDate: band.foundingDate,
+						websiteUrl: band.websiteUrl,
+						bandcampUrl: band.bandcampUrl,
+						soundcloudUrl: band.soundcloudUrl,
+						facebookUrl: band.facebookUrl
+					};
+					return next(null, responseBand);
+				}
+			})
+			.catch(err => {
+				return next(err, null);
+			});
+	});
+}
+
+module.exports.bandObjectArray = (bands, sortBy, order, next) => {
+	if (bands.length === 0) return next(null, []);
+	const responseBands = [];
+	bands.forEach((band, index, array) => {
+		bandObject(band, (err, responseBand) => {
+			if (err) return next(err, null);
+
+			responseBands.push(responseBand);
+
+			if (responseBands.length === array.length) {
+				responseBands.sort((a, b) => {
+					if (sortBy === 'origin.name') {
+						if (order === -1) return b.origin.name.localeCompare(a.origin.name);
+						return a.origin.name.localeCompare(b.origin.name);
+					}
+					else if (sortBy === 'genre') {
+						if (order === -1) return b.genre.reduce((x,y) => x < y ? x : y).localeCompare(a.genre.reduce((x,y) => x < y ? x : y));
+						return a.genre.reduce((x,y) => x < y ? x : y).localeCompare(b.genre.reduce((x,y) => x < y ? x : y));
+					}
+					else {
+						if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
+						return a[sortBy].localeCompare(b[sortBy]);
+					}
+				});
+				return next(null, responseBands);
+			}
+		});
+	});
+}
 
 const eventObject = module.exports.eventObject = (event, next) => {
 	Location.findOne({ _id: event.location })
@@ -42,27 +111,30 @@ const eventObject = module.exports.eventObject = (event, next) => {
 					.then(band => {
 						if (!band) band = 'Band not found';
 						
-						bandsArray.push({ band: band, index: index });
+						bandObject(band, (err, responseBand) => {
+							if (err) return next(err, null);
+							bandsArray.push({ band: responseBand, index: index });
 
-						if (bandsArray.length === array.length) {
-							let bandsArraySorted = [];
-							bandsArray.forEach(band => {
-								bandsArraySorted[band.index] = band.band;
-							});
+							if (bandsArray.length === array.length) {
+								let bandsArraySorted = [];
+								bandsArray.forEach(bandObject => {
+									bandsArraySorted[bandObject.index] = bandObject.band;
+								});
 
-							const responseEvent = {
-								_id: event._id,
-								title: event.title,
-								url: event.url,
-								description: event.description,
-								location: location,
-								startDate: event.startDate,
-								bands: bandsArraySorted,
-								canceled: event.canceled,
-								ticketLink: event.ticketLink
-							};
-							return next(null, responseEvent);
-						}
+								const responseEvent = {
+									_id: event._id,
+									title: event.title,
+									url: event.url,
+									description: event.description,
+									location: location,
+									startDate: event.startDate,
+									bands: bandsArraySorted,
+									canceled: event.canceled,
+									ticketLink: event.ticketLink
+								};
+								return next(null, responseEvent);
+							}
+						});
 					})
 					.catch(err => {
 						return next(err, null);
