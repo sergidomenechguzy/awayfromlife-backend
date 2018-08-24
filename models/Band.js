@@ -8,8 +8,7 @@ const BandSchema = new Schema({
 		required: true
 	},
 	url: {
-		type: String,
-		required: true
+		type: String
 	},
 	genre: [{
 		type: String

@@ -8,8 +8,7 @@ const LocationSchema = new Schema({
 		required: true
 	},
 	url: {
-		type: String,
-		required: true
+		type: String
 	},
 	address: {
 		street: {
