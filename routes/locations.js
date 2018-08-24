@@ -344,7 +344,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 
 			let update = {};
-			update._id = req.params._id,
+			update._id = req.params._id;
 			update.name = req.body.name;
 			update.url = req.body.name.split(' ').join('-');
 			update.address = {};

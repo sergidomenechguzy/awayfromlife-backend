@@ -36,7 +36,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['text']), (req
 	new Feedback(newFeedback)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Feedback saved', token: res.locals.token })
+			return res.status(200).json({ message: 'Feedback saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

@@ -71,7 +71,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['category', 'i
 			new Report(newReport)
 				.save()
 				.then(() => {
-					return res.status(200).json({ message: 'Report saved', token: res.locals.token })
+					return res.status(200).json({ message: 'Report saved', token: res.locals.token });
 				})
 				.catch(err => {
 					console.log(err.name + ': ' + err.message);
