@@ -22,6 +22,8 @@ const unvalidated_locations = require('./routes/unvalidated_locations');
 const bands = require('./routes/bands');
 const unvalidated_bands = require('./routes/unvalidated_bands');
 
+const genres = require('./routes/genres');
+
 const search = require('./routes/search');
 
 const bugs = require('./routes/bugs');
@@ -80,6 +82,8 @@ app.use('/api/unvalidated-locations', unvalidated_locations);
 
 app.use('/api/bands', bands);
 app.use('/api/unvalidated-bands', unvalidated_bands);
+
+app.use('/api/genres', genres);
 
 app.use('/api/search', search);
 
