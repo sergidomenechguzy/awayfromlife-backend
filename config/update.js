@@ -13,6 +13,10 @@ const Location = mongoose.model('locations');
 require('../models/Band');
 const Band = mongoose.model('bands');
 
+// load genre model
+require('../models/Genre');
+const Genre = mongoose.model('genres');
+
 // load url.js
 const url = require('../config/url');
 
@@ -144,4 +148,49 @@ const itBands = (bands) => {
 			if (itBands(newBands)) return true;
 		});
 	});
+}
+
+module.exports.updateGenres = () => {
+	Band.find()
+		.then(bands => {
+			itBandsForGenreUpdate(bands);
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+		});
+}
+
+const itBandsForGenreUpdate = (bands) => {
+	if (bands.length == 0) return true;
+	const band = bands[0];
+	let update = JSON.parse(JSON.stringify(band));
+
+	Genre.find()
+		.then(genres => {
+			let genreList = [];
+			update.genre.forEach(oldGenre => {
+				if(!genres.some(newGenre => {
+					if (oldGenre.toLowerCase() == newGenre.name.toLowerCase()) {
+						genreList.push(newGenre._id);
+						return true;
+					}
+					return false;
+				}))
+					genreList.push(genres.find(fillerGenre => { return fillerGenre.name === 'Temporary Filler Genre' })._id);
+			});
+			update.genre = genreList;
+			Band.findOneAndUpdate({ _id: band._id }, update, (err, updatedBand) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+				}
+				console.log(updatedBand.name + ' updated');
+				let newBands = bands;
+				newBands.splice(0, 1);
+		
+				if (itBandsForGenreUpdate(newBands)) return true;
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+		});
 }

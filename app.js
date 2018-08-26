@@ -97,8 +97,9 @@ if (process.env.NODE_ENV === 'production') {
 	}), 86400000);
 }
 
-// const update = require('./config/update');
+const update = require('./config/update');
 // update.updateEvents();
 // update.updateArchivedEvents();
 // update.updateLocations();
 // update.updateBands();
+update.updateGenres();
