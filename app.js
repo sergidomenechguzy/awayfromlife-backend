@@ -12,10 +12,6 @@ const events = require('./routes/events');
 const unvalidated_events = require('./routes/unvalidated_events');
 const archived_events = require('./routes/archived_events');
 
-const festivals = require('./routes/festivals');
-const festival_events = require('./routes/festival_events');
-const unvalidated_festival_events = require('./routes/unvalidated_festival_events');
-
 const locations = require('./routes/locations');
 const unvalidated_locations = require('./routes/unvalidated_locations');
 
@@ -73,10 +69,6 @@ app.use('/api/events', events);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/archived-events', archived_events);
 
-app.use('/api/festivals', festivals);
-app.use('/api/festival-events', festival_events);
-app.use('/api/unvalidated-festival-events', unvalidated_festival_events);
-
 app.use('/api/locations', locations);
 app.use('/api/unvalidated-locations', unvalidated_locations);
 
@@ -104,3 +96,9 @@ if (process.env.NODE_ENV === 'production') {
 		if (err) console.log(err.name + ': ' + err.message);
 	}), 86400000);
 }
+
+const update = require('./config/update');
+update.updateEvents();
+update.updateArchivedEvents();
+update.updateLocations();
+update.updateBands();
