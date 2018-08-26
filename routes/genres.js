@@ -47,7 +47,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name']), (req,
 });
 
 // post multiple genres to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name']), (req, res) => {
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name']), (req, res) => {
 	const genreList = req.body.list;
 	let savedGenres = 0;
 	genreList.forEach(genre => {

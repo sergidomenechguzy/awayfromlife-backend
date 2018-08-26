@@ -16,10 +16,6 @@ const Band = mongoose.model('bands');
 require('../models/Genre');
 const Genre = mongoose.model('genres');
 
-// load festival event model
-require('../models/Festival_Event');
-const FestivalEvents = mongoose.model('festival_events');
-
 const bandObject = module.exports.bandObject = (band, next) => {
 	let genreList = [];
 	band.genre.forEach(genreID => {
@@ -165,117 +161,6 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
 				return next(null, responseEvents);
-			}
-		});
-	});
-}
-
-const festivalEventObject = module.exports.festivalEventObject = (event, next) => {
-	if (event.bands.length === 0) return next(null, event);
-	
-	let bandsArray = [];
-	event.bands.forEach((bandID, index, array) => {
-		Band.findOne({ _id: bandID })
-			.then(band => {
-				if (!band) band = 'Band not found';
-				
-				bandsArray.push({ band: band, index: index });
-
-				if (bandsArray.length === array.length) {
-					let bandsArraySorted = [];
-					bandsArray.forEach(band => {
-						bandsArraySorted[band.index] = band.band;
-					});
-
-					const responseEvent = {
-						_id: event._id,
-						title: event.title,
-						startDate: event.startDate,
-						endDate: event.endDate,
-						bands: bandsArraySorted,
-						canceled: event.canceled
-					};
-					return next(null, responseEvent);
-				}
-			})
-			.catch(err => {
-				return next(err, null);
-			});
-	});
-}
-
-const festivalEventObjectArray = module.exports.festivalEventObjectArray = (events, sortBy, order, next) => {
-	if (events.length === 0) return next(null, []);
-	const responseEvents = [];
-	events.forEach((event, index, array) => {
-		festivalEventObject(event, (err, responseEvent) => {
-			if (err) return next(err, null);
-			
-			responseEvents.push(responseEvent);
-
-			if (responseEvents.length === array.length) {
-				responseEvents.sort((a, b) => {
-					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
-					return a[sortBy].localeCompare(b[sortBy]);
-				});
-				return next(null, responseEvents);
-			}
-		});
-	});
-}
-
-const festivalObject = module.exports.festivalObject = (festival, next) => {
-		eventList = [];
-		festival.events.forEach((eventID, index2, array2) => {
-			FestivalEvents.findOne({ _id: eventID })
-				.then(event => {
-					if (!event) event = 'Event not found';
-					eventList.push(event);
-					
-					if (eventList.length == array2.length) {
-						festivalEventObjectArray(eventList, 'title', 1, (err, responseEvent) => {
-							if (err) return next(err, null);
-				
-							const responseFestival = {
-								_id: festival._id,
-								title: festival.title,
-								url: festival.url,
-								description: festival.description,
-								events: responseEvent,
-								address: festival.address,
-								ticketLink: festival.ticketLink,
-								website: festival.website,
-								facebookUrl: festival.facebookUrl
-							};
-							return next(null, responseFestival);
-						});
-					}
-				})
-				.catch(err => {
-					return next(err, null);
-				});
-		});
-}
-
-module.exports.festivalObjectArray = (festivals, sortBy, order, next) => {
-	if (festivals.length === 0) return next(null, []);
-	let responseFestivals = [];
-	festivals.forEach((festival, index1, array1) => {
-		festivalObject(festival, (err, responseFestival) => {
-			if (err) return next(err, null);
-		
-			responseFestivals.push(responseFestival);
-
-			if (responseFestivals.length === array1.length) {
-				responseFestivals.sort((a, b) => {
-					if (sortBy === 'address') {
-						if (order === -1) return b[sortBy].city.localeCompare(a[sortBy].city);
-						return a[sortBy].city.localeCompare(b[sortBy].city);
-					}
-					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
-					return a[sortBy].localeCompare(b[sortBy]);
-				});
-				return next(null, responseFestivals);
 			}
 		});
 	});
