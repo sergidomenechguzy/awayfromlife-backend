@@ -98,8 +98,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const update = require('./config/update');
-// update.updateEvents();
-// update.updateArchivedEvents();
-// update.updateLocations();
-// update.updateBands();
-update.updateGenres();
+update.updateEvents();
+update.updateArchivedEvents();
+update.updateLocations();
+update.updateBands();
