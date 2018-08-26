@@ -29,7 +29,6 @@ router.get('/', token.checkToken(false), (req, res) => {
 		.then(events => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			
 
 			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -147,7 +146,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		.then(event => {
 			if (!event) 
 				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
-			
+
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -164,7 +163,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 
 // get event by title-url
 router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Event.findOne({ url: req.params.url })
+	Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
 		.then(event => {
 			if (!event) 
 				return res.status(200).json({ message: 'No event found with this URL', token: res.locals.token });
@@ -269,7 +268,7 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 		});
 });
 
-// get events by date
+// get canceled events
 router.get('/canceled', token.checkToken(true), (req, res) => {
 	Event.find({ canceled: 1 })
 		.then(events => {
@@ -296,7 +295,6 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 		return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
 	let query = {};
 	query.location = req.query.location;
-	// query.location = new RegExp('^' + req.query.location + '$', 'i');
 	query.startDate = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
 
 	Event.find(query)
@@ -388,10 +386,10 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
-		url: req.body.title.split(' ').join('-'),
+		url: '',
 		description: req.body.description,
 		location: req.body.location,
 		startDate: req.body.startDate,
@@ -400,7 +398,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 		ticketLink: req.body.ticketLink
 	};
 
-	url.generateEventUrl(newEvent, 'event', req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
+	url.generateEventUrl(newEvent, 'event', (err, responseEvent) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -427,18 +425,18 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 			let update = {};
 			update._id = req.params._id;
 			update.title = req.body.title;
-			update.url = req.body.title.split(' ').join('-');
+			update.url = '';
 			if (req.body.description) update.description = req.body.description;
 			else if (event.description) update.description = event.description;
 			update.location = req.body.location;
 			update.startDate = req.body.startDate;
 			update.bands = req.body.bands ? req.body.bands : event.bands;
-			update.canceled = req.body.canceled ? req.body.canceled : event.canceled;
+			update.canceled = (req.body.canceled || req.body.canceled == 0) ? req.body.canceled : event.canceled;
 			if (req.body.ticketLink) update.ticketLink = req.body.ticketLink;
 			else if (event.ticketLink) update.ticketLink = event.ticketLink;
 			update.lastModified = Date.now();
 
-			url.generateEventUrl(update, 'event', req.body.title.split(' ').join('-'), 2, (err, responseEvent) => {
+			url.generateEventUrl(update, 'event', (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });

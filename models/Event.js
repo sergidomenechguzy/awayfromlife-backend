@@ -8,8 +8,7 @@ const EventSchema = new Schema({
 		required: true
 	},
 	url: {
-		type: String,
-		required: true
+		type: String
 	},
 	description: {
 		type: String

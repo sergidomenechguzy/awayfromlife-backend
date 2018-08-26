@@ -8,18 +8,29 @@ const path = require('path');
 const app = express();
 
 // load routes
-const locations = require('./routes/locations');
 const events = require('./routes/events');
-const bands = require('./routes/bands');
-const unvalidated_locations = require('./routes/unvalidated_locations');
 const unvalidated_events = require('./routes/unvalidated_events');
-const unvalidated_bands = require('./routes/unvalidated_bands');
 const archived_events = require('./routes/archived_events');
-const users = require('./routes/users');
+
+const festivals = require('./routes/festivals');
+const festival_events = require('./routes/festival_events');
+const unvalidated_festival_events = require('./routes/unvalidated_festival_events');
+
+const locations = require('./routes/locations');
+const unvalidated_locations = require('./routes/unvalidated_locations');
+
+const bands = require('./routes/bands');
+const unvalidated_bands = require('./routes/unvalidated_bands');
+
+const genres = require('./routes/genres');
+
+const search = require('./routes/search');
+
 const bugs = require('./routes/bugs');
 const feedback = require('./routes/feedback');
 const reports = require('./routes/reports');
-const search = require('./routes/search');
+
+const users = require('./routes/users');
 
 // load secrets
 const secrets = require('./config/secrets');
@@ -58,18 +69,29 @@ app.get('/', (req, res) => {
 });
 
 // use routes
-app.use('/api/locations', locations);
 app.use('/api/events', events);
-app.use('/api/bands', bands);
-app.use('/api/unvalidated-locations', unvalidated_locations);
 app.use('/api/unvalidated-events', unvalidated_events);
-app.use('/api/unvalidated-bands', unvalidated_bands);
 app.use('/api/archived-events', archived_events);
-app.use('/api/users', users);
+
+app.use('/api/festivals', festivals);
+app.use('/api/festival-events', festival_events);
+app.use('/api/unvalidated-festival-events', unvalidated_festival_events);
+
+app.use('/api/locations', locations);
+app.use('/api/unvalidated-locations', unvalidated_locations);
+
+app.use('/api/bands', bands);
+app.use('/api/unvalidated-bands', unvalidated_bands);
+
+app.use('/api/genres', genres);
+
+app.use('/api/search', search);
+
 app.use('/api/bugs', bugs);
 app.use('/api/feedback', feedback);
 app.use('/api/reports', reports);
-app.use('/api/search', search);
+
+app.use('/api/users', users);
 
 const port = secrets.port;
 

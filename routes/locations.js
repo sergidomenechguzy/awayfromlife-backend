@@ -113,7 +113,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 
 // get location by name-url
 router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Location.findOne({ url: req.params.url })
+	Location.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
 		.then(location => {
 			if (!location) 
 				return res.status(400).json({ message: 'No location found with this URL', token: res.locals.token });
@@ -301,7 +301,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
-		url: req.body.name.split(' ').join('-'),
+		url: '',
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
@@ -319,7 +319,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 		facebookUrl: req.body.facebookUrl
 	};
 
-	url.generateUrl(newLocation, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
+	url.generateUrl(newLocation, Location, (err, responseLocation) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -337,16 +337,16 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 });
 
 // update location by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) 
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 
 			let update = {};
-			update._id = req.params._id,
+			update._id = req.params._id;
 			update.name = req.body.name;
-			update.url = req.body.name.split(' ').join('-');
+			update.url = '';
 			update.address = {};
 			update.address.street = req.body.address.street;
 			if (req.body.address.administrative) update.address.administrative = req.body.address.administrative;
@@ -371,7 +371,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 			if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
 			else if (location.facebookUrl) update.facebookUrl = location.facebookUrl;
 
-			url.generateUrl(update, Location, req.body.name.split(' ').join('-'), 2, (err, responseLocation) => {
+			url.generateUrl(update, Location, (err, responseLocation) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -392,7 +392,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'add
 });
 
 // delete location by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
+router.delete('/:_id', token.checkToken(false), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
 			if (!location) 
