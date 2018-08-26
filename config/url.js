@@ -125,5 +125,6 @@ function deUmlaut(value) {
 	value = value.replace(/,/g, '');
 	value = value.replace(/\(/g, '');
 	value = value.replace(/\)/g, '');
+	value = value.replace(/\//g, '');
 	return value;
 }
