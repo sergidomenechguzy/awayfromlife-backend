@@ -173,7 +173,6 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	const newBand = {
 		name: req.body.name,
-		url: '',
 		genre: req.body.genre,
 		origin: {
 			name: req.body.origin.name,

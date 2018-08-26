@@ -1,14 +1,20 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// create location schema
-const LocationSchema = new Schema({
-	name: {
+// create festival schema
+const FestivalSchema = new Schema({
+	title: {
 		type: String,
 		required: true
 	},
 	url: {
 		type: String
+	},
+	description: {
+		type: String
+	},
+	events: {
+		type: [String]
 	},
 	address: {
 		street: {
@@ -44,11 +50,7 @@ const LocationSchema = new Schema({
 			type: String,
 		}
 	},
-	status: {
-		type: String,
-		default: 'opened'
-	},
-	information: {
+	ticketLink: {
 		type: String
 	},
 	website: {
@@ -59,5 +61,4 @@ const LocationSchema = new Schema({
 	}
 });
 
-mongoose.model('locations', LocationSchema);
-mongoose.model('unvalidated_locations', LocationSchema);
+mongoose.model('festivals', FestivalSchema);

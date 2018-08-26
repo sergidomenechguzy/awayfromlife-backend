@@ -154,7 +154,6 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newLocation = {
 		name: req.body.name,
-		url: '',
 		address: {
 			street: req.body.address.street,
 			administrative: req.body.address.administrative,
