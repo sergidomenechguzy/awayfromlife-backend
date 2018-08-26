@@ -40,7 +40,6 @@ router.get('/', token.checkToken(true), (req, res) => {
 				}
 				return res.status(200).json({ data: responseReports, token: res.locals.token });
 			});
-			// return res.status(200).json({ data: reports, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

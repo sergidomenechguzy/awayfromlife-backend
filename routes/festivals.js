@@ -30,7 +30,6 @@ router.get('/', token.checkToken(false), (req, res) => {
 				}
 				return res.status(200).json({ data: responseFestivals, token: res.locals.token });
 			});
-			// return res.status(200).json({ data: festivals, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -63,7 +62,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 router.post('/', token.checkToken(false), params.checkParameters(['title', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newFestival = {
 		title: req.body.title,
-		url: req.body.title.split(' ').join('-'),
+		url: '',
 		description: req.body.description,
 		events: req.body.events,
 		address: {
@@ -82,7 +81,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'addr
 		facebookUrl: req.body.facebookUrl,
 	};
 
-	url.generateUrl(newFestival, Festival, req.body.title.split(' ').join('-'), 2, (err, responseFestival) => {
+	url.generateUrl(newFestival, Festival,(err, responseFestival) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });

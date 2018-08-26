@@ -75,8 +75,6 @@ router.get('/page', token.checkToken(false), (req, res) => {
 		query[countryString] = RegExp(req.query.country, 'i');
 	}
 	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
-	
-	// if (req.query.genre) query.genre = RegExp(req.query.genre, 'i');
 
 	Band.find(query)
 		.then(bands => {
@@ -139,7 +137,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 
 // get band by name-url
 router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Band.findOne({ url: req.params.url })
+	Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
 		.then(band => {
 			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
@@ -384,7 +382,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	let genreList = [];
 
 	Genre.find()
@@ -397,10 +395,9 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 					return res.status(400).json({ message: 'Genre(s) not found.', token: res.locals.token });
 			});
 
-
 			const newBand = {
 				name: req.body.name,
-				url: req.body.name.split(' ').join('-'),
+				url: '',
 				genre: genreList,
 				origin: {
 					name: req.body.origin.name,
@@ -421,7 +418,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 				facebookUrl: req.body.facebookUrl
 			};
 		
-			url.generateUrl(newBand, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
+			url.generateUrl(newBand, Band, (err, responseBand) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -444,7 +441,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
+router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
 	Band.findOne({ _id: req.params._id })
 		.then(band => {
 			if (!band) 
@@ -455,7 +452,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 					let update = {};
 					update._id = req.params._id;
 					update.name = req.body.name;
-					update.url = req.body.name.split(' ').join('-');
+					update.url = '';
 					if(!req.body.genre) update.genre = band.genre;
 					else {
 						let genreList = [];
@@ -496,7 +493,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 					if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
 					else if (band.facebookUrl) update.facebookUrl = band.facebookUrl;
 
-					url.generateUrl(update, Band, req.body.name.split(' ').join('-'), 2, (err, responseBand) => {
+					url.generateUrl(update, Band, (err, responseBand) => {
 						if (err) {
 							console.log(err.name + ': ' + err.message);
 							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
