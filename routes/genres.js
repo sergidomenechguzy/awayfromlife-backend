@@ -10,6 +10,8 @@ const Genre = mongoose.model('genres');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
+// load validate.js
+const validate = require('../config/validate');
 
 // genres routes
 // get all genres
@@ -31,11 +33,8 @@ router.get('/', token.checkToken(false), (req, res) => {
 });
 
 // post genre to database
-router.post('/', token.checkToken(true), params.checkParameters(['name']), (req, res) => {
-	const newGenre = {
-		name: req.body.name
-	};
-	new Genre(newGenre)
+router.post('/', token.checkToken(true), params.checkParameters(['name']), validate.reqGenre('post'), (req, res) => {
+	new Genre(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Genre saved', token: res.locals.token })
@@ -69,29 +68,14 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 });
 
 // update genre by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name']), (req, res) => {
-	Genre.findOne({ _id: req.params._id })
-		.then(genre => {
-			if (!genre) 
-				return res.status(400).json({ message: 'No genre found with this ID', token: res.locals.token });
-
-			let update = {
-				_id: req.params._id,
-				name: req.body.name
-			};
-
-			Genre.findOneAndUpdate({ _id: req.params._id }, update, (err, genre) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Genre updated', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name']), validate.reqGenre('put'), (req, res) => {
+	Genre.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, genre) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(200).json({ message: 'Genre updated', token: res.locals.token });
+	});
 });
 
 // delete genre by id

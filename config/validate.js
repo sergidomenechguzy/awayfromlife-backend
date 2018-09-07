@@ -17,10 +17,6 @@ const Location = mongoose.model('locations');
 require('../models/Genre');
 const Genre = mongoose.model('genres');
 
-// load bug model
-require('../models/Bug');
-const Bug = mongoose.model('bugs');
-
 // load url.js
 const url = require('../config/url');
 
@@ -356,6 +352,7 @@ module.exports.reqLocation = (type) => {
 						return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
 
 					newLocation = {
+						_id: req.params._id,
 						name: req.body.name,
 						url: '',
 						address: {
@@ -508,5 +505,63 @@ module.exports.reqReport = () => {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				});
+	}
+}
+
+// validate all attributes for genre objects in the request body
+module.exports.reqGenre = (type) => {
+	return (req, res, next) => {
+		if (!(typeof req.body.name == 'string' && req.body.name.length > 0))
+			return res.status(400).json({ message: 'Attribute \'name\' has to be a string with 1 or more characters.' });
+
+		Genre.find()
+		.then(genres => {
+			let genreNames = genres.map(genre => genre.name.toLowerCase());
+			if (type == 'put') {
+				Genre.findOne({ _id: req.params._id })
+					.then(genre => {
+						if (!genre) 
+							return res.status(400).json({ message: 'No genre found with this ID', token: res.locals.token });
+							
+						let index = genreNames.indexOf(req.body.name.toLowerCase());
+						if (index < 0) {
+							let newGenre = {
+								_id: req.params._id,
+								name: req.body.name
+							};
+							res.locals.validated = newGenre;
+							return next();
+						}
+						if (genres[index]._id.toString() == req.params._id) {
+							let newGenre = {
+								_id: req.params._id,
+								name: req.body.name
+							};
+							res.locals.validated = newGenre;
+							return next();
+						}
+						return res.status(400).json({ message: 'A genre with this name already exists.' });
+					})
+					.catch(err => {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					});
+			}
+			else {
+				if (genreNames.includes(req.body.name.toLowerCase())) {
+					return res.status(400).json({ message: 'A genre with this name already exists.' });
+				}
+				
+				let newGenre = {
+					name: req.body.name
+				};
+				res.locals.validated = newGenre;
+				return next();
+			}
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
 	}
 }
