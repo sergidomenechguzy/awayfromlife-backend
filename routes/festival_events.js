@@ -78,7 +78,7 @@ router.get('/canceled', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		startDate: req.body.startDate,
@@ -99,7 +99,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'star
 });
 
 // update event by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate']), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 
@@ -158,7 +158,7 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 });
 
 // delete event by id
-router.delete('/:_id', token.checkToken(false), (req, res) => {
+router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 

@@ -59,7 +59,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 });
 
 // post festival to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['title', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
 	const newFestival = {
 		title: req.body.title,
 		url: '',
@@ -99,7 +99,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'addr
 });
 
 // // update festival by id
-// router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate']), (req, res) => {
+// router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate']), (req, res) => {
 // 	Festival.findOne({ _id: req.params._id })
 // 		.then(festival => {
 // 			if (!festival) 
@@ -129,7 +129,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'addr
 // });
 
 // // delete festival by id
-// router.delete('/:_id', token.checkToken(false), (req, res) => {
+// router.delete('/:_id', token.checkToken(true), (req, res) => {
 // 	Festival.findOne({ _id: req.params._id })
 // 		.then(festival => {
 // 			if (!festival) 

@@ -24,6 +24,8 @@ const params = require('../config/params.js');
 const token = require('../config/token.js');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load validate.js
+const validate = require('../config/validate');
 
 // reports routes
 // get all reports
@@ -47,35 +49,13 @@ router.get('/', token.checkToken(true), (req, res) => {
 		});
 });
 
+
 // post report to database
-router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), (req, res) => {
-	if (req.body.category != 'event' && req.body.category != 'location' && req.body.category != 'band')
-		return res.status(400).json({ message: 'Only event, location or band allowed as category.' });
-
-	const categories = {
-		event: Event,
-		location: Location,
-		band: Band
-	}
-	
-	categories[req.body.category].findOne({ _id: req.body.item })
-		.then(item => {
-			if (!item) return res.status(200).json({ message: 'No item found with this ID in the specified category', token: res.locals.token });
-
-			const newReport = {
-				category: req.body.category,
-				item: req.body.item,
-				description: req.body.description
-			};
-			new Report(newReport)
-				.save()
-				.then(() => {
-					return res.status(200).json({ message: 'Report saved', token: res.locals.token });
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
+router.post('/test', token.checkToken(false), params.checkParameters(['category', 'item']), validate.reqReport(), (req, res) => {
+	new Report(res.locals.validated)
+		.save()
+		.then(() => {
+			return res.status(200).json({ message: 'Report saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

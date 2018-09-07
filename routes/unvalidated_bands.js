@@ -10,6 +10,8 @@ const Band = mongoose.model('unvalidated_bands');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load validate.js
+const validate = require('../config/validate');
 
 // unvalidated_bands routes
 // get all bands
@@ -170,33 +172,11 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
-	const newBand = {
-		name: req.body.name,
-		genre: req.body.genre,
-		origin: {
-			name: req.body.origin.name,
-			administrative: req.body.origin.administrative,
-			country: req.body.origin.country,
-			postcode: req.body.origin.postcode,
-			lat: req.body.origin.lat,
-			lng: req.body.origin.lng,
-			value: req.body.origin.value
-		},
-		history: req.body.history,
-		recordLabel: req.body.recordLabel,
-		releases: req.body.releases,
-		foundingDate: req.body.foundingDate,
-		websiteUrl: req.body.websiteUrl,
-		bandcampUrl: req.body.bandcampUrl,
-		soundcloudUrl: req.body.soundcloudUrl,
-		facebookUrl: req.body.facebookUrl
-	};
-	
-	new Band(newBand)
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('unvalidated'), (req, res) => {
+	new Band(res.locals.validated)
 		.save()
 		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: res.locals.token })
+			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

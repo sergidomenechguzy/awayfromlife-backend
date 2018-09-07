@@ -59,7 +59,7 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 			.then(() => {
 				savedGenres++;
 				if (genreList.length == savedGenres)
-					return res.status(200).json({ message: savedGenres + ' genre(s) saved', token: res.locals.token })
+					return res.status(200).json({ message: savedGenres + ' genre(s) saved', token: res.locals.token });
 			})
 			.catch(err => {
 				console.log(err.name + ': ' + err.message);

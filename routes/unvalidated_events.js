@@ -12,6 +12,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load validate.js
+const validate = require('../config/validate');
 
 // unvalidated_events routes
 // get all events
@@ -221,18 +223,8 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
-	const newEvent = {
-		title: req.body.title,
-		description: req.body.description,
-		location: req.body.location,
-		startDate: req.body.startDate,
-		bands: req.body.bands,
-		canceled: req.body.canceled,
-		ticketLink: req.body.ticketLink
-	};
-
-	new Event(newEvent)
+router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate', 'bands']), validate.reqEvent('unvalidated', 'unvalidated'), (req, res) => {
+	new Event(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
