@@ -10,6 +10,8 @@ const Band = mongoose.model('unvalidated_bands');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../config/dereference');
 // load validate.js
 const validate = require('../config/validate');
 
@@ -21,10 +23,13 @@ router.get('/', token.checkToken(true), (req, res) => {
 			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 			
-			bands.sort((a, b) => {
-				return a.name.localeCompare(b.name);
+			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseBands, token: res.locals.token });
 			});
-			return res.status(200).json({ data: bands, token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -39,8 +44,8 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	let perPage = 20;
 	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = ['name'];
-	if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy.split('.');
+	let sortBy = 'name';
+	if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy;
 
 	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
@@ -61,7 +66,6 @@ router.get('/page', token.checkToken(true), (req, res) => {
 		const countryString = 'origin.country';
 		query[countryString] = RegExp(req.query.country, 'i');
 	}
-	if (req.query.genre) query.genre = RegExp(req.query.genre, 'i');
 	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
 	Band.find(query)
@@ -69,26 +73,32 @@ router.get('/page', token.checkToken(true), (req, res) => {
 			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 
-			const count = bands.length;
-			if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+			dereference.bandObjectArray(bands, sortBy, order, (err, responseBands) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				let finalBands = [];
+				if (req.query.genre) {
+					const genreRegex = RegExp(req.query.genre, 'i');
+					responseBands.forEach(responseBand => {
+						responseBand.genre.some(genre => {
+							if (genreRegex.test(genre)) {
+								finalBands.push(responseBand);
+								return true;
+							}
+							return false;
+						});
+					});
+				}
+				else finalBands = responseBands;
 
-			bands.sort((a, b) => {
-				if (sortBy.length === 2) {
-					if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
-					return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
-				}
-				else if (sortBy[0] === 'genre') {
-					if (order === -1) return b.genre.reduce((x,y) => x < y ? x : y).localeCompare(a.genre.reduce((x,y) => x < y ? x : y));
-					return a.genre.reduce((x,y) => x < y ? x : y).localeCompare(b.genre.reduce((x,y) => x < y ? x : y));
-				}
-				else {
-					if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-					return a[sortBy[0]].localeCompare(b[sortBy[0]]);
-				}
+				const count = finalBands.length;
+				if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+				finalBands = finalBands.slice((perPage * page) - perPage, (perPage * page));
+
+				return res.status(200).json({ data: finalBands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 			});
-			bands = bands.slice((perPage * page) - perPage, (perPage * page));
-
-			return res.status(200).json({ data: bands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -103,7 +113,13 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 			
-			return res.status(200).json({ data: band, token: res.locals.token });
+			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseBands, token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
