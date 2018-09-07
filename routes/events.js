@@ -17,8 +17,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
-// load url.js
-const url = require('../config/url');
+// load validate.js
+const validate = require('../config/validate');
 
 moment.locale('de');
 
@@ -386,74 +386,27 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
-	const newEvent = {
-		title: req.body.title,
-		url: '',
-		description: req.body.description,
-		location: req.body.location,
-		startDate: req.body.startDate,
-		bands: req.body.bands,
-		canceled: req.body.canceled,
-		ticketLink: req.body.ticketLink
-	};
-
-	url.generateEventUrl(newEvent, 'event', (err, responseEvent) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
-		new Event(responseEvent)
-			.save()
-			.then(() => {
-				return res.status(200).json({ message: 'Event saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
-});
-
-// update event by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate']), (req, res) => {
-	Event.findOne({ _id: req.params._id })
-		.then(event => {
-			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			
-			let update = {};
-			update._id = req.params._id;
-			update.title = req.body.title;
-			update.url = '';
-			if (req.body.description) update.description = req.body.description;
-			else if (event.description) update.description = event.description;
-			update.location = req.body.location;
-			update.startDate = req.body.startDate;
-			update.bands = req.body.bands ? req.body.bands : event.bands;
-			update.canceled = (req.body.canceled || req.body.canceled == 0) ? req.body.canceled : event.canceled;
-			if (req.body.ticketLink) update.ticketLink = req.body.ticketLink;
-			else if (event.ticketLink) update.ticketLink = event.ticketLink;
-			update.lastModified = Date.now();
-
-			url.generateEventUrl(update, 'event', (err, responseEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				Event.findOneAndUpdate({ _id: req.params._id }, responseEvent, (err, event) => {
-					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					}
-					return res.status(200).json({ message: 'Event updated', token: res.locals.token });
-				});
-			});
+router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate', 'bands']), validate.reqEvent('post', 'event'), (req, res) => {
+	new Event(res.locals.validated)
+		.save()
+		.then(() => {
+			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// update event by id
+router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'startDate', 'bands']), validate.reqEvent('put', 'event'), (req, res) => {
+	Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, event) => {
+		if (err) {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		}
+		return res.status(200).json({ message: 'Event updated', token: res.locals.token });
+	});
 });
 
 // cancel event by id

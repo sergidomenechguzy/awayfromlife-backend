@@ -22,6 +22,8 @@ const token = require('../config/token');
 const dereference = require('../config/dereference');
 // load url.js
 const url = require('../config/url');
+// load validate.js
+const validate = require('../config/validate');
 
 // bands routes
 // get all bands
@@ -382,57 +384,11 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
-	let genreList = [];
-
-	Genre.find()
-		.then(genres => {
-			req.body.genre.forEach((reqGenre, index, array) => {
-				genres.forEach(savedGenre => {
-					if (reqGenre === savedGenre.name) genreList.push(savedGenre._id);
-				});
-				if (index + 1 != genreList.length) 
-					return res.status(400).json({ message: 'Genre(s) not found.', token: res.locals.token });
-			});
-
-			const newBand = {
-				name: req.body.name,
-				url: '',
-				genre: genreList,
-				origin: {
-					name: req.body.origin.name,
-					administrative: req.body.origin.administrative,
-					country: req.body.origin.country,
-					postcode: req.body.origin.postcode,
-					lat: req.body.origin.lat,
-					lng: req.body.origin.lng,
-					value: req.body.origin.value
-				},
-				history: req.body.history,
-				recordLabel: req.body.recordLabel,
-				releases: req.body.releases,
-				foundingDate: req.body.foundingDate,
-				websiteUrl: req.body.websiteUrl,
-				bandcampUrl: req.body.bandcampUrl,
-				soundcloudUrl: req.body.soundcloudUrl,
-				facebookUrl: req.body.facebookUrl
-			};
-		
-			url.generateUrl(newBand, Band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				new Band(responseBand)
-					.save()
-					.then(() => {
-						return res.status(200).json({ message: 'Band saved', token: res.locals.token })
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('post'), (req, res) => {
+	new Band(res.locals.validated)
+		.save()
+		.then(() => {
+			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -441,81 +397,14 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-
-			Genre.find()
-				.then(genres => {
-					let update = {};
-					update._id = req.params._id;
-					update.name = req.body.name;
-					update.url = '';
-					if(!req.body.genre) update.genre = band.genre;
-					else {
-						let genreList = [];
-						req.body.genre.forEach((reqGenre, index, array) => {
-							genres.forEach(savedGenre => {
-								if (reqGenre === savedGenre.name) genreList.push(savedGenre._id);
-							});
-							if (index + 1 != genreList.length) 
-								return res.status(400).json({ message: 'Genre(s) not found.', token: res.locals.token });
-						});
-						update.genre = genreList;
-					}
-					update.origin = {};
-					update.origin.name = req.body.origin.name;
-					if (req.body.origin.administrative) update.origin.administrative = req.body.origin.administrative;
-					else if (band.origin.administrative) update.origin.administrative = band.origin.administrative;
-					update.origin.country = req.body.origin.country;
-					if (req.body.origin.postcode) update.origin.postcode = req.body.origin.postcode;
-					else if (band.origin.postcode) update.origin.postcode = band.origin.postcode;
-					update.origin.lat = req.body.origin.lat;
-					update.origin.lng = req.body.origin.lng;
-					if (req.body.origin.value) update.origin.value = req.body.origin.value;
-					else if (band.origin.value) update.origin.value = band.origin.value;
-					if (req.body.history) update.history = req.body.history;
-					else if (band.history) update.history = band.history;
-					if (req.body.recordLabel) update.recordLabel = req.body.recordLabel;
-					else if (band.recordLabel) update.recordLabel = band.recordLabel;
-					if (req.body.releases) update.releases = req.body.releases;
-					else if (band.releases) update.releases = band.releases;
-					if (req.body.foundingDate) update.foundingDate = req.body.foundingDate;
-					else if (band.foundingDate) update.foundingDate = band.foundingDate;
-					if (req.body.websiteUrl) update.websiteUrl = req.body.websiteUrl;
-					else if (band.websiteUrl) update.websiteUrl = band.websiteUrl;
-					if (req.body.bandcampUrl) update.bandcampUrl = req.body.bandcampUrl;
-					else if (band.bandcampUrl) update.bandcampUrl = band.bandcampUrl;
-					if (req.body.soundcloudUrl) update.soundcloudUrl = req.body.soundcloudUrl;
-					else if (band.soundcloudUrl) update.soundcloudUrl = band.soundcloudUrl;
-					if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
-					else if (band.facebookUrl) update.facebookUrl = band.facebookUrl;
-
-					url.generateUrl(update, Band, (err, responseBand) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						Band.findOneAndUpdate({ _id: req.params._id }, responseBand, (err, band) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							return res.status(200).json({ message: 'Band updated', token: res.locals.token });
-						});
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('put'), (req, res) => {
+	Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, band) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+	});
 });
 
 // delete band by id

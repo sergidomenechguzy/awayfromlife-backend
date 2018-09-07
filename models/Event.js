@@ -22,7 +22,8 @@ const EventSchema = new Schema({
 		required: true
 	},
 	bands: {
-		type: [String]
+		type: [String],
+		required: true
 	},
 	canceled: {
 		type: Number,

@@ -10,6 +10,8 @@ const Location = mongoose.model('unvalidated_locations');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load validate.js
+const validate = require('../config/validate');
 
 // unvalidated_locations routes
 // get all locations
@@ -151,27 +153,8 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
-	const newLocation = {
-		name: req.body.name,
-		address: {
-			street: req.body.address.street,
-			administrative: req.body.address.administrative,
-			city: req.body.address.city,
-			county: req.body.address.county,
-			country: req.body.address.country,
-			postcode: req.body.address.postcode,
-			lat: req.body.address.lat,
-			lng: req.body.address.lng,
-			value: req.body.address.value
-		},
-		status: req.body.status,
-		information: req.body.information,
-		website: req.body.website,
-		facebookUrl: req.body.facebookUrl
-	};
-	
-	new Location(newLocation)
+router.post('/test', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('unvalidated'), (req, res) => {
+	new Location(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Location saved', token: res.locals.token })

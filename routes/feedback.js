@@ -10,10 +10,12 @@ const Feedback = mongoose.model('feedback');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
+// load validate.js
+const validate = require('../config/validate');
 
 // feedback routes
 // get all feedback
-router.get('/', token.checkToken(true), (req, res) => {
+router.get('/', token.checkToken(false), (req, res) => {
 	Feedback.find()
 		.then(feedbacks => {
 			if (feedbacks.length === 0) 
@@ -28,12 +30,8 @@ router.get('/', token.checkToken(true), (req, res) => {
 });
 
 // post feedback to database
-router.post('/', token.checkToken(false), params.checkParameters(['text']), (req, res) => {
-	const newFeedback = {
-		text: req.body.text,
-		email: req.body.email
-	};
-	new Feedback(newFeedback)
+router.post('/', token.checkToken(false), params.checkParameters(['text']), validate.reqFeedback(), (req, res) => {
+	new Feedback(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Feedback saved', token: res.locals.token });

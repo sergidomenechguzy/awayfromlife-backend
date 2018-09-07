@@ -10,6 +10,8 @@ const Bug = mongoose.model('bugs');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
+// load validate.js
+const validate = require('../config/validate');
 
 // bugs routes
 // get all bugs
@@ -28,15 +30,8 @@ router.get('/', token.checkToken(true), (req, res) => {
 });
 
 // post bug to database
-router.post('/', token.checkToken(false), params.checkParameters(['error']), (req, res) => {
-	const newBug = {
-		error: req.body.error,
-		description: req.body.description,
-		loggedIn: req.body.loggedIn,
-		component: req.body.component,
-		email: req.body.email
-	};
-	new Bug(newBug)
+router.post('/', token.checkToken(false), params.checkParameters(['error']), validate.reqBug(), (req, res) => {
+	new Bug(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Bug saved', token: res.locals.token });

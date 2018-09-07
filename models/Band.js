@@ -10,9 +10,10 @@ const BandSchema = new Schema({
 	url: {
 		type: String
 	},
-	genre: [{
-		type: String
-	}],
+	genre: {
+		type: [String],
+		required: true
+	},
 	origin: {
 		name: {
 			type: String,
