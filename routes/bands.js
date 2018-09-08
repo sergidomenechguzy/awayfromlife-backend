@@ -385,8 +385,6 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 
 // post band to database
 router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('post'), (req, res) => {
-	console.log('body: ', req.body);
-	console.log('validated ', res.locals.validated);
 	new Band(res.locals.validated)
 		.save()
 		.then(() => {
