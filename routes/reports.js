@@ -51,7 +51,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 
 
 // post report to database
-router.post('/test', token.checkToken(false), params.checkParameters(['category', 'item']), validate.reqReport(), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validate.reqReport(), (req, res) => {
 	new Report(res.locals.validated)
 		.save()
 		.then(() => {

@@ -139,7 +139,7 @@ module.exports.reqBand = (type) => {
 			return res.status(400).json({ message: 'Attribute \'name\' has to be a string with 1 or more characters.' });
 
 		if (!(Array.isArray(req.body.genre) && req.body.genre.length > 0 && req.body.genre.length < 4))
-			return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.1' });
+			return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
 
 		if (!(typeof req.body.origin.name == 'string' && req.body.origin.name.length > 0))
 			return res.status(400).json({ message: 'Attribute \'origin.name\' has to be a string with 1 or more characters.' });
