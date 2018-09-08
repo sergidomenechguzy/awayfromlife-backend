@@ -195,7 +195,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 	if (req.query.genre) {
 		const genres = req.query.genre.split(',');
 		genres.forEach(genre => {
-			eventQuery.genre.push(new RegExp(genre, 'i'));
+			eventQuery.genre.push(new RegExp('^' + genre + '$', 'i'));
 		});
 	}
 
@@ -207,7 +207,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 				responseEvents.forEach(event => {
 					if (
 						(
-							eventQuery.attributes.length === 0
+							eventQuery.attributes.length == 0
 							||
 							eventQuery.attributes.some((attribute, index) => {
 								let value = attribute.split('.').reduce((prev, curr) => {
@@ -218,7 +218,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 						)
 						&&
 						(
-							eventQuery.genre.length === 0
+							eventQuery.genre.length == 0
 							||
 							event.bands.some(band => {
 								return eventQuery.genre.some(currentGenre => {
@@ -342,31 +342,78 @@ const bandFind = (req, res, bandSearchAttributes, next) => {
 		const countryString = 'origin.country';
 		bandQuery[countryString] = RegExp(req.query.country, 'i');
 	}
-	if (req.query.genre) {
+
+	let genreList = [];
+	if (req.query.genre != undefined) {
 		const genres = req.query.genre.split(',');
-		bandQuery.$or = [];
 		genres.forEach(genre => {
-			bandQuery.$or.push({ 'genre': RegExp('^' + genre + '$', 'i') });
+			genreList.push(new RegExp('^' + genre + '$', 'i'));
 		});
 	}
 
 	Band.find(bandQuery)
 		.then(bands => {
-			bands.forEach(band => {
-				bandSearchAttributes.some((attribute, index) => {
-					let value = attribute[0].split('.').reduce((prev, curr) => {
-						return prev[curr];
-					}, band);
+			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
+				if (err) return next(err, null);
 
-					if (attribute[0] === 'releases') {
-						let releaseString = '';
-						const match = value.some(currentRelease => {
-							if (regex.test(currentRelease.releaseName)) {
-								value.forEach((release, index, array) => {
-									releaseString += release.releaseName;
-									if (index < array.length - 1) releaseString += ', ';
+				responseBands.forEach(band => {
+					if
+					(
+						genreList.length == 0
+						||
+						genreList.some(currentGenre => {
+							return band.genre.some(genre => {
+								return currentGenre.test(genre);
+							});
+						})
+					) {
+						bandSearchAttributes.some((attribute, index) => {
+							let value = attribute[0].split('.').reduce((prev, curr) => {
+								return prev[curr];
+							}, band);
+		
+							if (attribute[0] === 'releases') {
+								let releaseString = '';
+								const match = value.some(currentRelease => {
+									if (regex.test(currentRelease.releaseName)) {
+										value.forEach((release, index, array) => {
+											releaseString += release.releaseName;
+											if (index < array.length - 1) releaseString += ', ';
+										});
+										value = releaseString;
+										bandResults.push({
+											category: 'Band',
+											data: band,
+											match: {
+												attribute: 'band.' + attribute[0],
+												pretty: attribute[1],
+												value: value
+											}
+										});
+										return true;
+									}
 								});
-								value = releaseString;
+								return match;
+							}
+							else if (attribute[0] === 'genre') {
+								const match = value.some(currentGenre => {
+									if (regex.test(currentGenre)) {
+										value = value.join(', ');
+										bandResults.push({
+											category: 'Band',
+											data: band,
+											match: {
+												attribute: 'band.' + attribute[0],
+												pretty: attribute[1],
+												value: value
+											}
+										});
+										return true;
+									}
+								});
+								return match;
+							}
+							else if (regex.test(value)) {
 								bandResults.push({
 									category: 'Band',
 									data: band,
@@ -378,26 +425,13 @@ const bandFind = (req, res, bandSearchAttributes, next) => {
 								});
 								return true;
 							}
+							return false;
 						});
-						return match;
 					}
-					else if (regex.test(value)) {
-						bandResults.push({
-							category: 'Band',
-							data: band,
-							match: {
-								attribute: 'band.' + attribute[0],
-								pretty: attribute[1],
-								value: value
-							}
-						});
-						return true;
-					}
-					return false;
 				});
+	
+				return next(null, bandResults);
 			});
-
-			return next(null, bandResults);
 		})
 		.catch(err => {
 			return next(err, null);
