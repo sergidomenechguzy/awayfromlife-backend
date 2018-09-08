@@ -153,7 +153,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post location to database
-router.post('/test', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('unvalidated'), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('unvalidated'), (req, res) => {
 	new Location(res.locals.validated)
 		.save()
 		.then(() => {
