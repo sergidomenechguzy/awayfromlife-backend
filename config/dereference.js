@@ -97,7 +97,8 @@ const eventObject = module.exports.eventObject = (event, next) => {
 					url: event.url,
 					description: event.description,
 					location: location,
-					startDate: event.startDate,
+					date: event.date,
+					time: event.time,
 					bands: [],
 					canceled: event.canceled,
 					ticketLink: event.ticketLink
@@ -127,7 +128,8 @@ const eventObject = module.exports.eventObject = (event, next) => {
 									url: event.url,
 									description: event.description,
 									location: location,
-									startDate: event.startDate,
+									date: event.date,
+									time: event.time,
 									bands: bandsArraySorted,
 									canceled: event.canceled,
 									ticketLink: event.ticketLink

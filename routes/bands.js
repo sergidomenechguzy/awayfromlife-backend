@@ -170,7 +170,7 @@ router.get('/events/:_id', token.checkToken(false), (req, res) => {
 
 			if (eventList.length === 0) return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
 
-			dereference.eventObjectArray(eventList, 'startDate', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(eventList, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });

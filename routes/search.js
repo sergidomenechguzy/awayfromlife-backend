@@ -35,7 +35,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 
 	const eventSearchAttributes = [
 		['title', 'title'],
-		['startDate', 'date'],
+		['date', 'date'],
 		['location.name', 'location name'],
 		['location.address.street', 'location address'],
 		['location.address.city', 'location city'],
@@ -102,7 +102,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 router.get('/simple/:query', token.checkToken(false), (req, res) => {
 	const eventSearchAttributes = [
 		['title', 'title'],
-		['startDate', 'date'],
+		['date', 'date'],
 		['location.name', 'location name'],
 		['location.address.street', 'location address'],
 		['location.address.city', 'location city'],

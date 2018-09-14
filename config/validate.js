@@ -32,8 +32,11 @@ module.exports.reqEvent = (type, model) => {
 		if (!(typeof req.body.location == 'string' && req.body.location.length > 0))
 			return res.status(400).json({ message: 'Attribute \'location\' has to be the ID of a location from the database.' });
 
-		if (!(typeof req.body.startDate == 'string' && req.body.startDate.length > 0))
-			return res.status(400).json({ message: 'Attribute \'startDate\' has to be a string with 1 or more characters.' });
+		if (!(typeof req.body.date == 'string' && req.body.date.length > 0))
+			return res.status(400).json({ message: 'Attribute \'date\' has to be a string with 1 or more characters.' });
+		
+		if (!(req.body.time == undefined || typeof req.body.time == 'string'))
+			return res.status(400).json({ message: 'Attribute \'time\' can be left out or has to be a string.' });
 
 		if (!(Array.isArray(req.body.bands) && req.body.bands.length > 0))
 			return res.status(400).json({ message: 'Attribute \'bands\' has to be an array of IDs of bands from the database and must not be empty.' });
@@ -73,7 +76,8 @@ module.exports.reqEvent = (type, model) => {
 										url: '',
 										description: req.body.description != undefined ? req.body.description : event.description,
 										location: req.body.location,
-										startDate: req.body.startDate,
+										date: req.body.date,
+										time: req.body.time != undefined ? req.body.time : event.time,
 										bands: req.body.bands,
 										canceled: req.body.canceled != undefined ? req.body.canceled : event.canceled,
 										ticketLink: req.body.ticketLink != undefined ? req.body.ticketLink : event.ticketLink,
@@ -99,7 +103,8 @@ module.exports.reqEvent = (type, model) => {
 								url: '',
 								description: req.body.description != undefined ? req.body.description : '',
 								location: req.body.location,
-								startDate: req.body.startDate,
+								date: req.body.date,
+								time: req.body.time != undefined ? req.body.time : '',
 								bands: req.body.bands,
 								canceled: req.body.canceled != undefined ? req.body.canceled : 0,
 								ticketLink: req.body.ticketLink != undefined ? req.body.ticketLink : ''

@@ -52,7 +52,7 @@ const checkUrl = (object, model, url, counter, next) => {
 module.exports.generateEventUrl = (object, model, next) => {
 	dereference.eventObject(object, (err, responseEvent) => {
 		if (err) return next(err, null);
-		let url = object.title + '--' + moment(object.startDate).format('DD-MM-YYYY') + '--' + responseEvent.location.name;
+		let url = object.title + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + responseEvent.location.name;
 		url = deUmlaut(url);
 		let copiedObject = JSON.parse(JSON.stringify(object));
 		copiedObject.url = url;

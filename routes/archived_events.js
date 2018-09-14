@@ -54,7 +54,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
 	let sortBy = 'title';
-	if (req.query.sortBy === 'startDate' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
+	if (req.query.sortBy === 'date' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
 	let order = 1;
 	if (parseInt(req.query.order) === -1) order = -1;
@@ -72,7 +72,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 		.then(events => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-
+			
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -107,19 +107,19 @@ router.get('/page', token.checkToken(false), (req, res) => {
 						}
 						if (req.query.startDate && req.query.endDate) {
 							if (
-								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000)
 								&&
-								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)
+								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000)
 							) result.push(true);
 							else result.push(false);
 						}
 						else if (req.query.startDate) {
-							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
 								result.push(true);
 							else result.push(false);
 						}
 						else if (req.query.endDate) {
-							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.startDate).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
 								result.push(true);
 							else result.push(false);
 						}
@@ -250,7 +250,7 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 router.get('/date/:date', token.checkToken(false), (req, res) => {
 	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
 
-	Event.find({ startDate: regex })
+	Event.find({ date: regex })
 		.then(events => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
@@ -275,7 +275,7 @@ router.get('/similar', token.checkToken(false), (req, res) => {
 		return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
 	let query = {};
 	query.location = req.query.location;
-	query.startDate = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
+	query.date = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
 	
 	Event.find(query)
 		.then(events => {
@@ -308,14 +308,14 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 	};
 	Event.find()
 		.then(events => {
-			dereference.eventObjectArray(events, 'startDate', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
 
-				filters.firstDate = responseEvents[0].startDate;
-				filters.lastDate = responseEvents[responseEvents.length - 1].startDate;
+				filters.firstDate = responseEvents[0].date;
+				filters.lastDate = responseEvents[responseEvents.length - 1].date;
 				
 				responseEvents.forEach(event => {
 					if (event.title && !filters.startWith.includes(event.title.charAt(0).toUpperCase())) {
@@ -377,7 +377,7 @@ router.get('/archive', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate', 'bands']), validate.reqEvent('post', 'archive'), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('post', 'archive'), (req, res) => {
 	new Event(res.locals.validated)
 		.save()
 		.then(() => {
@@ -390,7 +390,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 });
 
 // update event by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 'location', 'startDate', 'bands']), validate.reqEvent('put', 'archive'), (req, res) => {
+router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('put', 'archive'), (req, res) => {
 	Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, event) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
