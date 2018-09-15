@@ -5,6 +5,7 @@ const router = express.Router();
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
+const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load event model
 require('../models/Event');
@@ -31,6 +32,38 @@ router.get('/', token.checkToken(false), (req, res) => {
 				return a.name.localeCompare(b.name);
 			});
 			return res.status(200).json({ data: locations, token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all locations including unvalidated locations
+router.get('/all', token.checkToken(false), (req, res) => {
+	Location.find()
+		.then(locations => {
+			UnvalidatedLocation.find()
+				.then(unvalidatedLocations => {
+					if (locations.length === 0 && unvalidatedLocations.length === 0) 
+						return res.status(200).json({ message: 'No locations found', token: res.locals.token });
+					
+					locations.sort((a, b) => {
+						return a.name.localeCompare(b.name);
+					});
+					unvalidatedLocations.sort((a, b) => {
+						return a.name.localeCompare(b.name);
+					});
+					const allLocations = {
+						validated: locations,
+						unvalidated: unvalidatedLocations
+					};
+					return res.status(200).json({ data: allLocations, token: res.locals.token });
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

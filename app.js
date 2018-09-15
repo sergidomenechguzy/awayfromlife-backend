@@ -105,5 +105,5 @@ if (process.env.NODE_ENV === 'production') {
 	}), 86400000);
 }
 
-const update = require('./config/update');
-update.updateDate();
+// const update = require('./config/update');
+// update.updateDate();

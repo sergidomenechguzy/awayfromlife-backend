@@ -5,6 +5,7 @@ const router = express.Router();
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load event model
 require('../models/Event');
@@ -40,6 +41,44 @@ router.get('/', token.checkToken(false), (req, res) => {
 				}
 				return res.status(200).json({ data: responseBands, token: res.locals.token });
 			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all bands including unvalidated bands
+router.get('/all', token.checkToken(false), (req, res) => {
+	Band.find()
+		.then(bands => {
+			UnvalidatedBand.find()
+				.then(unvalidatedBands => {
+					if (bands.length === 0 && unvalidatedBands.length === 0) 
+						return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+					
+					dereference.bandObjectArray(bands, 'name', 1, (err, responseBands1) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						dereference.bandObjectArray(unvalidatedBands, 'name', 1, (err, responseBands2) => {
+							if (err) {
+								console.log(err.name + ': ' + err.message);
+								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							}
+							const allBands = {
+								validated: responseBands1,
+								unvalidated: responseBands2
+							};
+							return res.status(200).json({ data: allBands, token: res.locals.token });
+						});
+					});
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
