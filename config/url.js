@@ -10,19 +10,18 @@ const ArchivedEvent = mongoose.model('archived_events');
 const dereference = require('../config/dereference');
 
 module.exports.generateUrl = (object, model, next) => {
-	let copiedObject = generateURLFromObject(object);
+	let copiedObject = generateUrlFromObject(object);
 	urlList = [];
 	checkUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
 }
 
 module.exports.generateUrlWithList = (object, model, urlList, next) => {
-	let copiedObject = generateURLFromObject(object);
+	let copiedObject = generateUrlFromObject(object);
 	checkUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
 }
 
 const checkUrl = (object, model, url, urlList, counter, next) => {
 	if (!object) return next(null, null);
-	console.log(urlList);
 	
 	if ((urlList.length > 0) && urlList.includes(url)) {
 		url = object.url + '--' + counter;
@@ -54,16 +53,30 @@ const checkUrl = (object, model, url, urlList, counter, next) => {
 module.exports.generateEventUrl = (object, model, next) => {
 	dereference.eventObject(object, (err, responseEvent) => {
 		if (err) return next(err, null);
-		let url = object.title + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + responseEvent.location.name;
-		url = deUmlaut(url);
-		let copiedObject = JSON.parse(JSON.stringify(object));
-		copiedObject.url = url;
-		checkEventUrl(copiedObject, model, url, 2, next);
+		
+		let copiedObject = generateEventUrlFromObject(object, responseEvent);
+		urlList = [];
+		checkEventUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
 	});
 }
 
-const checkEventUrl = (object, model, url, counter, next) => {
+module.exports.generateEventUrlWithList = (object, model, urlList, next) => {
+	dereference.eventObject(object, (err, responseEvent) => {
+		if (err) return next(err, null);
+
+		let copiedObject = generateEventUrlFromObject(object, responseEvent);
+		checkEventUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
+	});
+}
+
+const checkEventUrl = (object, model, url, urlList, counter, next) => {
 	if (!object) return next(null, null);
+
+	if ((urlList.length > 0) && urlList.includes(url)) {
+		url = object.url + '--' + counter;
+		counter++;
+		return checkEventUrl(object, model, url, urlList, counter, next);
+	}
 
 	Event.findOne({ url: url })
 		.then(savedObject1 => {
@@ -75,7 +88,7 @@ const checkEventUrl = (object, model, url, counter, next) => {
 				else {
 					url = object.url + '--' + counter;
 					counter++;
-					checkEventUrl(object, model, url, counter, next);
+					return checkEventUrl(object, model, url, urlList, counter, next);
 				}
 			}
 			else {
@@ -89,7 +102,7 @@ const checkEventUrl = (object, model, url, counter, next) => {
 							else {
 								url = object.url + '--' + counter;
 								counter++;
-								checkEventUrl(object, model, url, counter, next);
+								return checkEventUrl(object, model, url, urlList, counter, next);
 							}
 						}
 						else {
@@ -107,13 +120,21 @@ const checkEventUrl = (object, model, url, counter, next) => {
 		});
 }
 
-const generateURLFromObject = (object) => {
+const generateUrlFromObject = (object) => {
 	let url = '';
 	if (object.title != undefined) url = object.title;
 	else {
 		url = object.name;
 		if (object.address) url = url + '--' + object.address.city;
 	}
+	url = deUmlaut(url);
+	let copiedObject = JSON.parse(JSON.stringify(object));
+	copiedObject.url = url;
+	return copiedObject;
+}
+
+const generateEventUrlFromObject = (object, event) => {
+	let url = object.title + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + event.location.name;
 	url = deUmlaut(url);
 	let copiedObject = JSON.parse(JSON.stringify(object));
 	copiedObject.url = url;
