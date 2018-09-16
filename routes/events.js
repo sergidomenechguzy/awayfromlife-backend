@@ -287,9 +287,7 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 
 // get events by date
 router.get('/date/:date', token.checkToken(false), (req, res) => {
-	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
-
-	Event.find({ date: regex })
+	Event.find({ date: new RegExp('^' + req.params.date) })
 		.then(events => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
