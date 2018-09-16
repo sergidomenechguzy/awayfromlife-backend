@@ -292,7 +292,7 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 			if (events.length === 0) 
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
 			
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
