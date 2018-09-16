@@ -12,6 +12,8 @@ const params = require('../config/params.js');
 const token = require('../config/token.js');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 // genres routes
 // get all genres
@@ -46,14 +48,11 @@ router.post('/', token.checkToken(true), params.checkParameters(['name']), valid
 });
 
 // post multiple genres to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name']), (req, res) => {
-	const genreList = req.body.list;
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name']), validate_multiple.reqGenreList(), (req, res) => {
+	const genreList = res.locals.validated;
 	let savedGenres = 0;
 	genreList.forEach(genre => {
-		const newGenre = {
-			name: genre.name
-		};
-		new Genre(newGenre)
+		new Genre(genre)
 			.save()
 			.then(() => {
 				savedGenres++;

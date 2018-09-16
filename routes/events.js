@@ -6,6 +6,7 @@ const router = express.Router();
 // load event model
 require('../models/Event');
 const Event = mongoose.model('events');
+const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load location model
 require('../models/Location');
@@ -19,6 +20,8 @@ const token = require('../config/token');
 const dereference = require('../config/dereference');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 moment.locale('de');
 
@@ -37,6 +40,44 @@ router.get('/', token.checkToken(false), (req, res) => {
 				}
 				return res.status(200).json({ data: responseEvents, token: res.locals.token });
 			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all events including unvalidated events
+router.get('/all', token.checkToken(false), (req, res) => {
+	Event.find()
+		.then(events => {
+			UnvalidatedEvent.find()
+				.then(unvalidatedEvents => {
+					if (events.length === 0 && unvalidatedEvents.length === 0) 
+						return res.status(200).json({ message: 'No events found', token: res.locals.token });
+					
+					dereference.eventObjectArray(events, 'title', 1, (err, responseEvents1) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						dereference.eventObjectArray(unvalidatedEvents, 'title', 1, (err, responseEvents2) => {
+							if (err) {
+								console.log(err.name + ': ' + err.message);
+								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							}
+							const allEvents = {
+								validated: responseEvents1,
+								unvalidated: responseEvents2
+							};
+							return res.status(200).json({ data: allEvents, token: res.locals.token });
+						});
+					});
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -395,6 +436,25 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// post multiple events to database
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['title', 'location', 'date', 'bands']), validate_multiple.reqEventList('post', 'event'), (req, res) => {
+	const eventList = res.locals.validated;
+	let savedEvents = 0;
+	eventList.forEach(event => {
+		new Event(event)
+			.save()
+			.then(() => {
+				savedEvents++;
+				if (eventList.length == savedEvents)
+					return res.status(200).json({ message: savedEvents + ' event(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update event by id

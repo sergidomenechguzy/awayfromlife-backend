@@ -21,10 +21,10 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
-// load url.js
-const url = require('../config/url');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 // bands routes
 // get all bands
@@ -433,6 +433,25 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// post multiple bands to database
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate_multiple.reqBandList('post'), (req, res) => {
+	const bandList = res.locals.validated;
+	let savedBands = 0;
+	bandList.forEach(band => {
+		new Band(band)
+			.save()
+			.then(() => {
+				savedBands++;
+				if (bandList.length == savedBands)
+					return res.status(200).json({ message: savedBands + ' band(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update band by id

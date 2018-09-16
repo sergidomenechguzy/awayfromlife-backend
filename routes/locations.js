@@ -19,6 +19,8 @@ const token = require('../config/token');
 const dereference = require('../config/dereference');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 // locations routes
 // get all locations
@@ -341,6 +343,25 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// post multiple locations to database
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate_multiple.reqLocationList('post'), (req, res) => {
+	const locationList = res.locals.validated;
+	let savedLocations = 0;
+	locationList.forEach(location => {
+		new Location(location)
+			.save()
+			.then(() => {
+				savedLocations++;
+				if (locationList.length == savedLocations)
+					return res.status(200).json({ message: savedLocations + ' location(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // update location by id

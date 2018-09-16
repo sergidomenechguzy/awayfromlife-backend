@@ -21,6 +21,8 @@ const dereference = require('../config/dereference');
 const archive = require('../config/archive');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 moment.locale('de');
 
@@ -366,7 +368,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // move old events to archived events collection
-router.get('/archive', token.checkToken(false), (req, res) => {
+router.get('/archive', token.checkToken(true), (req, res) => {
 	archive.events((err, response) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
@@ -377,7 +379,7 @@ router.get('/archive', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('post', 'archive'), (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('post', 'archive'), (req, res) => {
 	new Event(res.locals.validated)
 		.save()
 		.then(() => {
@@ -389,8 +391,27 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		});
 });
 
+// post multiple events to database
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['title', 'location', 'date', 'bands']), validate_multiple.reqEventList('post', 'archive'), (req, res) => {
+	const eventList = res.locals.validated;
+	let savedEvents = 0;
+	eventList.forEach(event => {
+		new Event(event)
+			.save()
+			.then(() => {
+				savedEvents++;
+				if (eventList.length == savedEvents)
+					return res.status(200).json({ message: savedEvents + ' event(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
+});
+
 // update event by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('put', 'archive'), (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('put', 'archive'), (req, res) => {
 	Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, event) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);

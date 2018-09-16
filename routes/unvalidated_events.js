@@ -14,6 +14,8 @@ const token = require('../config/token');
 const dereference = require('../config/dereference');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 // unvalidated_events routes
 // get all events
@@ -233,6 +235,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// post multiple events to database
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['title', 'location', 'date', 'bands']), validate_multiple.reqEventList('unvalidated', 'unvalidated'), (req, res) => {
+	const eventList = res.locals.validated;
+	let savedEvents = 0;
+	eventList.forEach(event => {
+		new Event(event)
+			.save()
+			.then(() => {
+				savedEvents++;
+				if (eventList.length == savedEvents)
+					return res.status(200).json({ message: savedEvents + ' event(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // delete event by id

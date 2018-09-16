@@ -12,6 +12,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load validate.js
 const validate = require('../config/validate');
+// load validate-multiple.js
+const validate_multiple = require('../config/validate-multiple');
 
 // unvalidated_locations routes
 // get all locations
@@ -163,6 +165,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+});
+
+// post multiple locations to database
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate_multiple.reqLocationList('unvalidated'), (req, res) => {
+	const locationList = res.locals.validated;
+	let savedLocations = 0;
+	locationList.forEach(location => {
+		new Location(location)
+			.save()
+			.then(() => {
+				savedLocations++;
+				if (locationList.length == savedLocations)
+					return res.status(200).json({ message: savedLocations + ' location(s) saved', token: res.locals.token });
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
+	});
 });
 
 // delete location by id
