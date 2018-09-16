@@ -212,7 +212,7 @@ module.exports.reqBand = (type) => {
 							return false;
 						});
 					})
-				) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.2' });
+				) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
 
 				let newBand;
 				if (type == 'put') {
@@ -299,7 +299,7 @@ module.exports.reqBand = (type) => {
 			})
 			.catch(err => {
 				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.3' });
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 			});
 	}
 }

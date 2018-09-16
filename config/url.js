@@ -10,21 +10,26 @@ const ArchivedEvent = mongoose.model('archived_events');
 const dereference = require('../config/dereference');
 
 module.exports.generateUrl = (object, model, next) => {
-	let url = '';
-	if (object.title) url = object.title;
-	else {
-		url = object.name;
-		if (object.address) url = url + '--' + object.address.city;
-	}
-	url = deUmlaut(url);
-	let copiedObject = JSON.parse(JSON.stringify(object));
-	copiedObject.url = url;
-	checkUrl(copiedObject, model, url, 2, next);
+	let copiedObject = generateURLFromObject(object);
+	urlList = [];
+	checkUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
 }
 
-const checkUrl = (object, model, url, counter, next) => {
-	if (!object) return next(null, null);
+module.exports.generateUrlWithList = (object, model, urlList, next) => {
+	let copiedObject = generateURLFromObject(object);
+	checkUrl(copiedObject, model, copiedObject.url, urlList, 2, next);
+}
 
+const checkUrl = (object, model, url, urlList, counter, next) => {
+	if (!object) return next(null, null);
+	console.log(urlList);
+	
+	if ((urlList.length > 0) && urlList.includes(url)) {
+		url = object.url + '--' + counter;
+		counter++;
+		return checkUrl(object, model, url, urlList, counter, next);
+	}
+	
 	model.findOne({ url: url })
 		.then(savedObject => {
 			if (!savedObject) {
@@ -38,10 +43,7 @@ const checkUrl = (object, model, url, counter, next) => {
 			else {
 				url = object.url + '--' + counter;
 				counter++;
-				checkUrl(object, model, url, counter, (err, responseObject) => {
-					if (err) return next(err, null);
-					return next(null, responseObject);
-				});
+				return checkUrl(object, model, url, urlList, counter, next);
 			}
 		})
 		.catch(err => {
@@ -73,10 +75,7 @@ const checkEventUrl = (object, model, url, counter, next) => {
 				else {
 					url = object.url + '--' + counter;
 					counter++;
-					checkEventUrl(object, model, url, counter, (err, responseObject) => {
-						if (err) return next(err, null);
-						return next(null, responseObject);
-					});
+					checkEventUrl(object, model, url, counter, next);
 				}
 			}
 			else {
@@ -90,10 +89,7 @@ const checkEventUrl = (object, model, url, counter, next) => {
 							else {
 								url = object.url + '--' + counter;
 								counter++;
-								checkEventUrl(object, model, url, counter, (err, responseObject) => {
-									if (err) return next(err, null);
-									return next(null, responseObject);
-								});
+								checkEventUrl(object, model, url, counter, next);
 							}
 						}
 						else {
@@ -111,7 +107,20 @@ const checkEventUrl = (object, model, url, counter, next) => {
 		});
 }
 
-function deUmlaut(value) {
+const generateURLFromObject = (object) => {
+	let url = '';
+	if (object.title != undefined) url = object.title;
+	else {
+		url = object.name;
+		if (object.address) url = url + '--' + object.address.city;
+	}
+	url = deUmlaut(url);
+	let copiedObject = JSON.parse(JSON.stringify(object));
+	copiedObject.url = url;
+	return copiedObject;
+}
+
+const deUmlaut = (value) => {
 	value = value.replace(/ä/g, 'ae');
 	value = value.replace(/ö/g, 'oe');
 	value = value.replace(/ü/g, 'ue');
