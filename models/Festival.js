@@ -13,6 +13,10 @@ const FestivalSchema = new Schema({
 	description: {
 		type: String
 	},
+	genre: {
+		type: [String],
+		required: true
+	},
 	events: {
 		type: [String]
 	},
@@ -62,3 +66,4 @@ const FestivalSchema = new Schema({
 });
 
 mongoose.model('festivals', FestivalSchema);
+mongoose.model('unvalidated_festivals', FestivalSchema);
