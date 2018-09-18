@@ -6,6 +6,10 @@ const router = express.Router();
 require('../models/Festival_Event');
 const Event = mongoose.model('festival_events');
 
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -19,7 +23,7 @@ router.get('/', token.checkToken(false), (req, res) => {
 	Event.find()
 		.then(events => {
 			if (events.length === 0) 
-				return res.status(200).json({ message: 'No events found', token: res.locals.token });
+				return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
 			dereference.festivalEventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -40,7 +44,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 			
 			dereference.festivalEventObject(event, (err, responseEvent) => {
 				if (err) {
@@ -61,7 +65,7 @@ router.get('/canceled', token.checkToken(false), (req, res) => {
 	Event.find({ canceled: 1 })
 		.then(events => {
 			if (events.length === 0) 
-				return res.status(200).json({ message: 'No canceled events found.', token: res.locals.token });
+				return res.status(200).json({ message: 'No canceled festival events found.', token: res.locals.token });
 			
 			dereference.festivalEventObjectArray(events, 'title', 1, (err, responseEvents) => {
 				if (err) {
@@ -78,7 +82,7 @@ router.get('/canceled', token.checkToken(false), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
+router.post('/:_id', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
 	const newEvent = {
 		title: req.body.title,
 		startDate: req.body.startDate,
@@ -87,15 +91,29 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'start
 		canceled: req.body.canceled
 	};
 
-	new Event(newEvent)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+	Festival.findOne({ _id: req.params._id })
+		.then(festival => {
+			if (!festival) 
+				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
+			
+			new Event(newEvent)
+				.save()
+				.then(event => {
+					festival.events.push(event._id);
+					Festival.findOneAndUpdate({ _id: req.params._id }, festival, (err, updatedFestival) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
+					});
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
+			
 		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
 });
 
 // update event by id
@@ -103,7 +121,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'st
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 				
 			const update = {
 				_id: req.params._id,
@@ -119,7 +137,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'st
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event updated', token: res.locals.token });
+				return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -133,7 +151,7 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 			
 			const update = {
 				title: event.title,
@@ -148,7 +166,7 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event canceled', token: res.locals.token });
+				return res.status(200).json({ message: 'Festival event canceled', token: res.locals.token });
 			});
 		})
 		.catch(err => {
@@ -162,14 +180,31 @@ router.delete('/:_id', token.checkToken(true), (req, res) => {
 	Event.findOne({ _id: req.params._id })
 		.then(event => {
 			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 			
 			Event.remove({ _id: req.params._id }, (err, event) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
-				return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
+				Festival.findOne({ events: req.params._id })
+					.then(festival => {
+						if (!festival)
+							return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
+
+						festival.events.splice(festival.events.indexOf(req.params.eventId), 1);
+						Festival.findOneAndUpdate({ _id: festival._id }, festival, (err, updatedFestival) => {
+							if (err) {
+								console.log(err.name + ': ' + err.message);
+								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							}
+							return res.status(200).json({ message: 'Festival event deleted', token: res.locals.token });
+						});
+					})
+					.catch(err => {
+						console.log(err.name + ': ' + err.message);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					});
 			});
 		})
 		.catch(err => {

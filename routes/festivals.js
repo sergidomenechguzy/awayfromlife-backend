@@ -12,6 +12,10 @@ require('../models/Festival_Event');
 const Event = mongoose.model('festival_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_festival_events');
 
+// load genre model
+require('../models/Genre');
+const Genre = mongoose.model('genres');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -162,45 +166,82 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
-// post festival to database
-router.post('/', token.checkToken(true), params.checkParameters(['title', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), (req, res) => {
-	const newFestival = {
-		title: req.body.title,
-		url: '',
-		description: req.body.description,
-		genre: req.body.genre,
-		events: req.body.events,
-		address: {
-			street: req.body.address.street,
-			administrative: req.body.address.administrative,
-			city: req.body.address.city,
-			county: req.body.address.county,
-			country: req.body.address.country,
-			postcode: req.body.address.postcode,
-			lat: req.body.address.lat,
-			lng: req.body.address.lng,
-			value: req.body.address.value
-		},
-		ticketLink: req.body.ticketLink,
-		website: req.body.website,
-		facebookUrl: req.body.facebookUrl,
-	};
+// post festival and event to database
+router.post('/', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), (req, res) => {
+	Genre.find()
+		.then(genres => {
+			let finalGenres = [];
+			if (
+				req.body.festival.genre.some(reqGenre => {
+					return !genres.some(savedGenre => {
+						if (savedGenre.name == reqGenre) {
+							finalGenres.push(savedGenre._id);
+							return true;
+						}
+						return false;
+					});
+				})
+			) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
 
-	url.generateUrl(newFestival, Festival, (err, responseFestival) => {
-		if (err) {
+			const newFestival = {
+				title: req.body.festival.title,
+				url: '',
+				description: req.body.festival.description,
+				genre: finalGenres,
+				events: [],
+				address: {
+					street: req.body.festival.address.street,
+					administrative: req.body.festival.address.administrative,
+					city: req.body.festival.address.city,
+					county: req.body.festival.address.county,
+					country: req.body.festival.address.country,
+					postcode: req.body.festival.address.postcode,
+					lat: req.body.festival.address.lat,
+					lng: req.body.festival.address.lng,
+					value: req.body.festival.address.value
+				},
+				ticketLink: req.body.festival.ticketLink,
+				website: req.body.festival.website,
+				facebookUrl: req.body.festival.facebookUrl,
+			};
+
+			const newEvent = {
+				title: req.body.event.title,
+				startDate: req.body.event.startDate,
+				endDate: req.body.event.endDate,
+				bands: req.body.event.bands,
+				canceled: req.body.event.canceled
+			};
+
+			new Event(newEvent)
+				.save()
+				.then(event => {
+					newFestival.events = [event._id];
+					url.generateUrl(newFestival, Festival, (err, responseFestival) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						new Festival(responseFestival)
+							.save()
+							.then(() => {
+								return res.status(200).json({ message: 'Festival and event saved', token: res.locals.token });
+							})
+							.catch(err => {
+								console.log(err.name + ': ' + err.message);
+								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							});
+					});
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
+		})
+		.catch(err => {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
-		new Festival(responseFestival)
-			.save()
-			.then(() => {
-				return res.status(200).json({ message: 'Festival saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+		});
 });
 
 // // update festival by id
