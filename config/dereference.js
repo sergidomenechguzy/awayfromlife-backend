@@ -19,8 +19,11 @@ const Genre = mongoose.model('genres');
 // load festival event model
 require('../models/Festival_Event');
 const FestivalEvents = mongoose.model('festival_events');
+const UnvalidatedFestivalEvents = mongoose.model('unvalidated_festival_events');
 
 const bandObject = module.exports.bandObject = (band, next) => {
+	if (typeof band == 'string') return next(null, band);
+
 	let genreList = [];
 	band.genre.forEach(genreID => {
 		Genre.findOne({ _id: genreID })
@@ -57,6 +60,7 @@ const bandObject = module.exports.bandObject = (band, next) => {
 
 module.exports.bandObjectArray = (bands, sortBy, order, next) => {
 	if (bands.length === 0) return next(null, []);
+
 	const responseBands = [];
 	bands.forEach((band, index, array) => {
 		bandObject(band, (err, responseBand) => {
@@ -66,6 +70,8 @@ module.exports.bandObjectArray = (bands, sortBy, order, next) => {
 
 			if (responseBands.length === array.length) {
 				responseBands.sort((a, b) => {
+					if (typeof a == 'string') return 1;
+					if (typeof b == 'string') return -1;
 					if (sortBy === 'origin.name') {
 						if (order === -1) return b.origin.name.localeCompare(a.origin.name);
 						return a.origin.name.localeCompare(b.origin.name);
@@ -86,6 +92,8 @@ module.exports.bandObjectArray = (bands, sortBy, order, next) => {
 }
 
 const eventObject = module.exports.eventObject = (event, next) => {
+	if (typeof event == 'string') return next(null, event);
+
 	Location.findOne({ _id: event.location })
 		.then(location => {
 			if (!location) location = 'Location not found';
@@ -150,6 +158,7 @@ const eventObject = module.exports.eventObject = (event, next) => {
 
 module.exports.eventObjectArray = (events, sortBy, order, next) => {
 	if (events.length === 0) return next(null, []);
+
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
 		eventObject(event, (err, responseEvent) => {
@@ -159,6 +168,8 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
+					if (typeof a == 'string') return 1;
+					if (typeof b == 'string') return -1;
 					if (sortBy === 'location') {
 						if (order === -1) return b[sortBy].name.localeCompare(a[sortBy].name);
 						return a[sortBy].name.localeCompare(b[sortBy].name);
@@ -173,7 +184,7 @@ module.exports.eventObjectArray = (events, sortBy, order, next) => {
 }
 
 const festivalEventObject = module.exports.festivalEventObject = (event, next) => {
-	if (event.bands.length === 0) return next(null, event);
+	if (typeof event == 'string') return next(null, event);
 
 	let bandsArray = [];
 	event.bands.forEach((bandID, index, array) => {
@@ -211,6 +222,7 @@ const festivalEventObject = module.exports.festivalEventObject = (event, next) =
 
 const festivalEventObjectArray = module.exports.festivalEventObjectArray = (events, sortBy, order, next) => {
 	if (events.length === 0) return next(null, []);
+
 	const responseEvents = [];
 	events.forEach((event, index, array) => {
 		festivalEventObject(event, (err, responseEvent) => {
@@ -220,6 +232,8 @@ const festivalEventObjectArray = module.exports.festivalEventObjectArray = (even
 
 			if (responseEvents.length === array.length) {
 				responseEvents.sort((a, b) => {
+					if (typeof a == 'string') return 1;
+					if (typeof b == 'string') return -1;
 					if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 					return a[sortBy].localeCompare(b[sortBy]);
 				});
@@ -230,6 +244,8 @@ const festivalEventObjectArray = module.exports.festivalEventObjectArray = (even
 }
 
 const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (festival, next) => {
+	if (typeof festival == 'string') return next(null, festival);
+
 	let genreList = [];
 	festival.genre.forEach(genreID => {
 		Genre.findOne({ _id: genreID })
@@ -262,6 +278,7 @@ const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (fe
 
 module.exports.unvalidatedFestivalObjectArray = (festivals, sortBy, order, next) => {
 	if (festivals.length === 0) return next(null, []);
+
 	let responseFestivals = [];
 	festivals.forEach((festival, index1, array1) => {
 		unvalidatedFestivalObject(festival, (err, responseFestival) => {
@@ -285,47 +302,59 @@ module.exports.unvalidatedFestivalObjectArray = (festivals, sortBy, order, next)
 }
 
 const festivalObject = module.exports.festivalObject = (festival, next) => {
-	eventList = [];
+	if (typeof festival == 'string') return next(null, festival);
+
+	let eventList = [];
+	let deletedEvents = 0;
 	festival.events.forEach((eventID, index2, array2) => {
 		FestivalEvents.findOne({ _id: eventID })
 			.then(event => {
-				if (!event) event = 'Event not found';
-				eventList.push(event);
+				UnvalidatedFestivalEvents.findOne({ _id: eventID })
+					.then(unvalidatedEvent => {
+						if (!event) {
+							if (!unvalidatedEvent) eventList.push('Event not found');
+							else deletedEvents++;
+						}
+						else eventList.push(event);
 
-				if (eventList.length == array2.length) {
-					festivalEventObjectArray(eventList, 'title', 1, (err, responseEvent) => {
-						if (err) return next(err, null);
-
-						let genreList = [];
-						festival.genre.forEach(genreID => {
-							Genre.findOne({ _id: genreID })
-								.then(genre => {
-									genreList.push(genre.name);
-									if (festival.genre.length === genreList.length) {
-										genreList.sort((a, b) => {
-											return a.localeCompare(b);
+						if (eventList.length + deletedEvents == array2.length) {
+							festivalEventObjectArray(eventList, 'startDate', 1, (err, responseEvent) => {
+								if (err) return next(err, null);
+		
+								let genreList = [];
+								festival.genre.forEach(genreID => {
+									Genre.findOne({ _id: genreID })
+										.then(genre => {
+											genreList.push(genre.name);
+											if (festival.genre.length === genreList.length) {
+												genreList.sort((a, b) => {
+													return a.localeCompare(b);
+												});
+												const responseFestival = {
+													_id: festival._id,
+													title: festival.title,
+													url: festival.url,
+													description: festival.description,
+													genre: genreList,
+													events: responseEvent,
+													address: festival.address,
+													ticketLink: festival.ticketLink,
+													website: festival.website,
+													facebookUrl: festival.facebookUrl
+												};
+												return next(null, responseFestival);
+											}
+										})
+										.catch(err => {
+											return next(err, null);
 										});
-										const responseFestival = {
-											_id: festival._id,
-											title: festival.title,
-											url: festival.url,
-											description: festival.description,
-											genre: genreList,
-											events: responseEvent,
-											address: festival.address,
-											ticketLink: festival.ticketLink,
-											website: festival.website,
-											facebookUrl: festival.facebookUrl
-										};
-										return next(null, responseFestival);
-									}
-								})
-								.catch(err => {
-									return next(err, null);
 								});
-						});
+							});
+						}
+					})
+					.catch(err => {
+						return next(err, null);
 					});
-				}
 			})
 			.catch(err => {
 				return next(err, null);
@@ -335,6 +364,7 @@ const festivalObject = module.exports.festivalObject = (festival, next) => {
 
 module.exports.festivalObjectArray = (festivals, sortBy, order, next) => {
 	if (festivals.length === 0) return next(null, []);
+
 	let responseFestivals = [];
 	festivals.forEach((festival, index1, array1) => {
 		festivalObject(festival, (err, responseFestival) => {
@@ -358,11 +388,25 @@ module.exports.festivalObjectArray = (festivals, sortBy, order, next) => {
 }
 
 const reportObject = module.exports.reportObject = (report, model, next) => {
+	if (typeof report == 'string') return next(null, report);
+
 	model.findOne({ _id: report.item })
 		.then(item => {
 			if (!item) item = 'Item not found';
 			if (report.category === 'event') {
 				eventObject(item, (err, responseItem) => {
+					if (err) return next(err, null);
+					responseReport = {
+						_id: report._id,
+						category: report.category,
+						item: responseItem,
+						description: report.description
+					}
+					return next(null, responseReport);
+				});
+			}
+			else if (report.category === 'band') {
+				bandObject(item, (err, responseItem) => {
 					if (err) return next(err, null);
 					responseReport = {
 						_id: report._id,
@@ -390,6 +434,7 @@ const reportObject = module.exports.reportObject = (report, model, next) => {
 
 module.exports.reportObjectArray = (reports, order, next) => {
 	if (reports.length === 0) return next(null, []);
+
 	let responseReports = [];
 	let reportList = {
 		event: [],
