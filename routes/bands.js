@@ -367,6 +367,9 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 	};
 	Band.find()
 		.then(bands => {
+			if (bands.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
 			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

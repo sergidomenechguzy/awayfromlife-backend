@@ -140,6 +140,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 	};
 	Band.find()
 		.then(bands => {
+			if (bands.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
 			bands.forEach(band => {
 				if (band.name && !filters.startWith.includes(band.name.charAt(0).toUpperCase())) {
 					if (band.name.charAt(0).toUpperCase() === 'Ä') {
