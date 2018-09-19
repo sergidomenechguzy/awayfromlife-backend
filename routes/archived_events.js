@@ -310,6 +310,9 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 	};
 	Event.find()
 		.then(events => {
+			if (events.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
 			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);

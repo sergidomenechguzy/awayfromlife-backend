@@ -116,6 +116,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 	};
 	Location.find()
 		.then(locations => {
+			if (locations.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
 			locations.forEach(location => {
 				if (location.name && !filters.startWith.includes(location.name.charAt(0).toUpperCase())) {
 					if (location.name.charAt(0).toUpperCase() === 'Ä') {
