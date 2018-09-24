@@ -13,6 +13,10 @@ const Band = mongoose.model('bands');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+// load festival event model
+require('../models/Festival_Event');
+const FestivalEvent = mongoose.model('festival_events');
+
 // load genre model
 require('../models/Genre');
 const Genre = mongoose.model('genres');
@@ -29,8 +33,13 @@ module.exports.reqEvent = (type, model) => {
 		if (!(req.body.description == undefined || typeof req.body.description == 'string'))
 			return res.status(400).json({ message: 'Attribute \'description\' can be left out or has to be a string.' });
 
-		if (!(typeof req.body.location == 'string' && req.body.location.length > 0))
-			return res.status(400).json({ message: 'Attribute \'location\' has to be the ID of a location from the database.' });
+		let locationId;
+		if (!(typeof req.body.location == 'string' && req.body.location.length > 0)) {
+			if (!(typeof req.body.location == 'object' && req.body.location._id != undefined)) 
+				return res.status(400).json({ message: 'Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.' });
+			else locationId = req.body.location._id;
+		}
+		else locationId = req.body.location;
 
 		if (!(typeof req.body.date == 'string' && req.body.date.length > 0))
 			return res.status(400).json({ message: 'Attribute \'date\' has to be a string with 1 or more characters.' });
@@ -38,8 +47,28 @@ module.exports.reqEvent = (type, model) => {
 		if (!(req.body.time == undefined || typeof req.body.time == 'string'))
 			return res.status(400).json({ message: 'Attribute \'time\' can be left out or has to be a string.' });
 
+		let bandList = [];
 		if (!(Array.isArray(req.body.bands) && req.body.bands.length > 0))
-			return res.status(400).json({ message: 'Attribute \'bands\' has to be an array of IDs of bands from the database and must not be empty.' });
+			return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+		else {
+			if (
+				req.body.bands.some(band => {
+					if (!(typeof band == 'string' && band.length > 0)) {
+						if (!(typeof band == 'object' && band._id != undefined)) 
+							return true;
+						else {
+							bandList.push(band._id);
+							return false;
+						}
+					}
+					else {
+						bandList.push(band);
+						return false;
+					}
+				})
+			)
+				return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+		}
 
 		if (!(req.body.canceled == undefined || (typeof req.body.canceled == 'number' && (req.body.canceled == 0 || req.body.canceled == 1 || req.body.canceled == 2))))
 			return res.status(400).json({ message: 'Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.' });
@@ -50,18 +79,19 @@ module.exports.reqEvent = (type, model) => {
 		Location.find()
 			.then(locations => {
 				const locationIds = locations.map(location => location._id.toString());
-				if (!locationIds.includes(req.body.location))
-					return res.status(400).json({ message: 'Attribute \'location\' has to be the ID of a location from the database.' });
+				if (!locationIds.includes(locationId))
+					return res.status(400).json({ message: 'Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.' });
 
 				Band.find()
 					.then(bands => {
 						const bandIds = bands.map(band => band._id.toString());
 						if (
-							req.body.bands.some(band => {
+							bandList.some(band => {
 								if (!bandIds.includes(band)) return true;
 								return false;
 							})
-						) return res.status(400).json({ message: 'Attribute \'bands\' has to be an array of IDs of bands from the database and must not be empty.' });
+						) return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+
 						let newEvent;
 						if (type == 'put') {
 							let collection = (model == 'archive') ? ArchivedEvent : Event;
@@ -75,10 +105,10 @@ module.exports.reqEvent = (type, model) => {
 										title: req.body.title,
 										url: '',
 										description: req.body.description != undefined ? req.body.description : event.description,
-										location: req.body.location,
+										location: locationId,
 										date: req.body.date,
 										time: req.body.time != undefined ? req.body.time : event.time,
-										bands: req.body.bands,
+										bands: bandList,
 										canceled: req.body.canceled != undefined ? req.body.canceled : event.canceled,
 										ticketLink: req.body.ticketLink != undefined ? req.body.ticketLink : event.ticketLink,
 										lastModified: Date.now()
@@ -102,10 +132,10 @@ module.exports.reqEvent = (type, model) => {
 								title: req.body.title,
 								url: '',
 								description: req.body.description != undefined ? req.body.description : '',
-								location: req.body.location,
+								location: locationId,
 								date: req.body.date,
 								time: req.body.time != undefined ? req.body.time : '',
-								bands: req.body.bands,
+								bands: bandList,
 								canceled: req.body.canceled != undefined ? req.body.canceled : 0,
 								ticketLink: req.body.ticketLink != undefined ? req.body.ticketLink : ''
 							};
@@ -143,8 +173,28 @@ module.exports.reqBand = (type) => {
 		if (!(typeof req.body.name == 'string' && req.body.name.length > 0))
 			return res.status(400).json({ message: 'Attribute \'name\' has to be a string with 1 or more characters.' });
 
+		let genreList = [];
 		if (!(Array.isArray(req.body.genre) && req.body.genre.length > 0 && req.body.genre.length < 4))
-			return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
+			return res.status(400).json({ message: 'Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.' });
+		else {
+			if (
+				req.body.genre.some(gerne => {
+					if (!(typeof gerne == 'string' && gerne.length > 0)) {
+						if (!(typeof gerne == 'object' && gerne._id != undefined)) 
+							return true;
+						else {
+							genreList.push(gerne._id);
+							return false;
+						}
+					}
+					else {
+						genreList.push(gerne);
+						return false;
+					}
+				})
+			)
+				return res.status(400).json({ message: 'Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.' });
+		}
 
 		if (!(typeof req.body.origin.name == 'string' && req.body.origin.name.length > 0))
 			return res.status(400).json({ message: 'Attribute \'origin.name\' has to be a string with 1 or more characters.' });
@@ -203,16 +253,16 @@ module.exports.reqBand = (type) => {
 			.then(genres => {
 				let finalGenres = [];
 				if (
-					req.body.genre.some(reqGenre => {
+					genreList.some(reqGenre => {
 						return !genres.some(savedGenre => {
-							if (savedGenre.name == reqGenre) {
+							if (savedGenre.name == reqGenre || savedGenre._id.toString() == reqGenre) {
 								finalGenres.push(savedGenre._id);
 								return true;
 							}
 							return false;
 						});
 					})
-				) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
+				) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.' });
 
 				let newBand;
 				if (type == 'put') {
@@ -425,6 +475,98 @@ module.exports.reqLocation = (type) => {
 				});
 			}
 		}
+	}
+}
+
+// validate all attributes for festival event objects in the request body
+module.exports.reqFestivalEvent = (type) => {
+	return (req, res, next) => {
+		if (!(typeof req.body.title == 'string' && req.body.title.length > 0))
+			return res.status(400).json({ message: 'Attribute \'title\' has to be a string with 1 or more characters.' });
+
+		if (!(typeof req.body.startDate == 'string' && req.body.startDate.length > 0))
+			return res.status(400).json({ message: 'Attribute \'startDate\' has to be a string with 1 or more characters.' });
+		
+		if (!(typeof req.body.endDate == 'string' && req.body.endDate.length > 0))
+			return res.status(400).json({ message: 'Attribute \'endDate\' has to be a string with 1 or more characters.' });
+		
+		let bandList = [];
+		if (!(Array.isArray(req.body.bands) && req.body.bands.length > 0))
+			return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+		else {
+			if (
+				req.body.bands.some(band => {
+					if (!(typeof band == 'string' && band.length > 0)) {
+						if (!(typeof band == 'object' && band._id != undefined)) 
+							return true;
+						else {
+							bandList.push(band._id);
+							return false;
+						}
+					}
+					else {
+						bandList.push(band);
+						return false;
+					}
+				})
+			)
+				return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+		}
+
+		if (!(req.body.canceled == undefined || (typeof req.body.canceled == 'number' && (req.body.canceled == 0 || req.body.canceled == 1 || req.body.canceled == 2))))
+			return res.status(400).json({ message: 'Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.' });
+
+		Band.find()
+			.then(bands => {
+				const bandIds = bands.map(band => band._id.toString());
+				if (
+					bandList.some(band => {
+						if (!bandIds.includes(band)) return true;
+						return false;
+					})
+				) return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
+
+				let newFestivalEvent;
+				if (type == 'put') {
+					FestivalEvent.findOne({ _id: req.params._id })
+						.then(event => {
+							if (!event)
+								return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+
+							newFestivalEvent = {
+								_id: req.params._id,
+								title: req.body.title,
+								startDate: req.body.startDate,
+								endDate: req.body.endDate,
+								bands: bandList,
+								canceled: req.body.canceled != undefined ? req.body.canceled : event.canceled
+							};
+
+							res.locals.validated = newFestivalEvent;
+							return next();
+						})
+						.catch(err => {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						});
+				}
+				else {
+					newFestivalEvent = {
+						_id: req.params._id,
+						title: req.body.title,
+						startDate: req.body.startDate,
+						endDate: req.body.endDate,
+						bands: bandList,
+						canceled: req.body.canceled != undefined ? req.body.canceled : 0
+					};
+					res.locals.validated = newFestivalEvent;
+					return next();
+				}
+			})
+			.catch(err => {
+				console.log(err.name + ': ' + err.message);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			});
 	}
 }
 

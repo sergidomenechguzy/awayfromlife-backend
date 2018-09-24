@@ -17,6 +17,8 @@ const params = require('../config/params');
 const token = require('../config/token');
 // load dereference.js
 const dereference = require('../config/dereference');
+// load validate.js
+const validate = require('../config/validate');
 
 // festival_events routes
 // get all events
@@ -62,21 +64,13 @@ router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 });
 
 // post event to database
-router.post('/:_id', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
-	const newEvent = {
-		title: req.body.title,
-		startDate: req.body.startDate,
-		endDate: req.body.endDate,
-		bands: req.body.bands,
-		canceled: req.body.canceled
-	};
-
+router.post('/:_id', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), validate.reqFestivalEvent('post'), (req, res) => {
 	Festival.findOne({ _id: req.params._id })
 		.then(festival => {
 			if (!festival) 
 				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 			
-			new Event(newEvent)
+			new Event(res.locals.validated)
 				.save()
 				.then(event => {
 					festival.events.push(event._id);
@@ -96,16 +90,8 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['title', '
 		})
 });
 
-// post event to database
-router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), (req, res) => {
-	const newEvent = {
-		title: req.body.title,
-		startDate: req.body.startDate,
-		endDate: req.body.endDate,
-		bands: req.body.bands,
-		canceled: req.body.canceled
-	};
-
+// validate unvalidated festival event
+router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), validate.reqFestivalEvent('post'), (req, res) => {
 	Festival.findOne({ _id: req.params.festivalId })
 		.then(festival => {
 			if (!festival) 
@@ -115,7 +101,7 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.ch
 			
 			festival.events.splice(festival.events.indexOf(req.params.eventId), 1);
 
-			new ValidEvent(newEvent)
+			new ValidEvent(res.locals.validated)
 				.save()
 				.then(event => {
 					festival.events.push(event._id);
