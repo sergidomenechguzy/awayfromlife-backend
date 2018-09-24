@@ -203,7 +203,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['festival.titl
 		});
 });
 
-// post festival and event to database
+// validate unvalidated festival and festival event
 router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), (req, res) => {
 	Festival.findOne({ _id: req.params._id })
 		.then(festival => {

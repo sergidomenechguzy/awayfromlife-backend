@@ -166,6 +166,101 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get festival by title-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Festival.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
+		.then(festival => {
+			if (!festival) 
+				return res.status(200).json({ message: 'No festival found with this URL', token: res.locals.token });
+			
+			dereference.festivalObject(festival, (err, responseFestival) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseFestival, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		startWith: [],
+		cities: [],
+		countries: [],
+		genres: [],
+		firstDate: '',
+		lastDate: ''
+	};
+	Festival.find()
+		.then(festivals => {
+			if (festivals.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
+			dereference.festivalObjectArray(festivals, 'title', 1, (err, responseFestivals) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				
+				responseFestivals.forEach(festival => {
+					if (festival.title && !filters.startWith.includes(festival.title.charAt(0).toUpperCase())) {
+						if (festival.title.charAt(0).toUpperCase() === 'Ä') {
+							if (!filters.startWith.includes('A')) filters.startWith.push('A');
+						}
+						else if (festival.title.charAt(0).toUpperCase() === 'Ö') {
+							if (!filters.startWith.includes('O')) filters.startWith.push('O');
+						}
+						else if (festival.title.charAt(0).toUpperCase() === 'Ü') {
+							if (!filters.startWith.includes('U')) filters.startWith.push('U');
+						}
+						else if (/[A-Z]/.test(festival.title.charAt(0).toUpperCase())) 
+							filters.startWith.push(festival.title.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#')) 
+							filters.startWith.push('#');
+					}
+					if (festival.address.city && !filters.cities.includes(festival.address.city))
+						filters.cities.push(festival.address.city);
+					if (festival.address.country && !filters.countries.includes(festival.address.country)) 
+						filters.countries.push(festival.address.country);
+
+					festival.genre.forEach(genre => {
+						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+					});
+
+					festival.events.forEach(event => {
+						if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+							filters.firstDate = event.startDate;
+						if (!filters.lastDate || event.endDate.localeCompare(filters.lastDate) == 1)
+							filters.lastDate = event.endDate;
+					});
+				});
+				filters.startWith.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.cities.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.countries.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.genres.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post festival and event to database
 router.post('/', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), (req, res) => {
 	Genre.find()
