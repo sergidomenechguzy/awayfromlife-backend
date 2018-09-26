@@ -91,7 +91,7 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['title', '
 });
 
 // validate unvalidated festival event
-router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), validate.reqFestivalEvent('post'), (req, res) => {
+router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate', 'bands']), validate.reqFestivalEvent('post'), (req, res) => {
 	Festival.findOne({ _id: req.params.festivalId })
 		.then(festival => {
 			if (!festival) 

@@ -63,7 +63,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 });
 
 // get canceled events
-router.get('/canceled', token.checkToken(false), (req, res) => {
+router.get('/canceled', token.checkToken(true), (req, res) => {
 	Event.find({ canceled: 1 })
 		.then(events => {
 			if (events.length === 0)
