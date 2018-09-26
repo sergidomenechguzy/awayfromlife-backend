@@ -50,7 +50,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 });
 
 // get all festivals with unvalidated festival events
-router.get('/unvalidated', token.checkToken(true), (req, res) => {
+router.get('/unvalidated', token.checkToken(false), (req, res) => {
 	Event.find()
 		.then(events => {
 			if (events.length === 0)
@@ -157,42 +157,28 @@ router.post('/', token.checkToken(false), params.checkParameters(['festival.titl
 });
 
 // validate unvalidated festival and festival event
-router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('post'), (req, res) => {
-	Festival.findOne({ _id: req.params._id })
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-			const ids = [];
-			festival.events.forEach(event => {
-				ids.push({ _id: event });
-			});
-
-			new ValidEvent(res.locals.validated.event)
+router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('validate'), (req, res) => {
+	new ValidEvent(res.locals.validated.event)
+		.save()
+		.then(event => {
+			let newFestival = res.locals.validated.festival;
+			newFestival.events = [event._id];
+			new ValidFestival(newFestival)
 				.save()
-				.then(event => {
-					let newFestival = res.locals.validated.festival;
-					newFestival.events = [event._id];
-					new ValidFestival(newFestival)
-						.save()
-						.then(() => {
-							Festival.remove({ _id: req.params._id }, (err, removedFestival) => {
-								if (err) {
-									console.log(err.name + ': ' + err.message);
-									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-								}
-								Event.remove({ $or: ids }, (err, events) => {
-									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									}
-									return res.status(200).json({ message: 'Festival and event validated', token: res.locals.token });
-								});
-							});
-						})
-						.catch(err => {
+				.then(() => {
+					Festival.remove({ _id: req.params.festivalId }, (err, removedFestival) => {
+						if (err) {
 							console.log(err.name + ': ' + err.message);
 							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
+						Event.remove({ _id: req.params.eventId }, (err, events) => {
+							if (err) {
+								console.log(err.name + ': ' + err.message);
+								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							}
+							return res.status(200).json({ message: 'Festival and event validated', token: res.locals.token });
 						});
+					});
 				})
 				.catch(err => {
 					console.log(err.name + ': ' + err.message);

@@ -5,6 +5,7 @@ const router = express.Router();
 // load event model
 require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
+const ValidEvent = mongoose.model('events');
 
 // load params.js
 const params = require('../config/params');
@@ -233,6 +234,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// validate unvalidated event
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('validate', 'unvalidated'), (req, res) => {
+	new ValidEvent(res.locals.validated)
+		.save()
+		.then(() => {
+			Event.remove({ _id: req.params._id }, (err, removedEvent) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Event validated', token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

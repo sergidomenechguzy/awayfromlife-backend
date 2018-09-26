@@ -5,6 +5,7 @@ const router = express.Router();
 // load band model
 require('../models/Band');
 const Band = mongoose.model('unvalidated_bands');
+const ValidBand = mongoose.model('bands');
 
 // load params.js
 const params = require('../config/params');
@@ -198,6 +199,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// validate unvalidated band
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('validate'), (req, res) => {
+	new ValidBand(res.locals.validated)
+		.save()
+		.then(() => {
+			Band.remove({ _id: req.params._id }, (err, removedBand) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Band validated', token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

@@ -4,22 +4,27 @@ const mongoose = require('mongoose');
 require('../models/Event');
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
+const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
+const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load festival model
 require('../models/Festival');
 const Festival = mongoose.model('festivals');
+const UnvalidatedFestival = mongoose.model('unvalidated_festivals');
 
 // load festival event model
 require('../models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 // load genre model
 require('../models/Genre');
@@ -97,8 +102,8 @@ module.exports.reqEvent = (type, model) => {
 						) return res.status(400).json({ message: 'Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
 
 						let newEvent;
-						if (type == 'put') {
-							let collection = (model == 'archive') ? ArchivedEvent : Event;
+						if (type == 'put' || type == 'validate') {
+							let collection = (model == 'archive') ? ArchivedEvent : (model == 'unvalidated') ? UnvalidatedEvent : Event;
 							collection.findOne({ _id: req.params._id })
 								.then(event => {
 									if (!event)
@@ -269,8 +274,9 @@ module.exports.reqBand = (type) => {
 				) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.' });
 
 				let newBand;
-				if (type == 'put') {
-					Band.findOne({ _id: req.params._id })
+				if (type == 'put' || type == 'validate') {
+					collection = (type == 'validate') ? UnvalidatedBand : Band;
+					collection.findOne({ _id: req.params._id })
 						.then(band => {
 							if (!band)
 								return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
@@ -404,8 +410,9 @@ module.exports.reqLocation = (type) => {
 			return res.status(400).json({ message: 'Attribute \'facebookUrl\' can be left out or has to be a string.' });
 
 		let newLocation;
-		if (type == 'put') {
-			Location.findOne({ _id: req.params._id })
+		if (type == 'put' || type == 'validate') {
+			collection = (type == 'validate') ? UnvalidatedLocation : Location;
+			collection.findOne({ _id: req.params._id })
 				.then(location => {
 					if (!location)
 						return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
@@ -580,7 +587,7 @@ module.exports.reqFestival = () => {
 			.then(festival => {
 				if (!festival)
 					return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-				
+
 				if (!(typeof req.body.title == 'string' && req.body.title.length > 0))
 					return res.status(400).json({ message: 'Attribute \'title\' has to be a string with 1 or more characters.' });
 
@@ -825,48 +832,110 @@ module.exports.reqFestivalAndEvent = (type) => {
 							})
 						) return res.status(400).json({ message: 'Attribute \'event.bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.' });
 
-						let newFestival = {
-							title: req.body.festival.title,
-							url: '',
-							description: req.body.festival.description != undefined ? req.body.festival.description : '',
-							genre: finalGenres,
-							events: [],
-							address: {
-								street: req.body.festival.address.street,
-								administrative: req.body.festival.address.administrative != undefined ? req.body.festival.address.administrative : '',
-								city: req.body.festival.address.city,
-								county: req.body.festival.address.county != undefined ? req.body.festival.address.county : '',
-								country: req.body.festival.address.country,
-								postcode: req.body.festival.address.postcode != undefined ? req.body.festival.address.postcode : '',
-								lat: req.body.festival.address.lat,
-								lng: req.body.festival.address.lng,
-								value: req.body.festival.address.value != undefined ? req.body.festival.address.value : ''
-							},
-							ticketLink: req.body.festival.ticketLink != undefined ? req.body.festival.ticketLink : '',
-							website: req.body.festival.website != undefined ? req.body.festival.website : '',
-							facebookUrl: req.body.festival.facebookUrl != undefined ? req.body.festival.facebookUrl : ''
-						};
-						let newFestivalEvent = {
-							title: req.body.event.title,
-							startDate: req.body.event.startDate,
-							endDate: req.body.event.endDate,
-							bands: bandList,
-							canceled: req.body.event.canceled != undefined ? req.body.event.canceled : 0
-						};
+						let newFestival;
+						let newFestivalEvent;
+						if (type == 'validate') {
+							UnvalidatedFestival.findOne({ _id: req.params.festivalId })
+								.then(festival => {
+									if (!festival)
+										return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 
-						if (type == 'unvalidated') {
-							res.locals.validated = { festival: newFestival, event: newFestivalEvent };
-							return next();
-						}
-						else {
-							url.generateUrl(newFestival, Festival, (err, responseFestival) => {
-								if (err) {
+									UnvalidatedFestivalEvent.findOne({ _id: req.params.eventId })
+										.then(event => {
+											if (!event)
+												return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
+
+											newFestival = {
+												title: req.body.festival.title,
+												url: '',
+												description: req.body.festival.description != undefined ? req.body.festival.description : festival.description,
+												genre: finalGenres,
+												events: [],
+												address: {
+													street: req.body.festival.address.street,
+													administrative: req.body.festival.address.administrative != undefined ? req.body.festival.address.administrative : festival.address.administrative,
+													city: req.body.festival.address.city,
+													county: req.body.festival.address.county != undefined ? req.body.festival.address.county : festival.address.county,
+													country: req.body.festival.address.country,
+													postcode: req.body.festival.address.postcode != undefined ? req.body.festival.address.postcode : festival.address.postcode,
+													lat: req.body.festival.address.lat,
+													lng: req.body.festival.address.lng,
+													value: req.body.festival.address.value != undefined ? req.body.festival.address.value : festival.address.value
+												},
+												ticketLink: req.body.festival.ticketLink != undefined ? req.body.festival.ticketLink : festival.ticketLink,
+												website: req.body.festival.website != undefined ? req.body.festival.website : festival.website,
+												facebookUrl: req.body.festival.facebookUrl != undefined ? req.body.festival.facebookUrl : festival.facebookUrl
+											};
+											newFestivalEvent = {
+												title: req.body.event.title,
+												startDate: req.body.event.startDate,
+												endDate: req.body.event.endDate,
+												bands: bandList,
+												canceled: req.body.event.canceled != undefined ? req.body.event.canceled : event.canceled
+											};
+											url.generateUrl(newFestival, Festival, (err, responseFestival) => {
+												if (err) {
+													console.log(err.name + ': ' + err.message);
+													return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+												}
+												res.locals.validated = { festival: responseFestival, event: newFestivalEvent };
+												return next();
+											});
+										})
+										.catch(err => {
+											console.log(err.name + ': ' + err.message);
+											return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+										});
+								})
+								.catch(err => {
 									console.log(err.name + ': ' + err.message);
 									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-								}
-								res.locals.validated = { festival: responseFestival, event: newFestivalEvent };
+								});
+						}
+						else {
+							newFestival = {
+								title: req.body.festival.title,
+								url: '',
+								description: req.body.festival.description != undefined ? req.body.festival.description : '',
+								genre: finalGenres,
+								events: [],
+								address: {
+									street: req.body.festival.address.street,
+									administrative: req.body.festival.address.administrative != undefined ? req.body.festival.address.administrative : '',
+									city: req.body.festival.address.city,
+									county: req.body.festival.address.county != undefined ? req.body.festival.address.county : '',
+									country: req.body.festival.address.country,
+									postcode: req.body.festival.address.postcode != undefined ? req.body.festival.address.postcode : '',
+									lat: req.body.festival.address.lat,
+									lng: req.body.festival.address.lng,
+									value: req.body.festival.address.value != undefined ? req.body.festival.address.value : ''
+								},
+								ticketLink: req.body.festival.ticketLink != undefined ? req.body.festival.ticketLink : '',
+								website: req.body.festival.website != undefined ? req.body.festival.website : '',
+								facebookUrl: req.body.festival.facebookUrl != undefined ? req.body.festival.facebookUrl : ''
+							};
+							newFestivalEvent = {
+								title: req.body.event.title,
+								startDate: req.body.event.startDate,
+								endDate: req.body.event.endDate,
+								bands: bandList,
+								canceled: req.body.event.canceled != undefined ? req.body.event.canceled : 0
+							};
+
+							if (type == 'unvalidated') {
+								res.locals.validated = { festival: newFestival, event: newFestivalEvent };
 								return next();
-							});
+							}
+							else {
+								url.generateUrl(newFestival, Festival, (err, responseFestival) => {
+									if (err) {
+										console.log(err.name + ': ' + err.message);
+										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+									}
+									res.locals.validated = { festival: responseFestival, event: newFestivalEvent };
+									return next();
+								});
+							}
 						}
 					})
 					.catch(err => {
