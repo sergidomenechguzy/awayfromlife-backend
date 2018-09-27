@@ -12,9 +12,8 @@ require('../models/Festival_Event');
 const Event = mongoose.model('unvalidated_festival_events');
 const ValidEvent = mongoose.model('festival_events');
 
-// load genre model
-require('../models/Genre');
-const Genre = mongoose.model('genres');
+// load delete route
+const deleteRoute = require('./controller/delete');
 
 // load params.js
 const params = require('../config/params');
@@ -193,33 +192,13 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.ch
 
 // delete festival by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Festival.findOne({ _id: req.params._id })
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-			const ids = [];
-			festival.events.forEach(event => {
-				ids.push({ _id: event });
-			});
-
-			Festival.remove({ _id: req.params._id }, (err, removedFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				Event.remove({ $or: ids }, (err, events) => {
-					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					}
-					return res.status(200).json({ message: 'Festival deleted', token: res.locals.token });
-				});
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'unvalidFestival', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

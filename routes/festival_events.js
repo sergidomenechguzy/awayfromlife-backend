@@ -10,6 +10,9 @@ const Event = mongoose.model('festival_events');
 require('../models/Festival');
 const Festival = mongoose.model('festivals');
 
+// load delete route
+const deleteRoute = require('./controller/delete');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -152,40 +155,13 @@ router.put('/cancel/:_id', token.checkToken(false), (req, res) => {
 
 // delete event by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Event.findOne({ _id: req.params._id })
-		.then(event => {
-			if (!event)
-				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
-
-			Event.remove({ _id: req.params._id }, (err, event) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				Festival.findOne({ events: req.params._id })
-					.then(festival => {
-						if (!festival)
-							return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
-
-						festival.events.splice(festival.events.indexOf(req.params.eventId), 1);
-						Festival.findOneAndUpdate({ _id: festival._id }, festival, (err, updatedFestival) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							return res.status(200).json({ message: 'Festival event deleted', token: res.locals.token });
-						});
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'validFestivalEvent', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

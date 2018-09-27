@@ -7,6 +7,9 @@ require('../models/Band');
 const Band = mongoose.model('unvalidated_bands');
 const ValidBand = mongoose.model('bands');
 
+// load delete route
+const deleteRoute = require('./controller/delete');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -246,23 +249,13 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['n
 
 // delete band by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			Band.remove({ _id: req.params._id }, (err, band) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Band deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'unvalidBand', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

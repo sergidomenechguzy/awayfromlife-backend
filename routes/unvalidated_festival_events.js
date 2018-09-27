@@ -134,17 +134,18 @@ router.delete('/:_id', token.checkToken(true), (req, res) => {
 			if (!event) 
 				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 			
-			Event.remove({ _id: req.params._id }, (err, event) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				Festival.findOne({ events: req.params._id })
-					.then(festival => {
-						if (!festival)
-							return res.status(200).json({ message: 'Festival event deleted', token: res.locals.token });
+			Festival.findOne({ events: req.params._id })
+				.then(festival => {
+					if (!festival)
+						return res.status(400).json({ message: 'No validated festival with this festival event ID found.', token: res.locals.token });
+					
+					Event.remove({ _id: req.params._id }, (err, event) => {
+						if (err) {
+							console.log(err.name + ': ' + err.message);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						}
 
-						festival.events.splice(festival.events.indexOf(req.params.eventId), 1);
+						festival.events.splice(festival.events.indexOf(req.params._id), 1);
 						Festival.findOneAndUpdate({ _id: festival._id }, festival, (err, updatedFestival) => {
 							if (err) {
 								console.log(err.name + ': ' + err.message);
@@ -152,12 +153,12 @@ router.delete('/:_id', token.checkToken(true), (req, res) => {
 							}
 							return res.status(200).json({ message: 'Festival event deleted', token: res.locals.token });
 						});
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 					});
-			});
+				})
+				.catch(err => {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);

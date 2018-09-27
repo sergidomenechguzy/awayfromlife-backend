@@ -7,6 +7,9 @@ require('../models/Location');
 const Location = mongoose.model('unvalidated_locations');
 const ValidLocation = mongoose.model('locations');
 
+// load delete route
+const deleteRoute = require('./controller/delete');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -211,23 +214,13 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['n
 
 // delete location by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Location.findOne({ _id: req.params._id })
-		.then(location => {
-			if (!location)
-				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-
-			Location.remove({ _id: req.params._id }, (err, location) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'unvalidLocation', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;
