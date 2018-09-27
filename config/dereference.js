@@ -16,10 +16,14 @@ const Band = mongoose.model('bands');
 require('../models/Genre');
 const Genre = mongoose.model('genres');
 
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
+
 // load festival event model
 require('../models/Festival_Event');
-const FestivalEvents = mongoose.model('festival_events');
-const UnvalidatedFestivalEvents = mongoose.model('unvalidated_festival_events');
+const FestivalEvent = mongoose.model('festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 const bandObject = module.exports.bandObject = (band, next) => {
 	if (typeof band == 'string') return next(null, band);
@@ -307,9 +311,9 @@ const festivalObject = module.exports.festivalObject = (festival, next) => {
 	let eventList = [];
 	let deletedEvents = 0;
 	festival.events.forEach((eventID, index2, array2) => {
-		FestivalEvents.findOne({ _id: eventID })
+		FestivalEvent.findOne({ _id: eventID })
 			.then(event => {
-				UnvalidatedFestivalEvents.findOne({ _id: eventID })
+				UnvalidatedFestivalEvent.findOne({ _id: eventID })
 					.then(unvalidatedEvent => {
 						if (!event) {
 							if (!unvalidatedEvent) eventList.push('Event not found');
@@ -417,6 +421,18 @@ const reportObject = module.exports.reportObject = (report, model, next) => {
 					return next(null, responseReport);
 				});
 			}
+			else if (report.category === 'festival') {
+				festivalObject(item, (err, responseItem) => {
+					if (err) return next(err, null);
+					responseReport = {
+						_id: report._id,
+						category: report.category,
+						item: responseItem,
+						description: report.description
+					}
+					return next(null, responseReport);
+				});
+			}
 			else {
 				responseReport = {
 					_id: report._id,
@@ -439,19 +455,21 @@ module.exports.reportObjectArray = (reports, order, next) => {
 	let reportList = {
 		event: [],
 		location: [],
-		band: []
+		band: [],
+		festival: []
 	}
 	reports.forEach((report, index, array) => {
 		let model = Event;
 		if (report.category == 'location') model = Location;
 		else if (report.category == 'band') model = Band;
+		else if (report.category == 'festival') model = Festival;
 
 		reportObject(report, model, (err, responseReport) => {
 			if (err) return next(err, null);
 
 			reportList[responseReport.category].push(responseReport);
 
-			if ((reportList.event.length + reportList.location.length + reportList.band.length) == array.length) {
+			if ((reportList.event.length + reportList.location.length + reportList.band.length + reportList.festival.length) == array.length) {
 				reportList.event.sort((a, b) => {
 					if (order === -1) return b.item.title.localeCompare(a.item.title);
 					return a.item.title.localeCompare(b.item.title);
@@ -464,7 +482,11 @@ module.exports.reportObjectArray = (reports, order, next) => {
 					if (order === -1) return b.item.name.localeCompare(a.item.name);
 					return a.item.name.localeCompare(b.item.name);
 				});
-				responseReports = responseReports.concat(reportList.band).concat(reportList.event).concat(reportList.location);
+				reportList.festival.sort((a, b) => {
+					if (order === -1) return b.item.title.localeCompare(a.item.title);
+					return a.item.title.localeCompare(b.item.title);
+				});
+				responseReports = responseReports.concat(reportList.band).concat(reportList.event).concat(reportList.festival).concat(reportList.location);
 
 				return next(null, responseReports);
 			}

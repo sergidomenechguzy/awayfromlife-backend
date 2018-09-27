@@ -1001,8 +1001,8 @@ module.exports.reqFeedback = () => {
 // validate all attributes for report objects in the request body
 module.exports.reqReport = () => {
 	return (req, res, next) => {
-		if (!(req.body.category.toLowerCase() === 'event' || req.body.category.toLowerCase() === 'location' || req.body.category.toLowerCase() === 'band'))
-			return res.status(400).json({ message: 'Attribute \'category\' has to be either \'event\', \'location\' or \'band\' as a string.' });
+		if (!(req.body.category.toLowerCase() === 'event' || req.body.category.toLowerCase() === 'location' || req.body.category.toLowerCase() === 'band' || req.body.category.toLowerCase() === 'festival'))
+			return res.status(400).json({ message: 'Attribute \'category\' has to be either \'event\', \'location\', \'band\' or \'festival\' as a string.' });
 
 		if (!(typeof req.body.item == 'string' && req.body.item.length > 0))
 			return res.status(400).json({ message: 'Attribute \'item\' has to be the ID of one item from the specified category from the database.' });
@@ -1013,8 +1013,9 @@ module.exports.reqReport = () => {
 		const categories = {
 			event: Event,
 			location: Location,
-			band: Band
-		}
+			band: Band,
+			festival: Festival
+		};
 
 		categories[req.body.category.toLowerCase()].findOne({ _id: req.body.item })
 			.then(item => {
