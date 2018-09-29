@@ -17,7 +17,7 @@ const Band = mongoose.model('bands');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
+const dereference = require('../helpers/dereference');
 
 // search route
 // get all search results with different possible parameters
@@ -34,7 +34,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 	}
 
 	const eventSearchAttributes = [
-		['title', 'title'],
+		['name', 'name'],
 		['date', 'date'],
 		['location.name', 'location name'],
 		['location.address.street', 'location address'],
@@ -101,7 +101,7 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 // get a maximum of 6 search results without parameters
 router.get('/simple/:query', token.checkToken(false), (req, res) => {
 	const eventSearchAttributes = [
-		['title', 'title'],
+		['name', 'name'],
 		['date', 'date'],
 		['location.name', 'location name'],
 		['location.address.street', 'location address'],
@@ -201,7 +201,7 @@ const eventFind = (req, res, eventSearchAttributes, next) => {
 
 	Event.find()
 		.then(events => {
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(events, 'name', 1, (err, responseEvents) => {
 				if (err) return next(err, null);
 
 				responseEvents.forEach(event => {

@@ -4,8 +4,8 @@ const router = express.Router();
 
 // load location model
 require('../models/Location');
-const Location = mongoose.model('unvalidated_locations');
-const ValidLocation = mongoose.model('locations');
+const Location = mongoose.model('locations');
+const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -14,15 +14,13 @@ const deleteRoute = require('./controller/delete');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
-// load validate.js
-const validate = require('../config/validate');
-// load validate-multiple.js
-const validate_multiple = require('../config/validate-multiple');
+// load validateLocation.js
+const validateLocation = require('../helpers/validateLocation');
 
 // unvalidated_locations routes
 // get all locations
 router.get('/', token.checkToken(true), (req, res) => {
-	Location.find()
+	UnvalidatedLocation.find()
 		.then(locations => {
 			if (locations.length === 0)
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
@@ -70,7 +68,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 		query[countryString] = RegExp(req.query.country, 'i');
 	}
 
-	Location.find(query)
+	UnvalidatedLocation.find(query)
 		.then(locations => {
 			if (locations.length === 0)
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
@@ -98,7 +96,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 // get location by id
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	Location.findOne({ _id: req.params._id })
+	UnvalidatedLocation.findById(req.params._id)
 		.then(location => {
 			if (!location)
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
@@ -118,7 +116,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 		cities: [],
 		countries: []
 	};
-	Location.find()
+	UnvalidatedLocation.find()
 		.then(locations => {
 			if (locations.length === 0)
 				return res.status(200).json({ data: filters, token: res.locals.token });
@@ -162,8 +160,8 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('unvalidated'), (req, res) => {
-	new Location(res.locals.validated)
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('unvalidated'), (req, res) => {
+	new UnvalidatedLocation(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
@@ -175,11 +173,11 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 });
 
 // validate unvalidated location
-router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('validate'), (req, res) => {
-	new ValidLocation(res.locals.validated)
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('validate'), (req, res) => {
+	new Location(res.locals.validated)
 		.save()
 		.then(() => {
-			Location.remove({ _id: req.params._id }, (err, removedFestival) => {
+			UnvalidatedLocation.remove({ _id: req.params._id }, (err, removedFestival) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -194,11 +192,11 @@ router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['
 });
 
 // post multiple locations to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate_multiple.reqLocationList('unvalidated'), (req, res) => {
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('unvalidated'), (req, res) => {
 	const locationList = res.locals.validated;
 	let savedLocations = 0;
 	locationList.forEach(location => {
-		new Location(location)
+		new UnvalidatedLocation(location)
 			.save()
 			.then(() => {
 				savedLocations++;

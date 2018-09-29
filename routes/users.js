@@ -22,7 +22,7 @@ router.get('/logout', (req, res) => {
 	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
 		if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-		User.findOne({ _id: decodedAuthToken.userID })
+		User.findById(decodedAuthToken.userID)
 			.then(user => {
 				if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -148,7 +148,7 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 
 			if (decodedPasswordToken.newPassword.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
 
-			User.findOne({ _id: decodedAuthToken.userID })
+			User.findById(decodedAuthToken.userID)
 				.then(user => {
 					if (!user) return res.status(400).json({ message: 'An error occurred. Please try again.' });
 

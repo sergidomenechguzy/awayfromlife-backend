@@ -10,8 +10,8 @@ const Feedback = mongoose.model('feedback');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
-// load validate.js
-const validate = require('../config/validate');
+// load validateFeedback.js
+const validateFeedback = require('../helpers/validateFeedback');
 
 // feedback routes
 // get all feedback
@@ -30,7 +30,7 @@ router.get('/', token.checkToken(false), (req, res) => {
 });
 
 // post feedback to database
-router.post('/', token.checkToken(false), params.checkParameters(['text']), validate.reqFeedback(), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['text']), validateFeedback.validateObject(), (req, res) => {
 	new Feedback(res.locals.validated)
 		.save()
 		.then(() => {
@@ -44,7 +44,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['text']), vali
 
 // delete feedback by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Feedback.findOne({ _id: req.params._id })
+	Feedback.findById(req.params._id)
 		.then(feedback => {
 			if (!feedback) 
 				return res.status(400).json({ message: 'No feedback found with this ID', token: res.locals.token });

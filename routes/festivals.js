@@ -9,8 +9,7 @@ const Festival = mongoose.model('festivals');
 
 // load event model
 require('../models/Festival_Event');
-const Event = mongoose.model('festival_events');
-const UnvalidatedEvent = mongoose.model('unvalidated_festival_events');
+const FestivalEvent = mongoose.model('festival_events');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -20,32 +19,27 @@ const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
-// load url.js
-const url = require('../config/url');
-// load validate.js
-const validate = require('../config/validate');
+const dereference = require('../helpers/dereference');
+// load validateFestival.js
+const validateFestival = require('../helpers/validateFestival');
+// load validateFestivalAndFestivalEvent.js
+const validateFestivalAndFestivalEvent = require('../helpers/validateFestivalAndFestivalEvent');
 
 // festivals routes
 // get all festivals
-router.get('/', token.checkToken(false), (req, res) => {
-	Festival.find()
-		.then(festivals => {
-			if (festivals.length === 0)
-				return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
+router.get('/', token.checkToken(false), async (req, res) => {
+	try {
+		const festivals = await Festival.find();
+		if (festivals.length === 0) 
+			return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
 
-			dereference.festivalObjectArray(festivals, 'title', 1, (err, responseFestivals) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestivals, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated festivals
@@ -55,7 +49,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	let perPage = 20;
 	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = 'title';
+	let sortBy = 'name';
 	if (req.query.sortBy === 'city' || req.query.sortBy === 'country') sortBy = req.query.sortBy;
 
 	let order = 1;
@@ -63,11 +57,11 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	let query = {};
 	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-		if (req.query.startWith === '#') query.title = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.title = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.title = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.title = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-		else query.title = new RegExp('^' + req.query.startWith, 'i');
+		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
 
 	Festival.find(query)
@@ -148,7 +142,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 // get festival by id
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Festival.findOne({ _id: req.params._id })
+	Festival.findById(req.params._id)
 		.then(festival => {
 			if (!festival)
 				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
@@ -167,7 +161,7 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
-// get festival by title-url
+// get festival by name-url
 router.get('/byurl/:url', token.checkToken(false), (req, res) => {
 	Festival.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
 		.then(festival => {
@@ -203,25 +197,25 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 			if (festivals.length === 0) 
 				return res.status(200).json({ data: filters, token: res.locals.token });
 			
-			dereference.festivalObjectArray(festivals, 'title', 1, (err, responseFestivals) => {
+			dereference.festivalObjectArray(festivals, 'name', 1, (err, responseFestivals) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
 				
 				responseFestivals.forEach(festival => {
-					if (festival.title && !filters.startWith.includes(festival.title.charAt(0).toUpperCase())) {
-						if (festival.title.charAt(0).toUpperCase() === 'Ä') {
+					if (festival.name && !filters.startWith.includes(festival.name.charAt(0).toUpperCase())) {
+						if (festival.name.charAt(0).toUpperCase() === 'Ä') {
 							if (!filters.startWith.includes('A')) filters.startWith.push('A');
 						}
-						else if (festival.title.charAt(0).toUpperCase() === 'Ö') {
+						else if (festival.name.charAt(0).toUpperCase() === 'Ö') {
 							if (!filters.startWith.includes('O')) filters.startWith.push('O');
 						}
-						else if (festival.title.charAt(0).toUpperCase() === 'Ü') {
+						else if (festival.name.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]/.test(festival.title.charAt(0).toUpperCase())) 
-							filters.startWith.push(festival.title.charAt(0).toUpperCase());
+						else if (/[A-Z]/.test(festival.name.charAt(0).toUpperCase())) 
+							filters.startWith.push(festival.name.charAt(0).toUpperCase());
 						else if (!filters.startWith.includes('#')) 
 							filters.startWith.push('#');
 					}
@@ -263,8 +257,8 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(true), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('post'), (req, res) => {
-	new Event(res.locals.validated.event)
+router.post('/', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('post'), (req, res) => {
+	new FestivalEvent(res.locals.validated.event)
 		.save()
 		.then(event => {
 			let newFestival = res.locals.validated.festival;
@@ -286,14 +280,15 @@ router.post('/', token.checkToken(true), params.checkParameters(['festival.title
 });
 
 // update festival by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqFestival(), (req, res) => {
-	Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, festival) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateFestival.validateObject(), async (req, res) => {
+	try {
+		await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
 		return res.status(200).json({ message: 'Festival updated', token: res.locals.token });
-	});
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete festival by id

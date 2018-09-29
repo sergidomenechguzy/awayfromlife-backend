@@ -5,7 +5,7 @@ const router = express.Router();
 
 // load event model
 require('../models/Event');
-const Event = mongoose.model('archived_events');
+const ArchivedEvent = mongoose.model('archived_events');
 
 // load location model
 require('../models/Location');
@@ -19,36 +19,29 @@ const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
+const dereference = require('../helpers/dereference');
 // load archive.js
 const archive = require('../config/archive');
-// load validate.js
-const validate = require('../config/validate');
-// load validate-multiple.js
-const validate_multiple = require('../config/validate-multiple');
+// load validateEvent.js
+const validateEvent = require('../helpers/validateEvent');
 
 moment.locale('de');
 
 // events routes
 // get all events
-router.get('/', token.checkToken(false), (req, res) => {
-	Event.find()
-		.then(events => {
-			if (events.length === 0) 
-				return res.status(200).json({ message: 'No events found', token: res.locals.token });
+router.get('/', token.checkToken(false), async (req, res) => {
+	try {
+		const events = await ArchivedEvent.find();
+		if (events.length === 0)
+			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvents, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated events
@@ -58,7 +51,7 @@ router.get('/page', token.checkToken(false), (req, res) => {
 	let perPage = 20;
 	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = 'title';
+	let sortBy = 'name';
 	if (req.query.sortBy === 'date' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
 	let order = 1;
@@ -66,18 +59,18 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 	let query = {};
 	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-		if (req.query.startWith === '#') query.title = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.title = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.title = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.title = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-		else query.title = new RegExp('^' + req.query.startWith, 'i');
+		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
 
-	Event.find(query)
+	ArchivedEvent.find(query)
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			
+
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -119,12 +112,12 @@ router.get('/page', token.checkToken(false), (req, res) => {
 							else result.push(false);
 						}
 						else if (req.query.startDate) {
-							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
 								result.push(true);
 							else result.push(false);
 						}
 						else if (req.query.endDate) {
-							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
 								result.push(true);
 							else result.push(false);
 						}
@@ -148,9 +141,9 @@ router.get('/page', token.checkToken(false), (req, res) => {
 
 // get event by id
 router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Event.findOne({ _id: req.params._id })
+	ArchivedEvent.findById(req.params._id)
 		.then(event => {
-			if (!event) 
+			if (!event)
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
 			dereference.eventObject(event, (err, responseEvent) => {
@@ -167,13 +160,13 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
-// get event by title-url
+// get event by name-url
 router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
+	ArchivedEvent.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
 		.then(event => {
-			if (!event) 
+			if (!event)
 				return res.status(200).json({ message: 'No event found with this URL', token: res.locals.token });
-			
+
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -188,15 +181,15 @@ router.get('/byurl/:url', token.checkToken(false), (req, res) => {
 		});
 });
 
-// get events by title
-router.get('/title/:title', token.checkToken(false), (req, res) => {
-	let regex = '.*' + req.params.title + '.*';
-	Event.find({ title: new RegExp(regex, 'gi') })
+// get events by name
+router.get('/name/:name', token.checkToken(false), (req, res) => {
+	let regex = '.*' + req.params.name + '.*';
+	ArchivedEvent.find({ name: new RegExp(regex, 'gi') })
 		.then(events => {
-			if (events.length === 0) 
-				return res.status(200).json({ message: 'No event found with this title', token: res.locals.token });
+			if (events.length === 0)
+				return res.status(200).json({ message: 'No event found with this name', token: res.locals.token });
 
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(events, 'name', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -217,20 +210,20 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 
 	Location.find({ 'address.city': new RegExp(regex, 'gi') })
 		.then(locations => {
-			if (locations.length === 0) 
+			if (locations.length === 0)
 				return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
 
 			locations.forEach((location, index, array) => {
-				Event.find({ location: location._id })
+				ArchivedEvent.find({ location: location._id })
 					.then(events => {
-						if (events.length > 0) 
+						if (events.length > 0)
 							cityEvents = cityEvents.concat(events);
 
 						if (index === array.length - 1) {
-							if (cityEvents.length === 0) 
+							if (cityEvents.length === 0)
 								return res.status(200).json({ message: 'No events found in this city', token: res.locals.token });
-							
-							dereference.eventObjectArray(cityEvents, 'title', 1, (err, responseEvents) => {
+
+							dereference.eventObjectArray(cityEvents, 'name', 1, (err, responseEvents) => {
 								if (err) {
 									console.log(err.name + ': ' + err.message);
 									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -255,12 +248,12 @@ router.get('/city/:city', token.checkToken(false), (req, res) => {
 router.get('/date/:date', token.checkToken(false), (req, res) => {
 	const regex = new RegExp('^' + moment(req.params.date).format('YYYY-MM-DD'));
 
-	Event.find({ date: regex })
+	ArchivedEvent.find({ date: regex })
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ message: 'No events found on this date', token: res.locals.token });
-			
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+
+			dereference.eventObjectArray(events, 'name', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -276,18 +269,18 @@ router.get('/date/:date', token.checkToken(false), (req, res) => {
 
 // get similar events
 router.get('/similar', token.checkToken(false), (req, res) => {
-	if(!req.query.location || !req.query.date)
+	if (!req.query.location || !req.query.date)
 		return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
 	let query = {};
 	query.location = req.query.location;
 	query.date = new RegExp('^' + moment(req.query.date).format('YYYY-MM-DD'));
-	
-	Event.find(query)
+
+	ArchivedEvent.find(query)
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ message: 'No events found for this location on this date', token: res.locals.token });
-			
-			dereference.eventObjectArray(events, 'title', 1, (err, responseEvents) => {
+
+			dereference.eventObjectArray(events, 'name', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -311,11 +304,11 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 		firstDate: '',
 		lastDate: ''
 	};
-	Event.find()
+	ArchivedEvent.find()
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ data: filters, token: res.locals.token });
-			
+
 			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -324,28 +317,28 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 
 				filters.firstDate = responseEvents[0].date;
 				filters.lastDate = responseEvents[responseEvents.length - 1].date;
-				
+
 				responseEvents.forEach(event => {
-					if (event.title && !filters.startWith.includes(event.title.charAt(0).toUpperCase())) {
-						if (event.title.charAt(0).toUpperCase() === 'Ä') {
+					if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
+						if (event.name.charAt(0).toUpperCase() === 'Ä') {
 							if (!filters.startWith.includes('A')) filters.startWith.push('A');
 						}
-						else if (event.title.charAt(0).toUpperCase() === 'Ö') {
+						else if (event.name.charAt(0).toUpperCase() === 'Ö') {
 							if (!filters.startWith.includes('O')) filters.startWith.push('O');
 						}
-						else if (event.title.charAt(0).toUpperCase() === 'Ü') {
+						else if (event.name.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]/.test(event.title.charAt(0).toUpperCase())) 
-							filters.startWith.push(event.title.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#')) 
+						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
+							filters.startWith.push(event.name.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#'))
 							filters.startWith.push('#');
 					}
-					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) 
+					if (event.location.address.city && !filters.cities.includes(event.location.address.city))
 						filters.cities.push(event.location.address.city);
-					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) 
+					if (event.location.address.country && !filters.countries.includes(event.location.address.country))
 						filters.countries.push(event.location.address.country);
-					
+
 					event.bands.forEach(band => {
 						band.genre.forEach(genre => {
 							if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
@@ -374,19 +367,20 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // move old events to archived events collection
-router.get('/archive', token.checkToken(true), (req, res) => {
-	archive.events((err, response) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
-		return res.status(200).json({ message: `${response.length} event(s) moved to archive.`, token: res.locals.token });
-	});
+router.get('/archive', token.checkToken(false), async (req, res) => {
+	try {
+		const archived = await archive.events();
+		return res.status(200).json({ message: `${archived.length} event(s) moved to archive.`, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post event to database
-router.post('/', token.checkToken(true), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('post', 'archive'), (req, res) => {
-	new Event(res.locals.validated)
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('post', 'archive'), (req, res) => {
+	new ArchivedEvent(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
@@ -398,11 +392,11 @@ router.post('/', token.checkToken(true), params.checkParameters(['title', 'locat
 });
 
 // post multiple events to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['title', 'location', 'date', 'bands']), validate_multiple.reqEventList('post', 'archive'), (req, res) => {
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'location', 'date', 'bands']), validateEvent.validateList('post', 'archive'), (req, res) => {
 	const eventList = res.locals.validated;
 	let savedEvents = 0;
 	eventList.forEach(event => {
-		new Event(event)
+		new ArchivedEvent(event)
 			.save()
 			.then(() => {
 				savedEvents++;
@@ -417,14 +411,15 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['ti
 });
 
 // update event by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('put', 'archive'), (req, res) => {
-	Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, event) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('put', 'archive'), async (req, res) => {
+	try {
+		await ArchivedEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
 		return res.status(200).json({ message: 'Event updated', token: res.locals.token });
-	});
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete location by id

@@ -10,8 +10,8 @@ const Bug = mongoose.model('bugs');
 const params = require('../config/params.js');
 // load token.js
 const token = require('../config/token.js');
-// load validate.js
-const validate = require('../config/validate');
+// load validateBug.js
+const validateBug = require('../helpers/validateBug');
 
 // bugs routes
 // get all bugs
@@ -30,7 +30,7 @@ router.get('/', token.checkToken(true), (req, res) => {
 });
 
 // post bug to database
-router.post('/', token.checkToken(false), params.checkParameters(['error']), validate.reqBug(), (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['error']), validateBug.validateObject(), (req, res) => {
 	new Bug(res.locals.validated)
 		.save()
 		.then(() => {
@@ -44,7 +44,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), val
 
 // delete bug by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Bug.findOne({ _id: req.params._id })
+	Bug.findById(req.params._id)
 		.then(bug => {
 			if (!bug) 
 				return res.status(400).json({ message: 'No bug found with this ID', token: res.locals.token });

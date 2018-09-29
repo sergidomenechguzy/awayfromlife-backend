@@ -4,8 +4,8 @@ const router = express.Router();
 
 // load band model
 require('../models/Band');
-const Band = mongoose.model('unvalidated_bands');
-const ValidBand = mongoose.model('bands');
+const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -15,32 +15,25 @@ const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
-// load validate.js
-const validate = require('../config/validate');
-// load validate-multiple.js
-const validate_multiple = require('../config/validate-multiple');
+const dereference = require('../helpers/dereference');
+// load validateBand.js
+const validateBand = require('../helpers/validateBand');
 
 // unvalidated_bands routes
 // get all bands
-router.get('/', token.checkToken(true), (req, res) => {
-	Band.find()
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
-			
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBands, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/', token.checkToken(true), async (req, res) => {
+	try {
+		const bands = await UnvalidatedBand.find();
+		if (bands.length === 0) 
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated bands
@@ -74,7 +67,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 	}
 	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
-	Band.find(query)
+	UnvalidatedBand.find(query)
 		.then(bands => {
 			if (bands.length === 0) 
 				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
@@ -114,7 +107,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 // get band by id
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	Band.findOne({ _id: req.params._id })
+	UnvalidatedBand.findById(req.params._id)
 		.then(band => {
 			if (!band) 
 				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
@@ -142,7 +135,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 		cities: [],
 		countries: []
 	};
-	Band.find()
+	UnvalidatedBand.find()
 		.then(bands => {
 			if (bands.length === 0) 
 				return res.status(200).json({ data: filters, token: res.locals.token });
@@ -197,8 +190,8 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('unvalidated'), (req, res) => {
-	new Band(res.locals.validated)
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('unvalidated'), (req, res) => {
+	new UnvalidatedBand(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
@@ -210,11 +203,11 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 });
 
 // validate unvalidated band
-router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate.reqBand('validate'), (req, res) => {
-	new ValidBand(res.locals.validated)
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('validate'), (req, res) => {
+	new Band(res.locals.validated)
 		.save()
 		.then(() => {
-			Band.remove({ _id: req.params._id }, (err, removedBand) => {
+			UnvalidatedBand.remove({ _id: req.params._id }, (err, removedBand) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -229,11 +222,11 @@ router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['
 });
 
 // post band to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validate_multiple.reqBandList('unvalidated'), (req, res) => {
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('unvalidated'), (req, res) => {
 	const bandList = res.locals.validated;
 	let savedBands = 0;
 	bandList.forEach(band => {
-		new Band(band)
+		new UnvalidatedBand(band)
 			.save()
 			.then(() => {
 				savedBands++;
