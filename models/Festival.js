@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // create festival schema
 const FestivalSchema = new Schema({
-	title: {
+	name: {
 		type: String,
 		required: true
 	},

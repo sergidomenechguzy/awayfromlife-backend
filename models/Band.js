@@ -58,7 +58,7 @@ const BandSchema = new Schema({
 	foundingDate: {
 		type: String
 	},
-	websiteUrl: {
+	website: {
 		type: String
 	},
 	bandcampUrl: {
