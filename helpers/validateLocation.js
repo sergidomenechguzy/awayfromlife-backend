@@ -13,7 +13,7 @@ module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
 			let response;
-			if (type == 'put') response = await validateLocation(req.body, type, { id: req.params._id });
+			if (type == 'put' || type == 'validate') response = await validateLocation(req.body, type, { id: req.params._id });
 			else response = await validateLocation(req.body, type);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;

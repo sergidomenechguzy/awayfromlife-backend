@@ -22,7 +22,7 @@ module.exports.validateObject = (type, model) => {
 	return async (req, res, next) => {
 		try {
 			let response;
-			if (type == 'put') response = await validateEvent(req.body, type, model, { id: req.params._id });
+			if (type == 'put' || type == 'validate') response = await validateEvent(req.body, type, model, { id: req.params._id });
 			else response = await validateEvent(req.body, type, model);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;

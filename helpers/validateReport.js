@@ -32,8 +32,13 @@ module.exports.validateObject = () => {
 				)
 			) return res.status(400).json({ message: 'Attribute \'category\' has to be either \'event\', \'location\', \'band\' or \'festival\' as a string.', token: res.locals.token });
 
-			if (!(typeof req.body.item == 'string' && req.body.item.length > 0))
-				return res.status(400).json({ message: 'Attribute \'item\' has to be the ID of one item from the specified category from the database.', token: res.locals.token });
+			let itemId;
+			if (!(typeof req.body.item == 'string' && req.body.item.length > 0)) {
+				if (!(typeof req.body.item == 'object' && req.body.item._id != undefined))
+					return res.status(400).json({ message: 'Attribute \'item\' has to be either the ID of one item from the specified category from the database or an object from the specified category with an _id attribute containing the ID of an item from the specified category from the database.', token: res.locals.token });
+				else itemId = req.body.item._id;
+			}
+			else itemId = req.body.item;
 
 			if (!(req.body.description == undefined || typeof req.body.description == 'string'))
 				return res.status(400).json({ message: 'Attribute \'description\' can be left out or has to be a string.', token: res.locals.token });
@@ -45,12 +50,12 @@ module.exports.validateObject = () => {
 				festival: Festival
 			};
 
-			const item = await categories[req.body.category.toLowerCase()].findById(req.body.item);
+			const item = await categories[req.body.category.toLowerCase()].findById(itemId);
 			if (!item) return res.status(200).json({ message: `No ${req.body.category.toLowerCase()} found with this ID.`, token: res.locals.token });
 
 			let newReport = {
 				category: req.body.category.toLowerCase(),
-				item: req.body.item,
+				item: itemId,
 				description: req.body.description != undefined ? req.body.description : ''
 			};
 			res.locals.validated = newReport;
