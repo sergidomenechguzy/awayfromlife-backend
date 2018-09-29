@@ -6,46 +6,38 @@ require('../models/Event');
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
 
-module.exports.events = (next) => {
-	let archiveEvents = [];
-	let counter = 0;
-	Event.find()
-		.then(events => {
+module.exports.events = () => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			let archiveEvents = [];
+			const events = await Event.find();
 			events.forEach(event => {
-				if (Math.floor(moment(event.date).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1)) 
+				if (Math.floor(moment(event.date).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1))
 					archiveEvents.push(event);
 			});
-			if (archiveEvents.length === 0) next(null, archiveEvents);
+			if (archiveEvents.length === 0) resolve(archiveEvents);
 
-			archiveEvents.forEach((archiveEvent, index, array) => {
-				Event.remove({ _id: archiveEvent._id }, (err, event) => {
-					if (err) next(err, null);
-
-					const newEvent = {
-						title: archiveEvent.title,
-						url: archiveEvent.url,
-						description: archiveEvent.description,
-						location: archiveEvent.location,
-						date: archiveEvent.date,
-						time: archiveEvent.time,
-						bands: archiveEvent.bands,
-						canceled: archiveEvent.canceled,
-						ticketLink: archiveEvent.ticketLink
-					};
-
-					new ArchivedEvent(newEvent)
-						.save()
-						.then(() => {
-							counter++;
-							if (counter === array.length) next(null, archiveEvents);
-						})
-						.catch(err => {
-							next(err, null);
-						});
-				});
+			const promises = archiveEvents.map(async (object) => {
+				await Event.remove({ _id: object._id });
+				const newEvent = {
+					name: object.name,
+					url: object.url,
+					description: object.description,
+					location: object.location,
+					date: object.date,
+					time: object.time,
+					bands: object.bands,
+					canceled: object.canceled,
+					ticketLink: object.ticketLink
+				};
+				const saved = await new ArchivedEvent(newEvent).save();
+				return saved;
 			});
-		})
-		.catch(err => {
-			next(err, null);
-		});
+			const objectList = await Promise.all(promises);
+			resolve(objectList);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
 };
