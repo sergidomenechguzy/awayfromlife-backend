@@ -383,14 +383,15 @@ router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'ad
 });
 
 // delete location by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
-	deleteRoute.delete(req.params._id, 'validLocation', (err, response) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'validLocation');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
-	});
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 module.exports = router;

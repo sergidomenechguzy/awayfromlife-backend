@@ -24,7 +24,7 @@ const validateEvent = require('../helpers/validateEvent');
 router.get('/', token.checkToken(true), async (req, res) => {
 	try {
 		const events = await UnvalidatedEvent.find();
-		if (events.length === 0) 
+		if (events.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
@@ -60,9 +60,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 	UnvalidatedEvent.find(query)
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
-			
+
 			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -104,12 +104,12 @@ router.get('/page', token.checkToken(true), (req, res) => {
 							else result.push(false);
 						}
 						else if (req.query.startDate) {
-							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
 								result.push(true);
 							else result.push(false);
 						}
 						else if (req.query.endDate) {
-							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000)) 
+							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
 								result.push(true);
 							else result.push(false);
 						}
@@ -135,9 +135,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	UnvalidatedEvent.findById(req.params._id)
 		.then(event => {
-			if (!event) 
+			if (!event)
 				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			
+
 			dereference.eventObject(event, (err, responseEvent) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -164,9 +164,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 	};
 	UnvalidatedEvent.find()
 		.then(events => {
-			if (events.length === 0) 
+			if (events.length === 0)
 				return res.status(200).json({ data: filters, token: res.locals.token });
-			
+
 			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
@@ -175,7 +175,7 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 
 				filters.firstDate = responseEvents[0].date;
 				filters.lastDate = responseEvents[responseEvents.length - 1].date;
-				
+
 				responseEvents.forEach(event => {
 					if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
 						if (event.name.charAt(0).toUpperCase() === 'Ä') {
@@ -187,14 +187,14 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 						else if (event.name.charAt(0).toUpperCase() === 'Ü') {
 							if (!filters.startWith.includes('U')) filters.startWith.push('U');
 						}
-						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase())) 
+						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
 							filters.startWith.push(event.name.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#')) 
+						else if (!filters.startWith.includes('#'))
 							filters.startWith.push('#');
 					}
-					if (event.location.address.city && !filters.cities.includes(event.location.address.city)) 
+					if (event.location.address.city && !filters.cities.includes(event.location.address.city))
 						filters.cities.push(event.location.address.city);
-					if (event.location.address.country && !filters.countries.includes(event.location.address.country)) 
+					if (event.location.address.country && !filters.countries.includes(event.location.address.country))
 						filters.countries.push(event.location.address.country);
 
 					event.bands.forEach(band => {
@@ -276,14 +276,15 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['n
 });
 
 // delete event by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
-	deleteRoute.delete(req.params._id, 'unvalidEvent', (err, response) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'unvalidEvent');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
-	});
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 module.exports = router;

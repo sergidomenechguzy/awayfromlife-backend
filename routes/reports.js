@@ -23,7 +23,7 @@ const validateReport = require('../helpers/validateReport');
 router.get('/', token.checkToken(false), async (req, res) => {
 	try {
 		const reports = await Report.find();
-		if (reports.length === 0) 
+		if (reports.length === 0)
 			return res.status(200).json({ message: 'No reports found', token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(reports, 'report', '', 1);
@@ -37,66 +37,52 @@ router.get('/', token.checkToken(false), async (req, res) => {
 
 
 // post report to database
-router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validateReport.validateObject(), (req, res) => {
-	new Report(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Report saved', token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validateReport.validateObject(), async (req, res) => {
+	try {
+		await new Report(res.locals.validated).save();
+		return res.status(200).json({ message: 'Report saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete report by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Report.findById(req.params._id)
-		.then(report => {
-			if (!report) 
-				return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
-			
-			Report.remove({ _id: req.params._id }, (err, report) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Report deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'report');
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete report and reported item by report id
-router.delete('/accept/:_id', token.checkToken(true), (req, res) => {
-	Report.findById(req.params._id)
-		.then(report => {
-			if (!report) 
-				return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
-			
-			const categories = {
-				event: 'validEvent',
-				location: 'validLocation',
-				band: 'validBand',
-				festival: 'validFestival'
-			};
-			deleteRoute.delete(report.item, categories[report.category], (err, response) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				if (response.status == 200)
-					return res.status(200).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
-				return res.status(response.status).json({ message: response.message, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.delete('/accept/:_id', token.checkToken(true), async (req, res) => {
+	const categories = {
+		event: 'validEvent',
+		location: 'validLocation',
+		band: 'validBand',
+		festival: 'validFestival'
+	};
+
+	try {
+		const report = await Report.findById(req.params._id);
+		if (!report)
+			return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
+
+		const response = await deleteRoute.delete(report.item, categories[report.category]);
+		if (response.status == 200)
+			return res.status(response.status).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 module.exports = router;
