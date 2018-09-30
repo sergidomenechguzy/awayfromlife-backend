@@ -339,35 +339,32 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('post'), (req, res) => {
-	new Location(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('post'), async (req, res) => {
+	try {
+		await new Location(res.locals.validated).save();
+		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post multiple locations to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('post'), (req, res) => {
-	const locationList = res.locals.validated;
-	let savedLocations = 0;
-	locationList.forEach(location => {
-		new Location(location)
-			.save()
-			.then(() => {
-				savedLocations++;
-				if (locationList.length == savedLocations)
-					return res.status(200).json({ message: savedLocations + ' location(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('post'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new Location(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' location(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // update location by id

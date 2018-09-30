@@ -33,6 +33,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 	return new Promise(async (resolve, reject) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
+		const festivalEventId = optionsChecked.festivalEventId || '';
 		const urlList = optionsChecked.urlList || [];
 
 		try {
@@ -125,6 +126,9 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 				if (!object)
 					resolve('No festival found with this ID');
 
+				if (type == 'validate' && !object.events.includes(festivalEventId))
+					resolve('Festival event ID not found in the festival\'s festival events list');
+
 				let newFestival = {
 					name: data.name,
 					url: '',
@@ -146,9 +150,8 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 					website: data.website != undefined ? data.website : object.website,
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl
 				};
-				if (type == 'put') {
-					newFestival._id = id;
-				}
+				if (type == 'put') newFestival._id = id;
+
 				const updatedObject = await url.generateUrl(newFestival, 'festival');
 				resolve(updatedObject);
 			}

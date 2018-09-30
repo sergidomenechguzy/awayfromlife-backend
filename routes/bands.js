@@ -416,35 +416,32 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('post'), (req, res) => {
-	new Band(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('post'), async (req, res) => {
+	try {
+		await new Band(res.locals.validated).save();
+		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post multiple bands to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('post'), (req, res) => {
-	const bandList = res.locals.validated;
-	let savedBands = 0;
-	bandList.forEach(band => {
-		new Band(band)
-			.save()
-			.then(() => {
-				savedBands++;
-				if (bandList.length == savedBands)
-					return res.status(200).json({ message: savedBands + ' band(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('post'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new Band(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // update band by id
@@ -491,166 +488,304 @@ require('../models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
-router.get('/update/website', async (req, res) => {
-	try {
-		const bands = await Band.find();
-		if (bands.length === 0) 
-			console.log('No bands found');
+// router.get('/update/website', async (req, res) => {
+// 	try {
+// 		const bands = await Band.find();
+// 		if (bands.length === 0)
+// 			console.log('No bands found');
 
-		bands.forEach(band => {
-			let updatedBand = JSON.parse(JSON.stringify(band));
-			updatedBand.website = band.websiteUrl;
-			if (updatedBand.website == null) updatedBand.website = '';
-			Band.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
-				if (err) console.log(err);
-				Band.findOneAndUpdate({ _id: band._id }, {$unset: {websiteUrl: 1 }}, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		bands.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.websiteUrl = object.website;
+// 			if (updatedObject.websiteUrl == null) updatedObject.websiteUrl = '';
+// 			Band.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const unvalidatedbands = await UnvalidatedBand.find();
-		if (unvalidatedbands.length === 0) 
-			console.log('No unvalidatedBands found');
+// 		const unvalidatedbands = await UnvalidatedBand.find();
+// 		if (unvalidatedbands.length === 0)
+// 			console.log('No unvalidatedBands found');
 
-			unvalidatedbands.forEach(band => {
-			let updatedBand = JSON.parse(JSON.stringify(band));
-			updatedBand.website = band.websiteUrl;
-			if (updatedBand.website == null) updatedBand.website = '';
-			UnvalidatedBand.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
-				if (err) console.log(err);
-				UnvalidatedBand.findOneAndUpdate({ _id: band._id }, {$unset: {websiteUrl: 1 }}, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		unvalidatedbands.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.websiteUrl = object.website;
+// 			if (updatedObject.websiteUrl == null) updatedObject.websiteUrl = '';
+// 			UnvalidatedBand.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const events = await Event.find();
-		if (events.length === 0)
-			console.log('No events found');
+// 		const events = await Event.find();
+// 		if (events.length === 0)
+// 			console.log('No events found');
 
-			events.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				Event.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		events.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const unvalidatedEvents = await UnvalidatedEvent.find();
-		if (unvalidatedEvents.length === 0) 
-			console.log('No unvalidatedEvents found');
+// 		const unvalidatedEvents = await UnvalidatedEvent.find();
+// 		if (unvalidatedEvents.length === 0)
+// 			console.log('No unvalidatedEvents found');
 
-			unvalidatedEvents.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, {$unset: {title: 1 }}, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		unvalidatedEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const archivedEvents = await ArchivedEvent.find();
-		if (archivedEvents.length === 0)
-			console.log('No archivedEvents found');
+// 		const archivedEvents = await ArchivedEvent.find();
+// 		if (archivedEvents.length === 0)
+// 			console.log('No archivedEvents found');
 
-			archivedEvents.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				ArchivedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		archivedEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const festivals = await Festival.find();
-		if (festivals.length === 0)
-			console.log('No festivals found');
+// 		const festivals = await Festival.find();
+// 		if (festivals.length === 0)
+// 			console.log('No festivals found');
 
-			festivals.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				Festival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		festivals.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const unvalidatedFestivals = await UnvalidatedFestival.find();
-		if (unvalidatedFestivals.length === 0)
-			console.log('No unvalidatedFestivals found');
+// 		const unvalidatedFestivals = await UnvalidatedFestival.find();
+// 		if (unvalidatedFestivals.length === 0)
+// 			console.log('No unvalidatedFestivals found');
 
-			unvalidatedFestivals.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		unvalidatedFestivals.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const festivalEvents = await FestivalEvent.find();
-		if (festivalEvents.length === 0)
-			console.log('No festivalEvents found');
+// 		const festivalEvents = await FestivalEvent.find();
+// 		if (festivalEvents.length === 0)
+// 			console.log('No festivalEvents found');
 
-			festivalEvents.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				FestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
+// 		festivalEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
 
-		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
-		if (unvalidatedFestivalEvents.length === 0)
-			console.log('No unvalidatedFestivalEvents found');
+// 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
+// 		if (unvalidatedFestivalEvents.length === 0)
+// 			console.log('No unvalidatedFestivalEvents found');
 
-			unvalidatedFestivalEvents.forEach(object => {
-			let updatedObject = JSON.parse(JSON.stringify(object));
-			updatedObject.name = object.title;
-			if (updatedObject.name == null) updatedObject.name = '';
-			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-				if (err) console.log(err);
-				UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-					if (err) console.log(err);
-					console.log(update.name);
-				});
-			});
-		});
-		return res.status(200).json({ message: 'fertig' });
-	}
-	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-	}
-});
+// 		unvalidatedFestivalEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.title = object.name;
+// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				console.log(update.name);
+// 			});
+// 		});
+// 		return res.status(200).json({ message: 'fertig' });
+// 	}
+// 	catch (err) {
+// 		console.log(err.name + ': ' + err.message);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+// 	}
+// });
+
+
+
+
+
+// router.get('/update/website', async (req, res) => {
+// 	try {
+// 		const bands = await Band.find();
+// 		if (bands.length === 0)
+// 			console.log('No bands found');
+
+// 		bands.forEach(band => {
+// 			let updatedBand = JSON.parse(JSON.stringify(band));
+// 			updatedBand.website = band.websiteUrl;
+// 			if (updatedBand.website == null) updatedBand.website = '';
+// 			Band.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
+// 				if (err) console.log(err);
+// 				Band.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const unvalidatedbands = await UnvalidatedBand.find();
+// 		if (unvalidatedbands.length === 0)
+// 			console.log('No unvalidatedBands found');
+
+// 		unvalidatedbands.forEach(band => {
+// 			let updatedBand = JSON.parse(JSON.stringify(band));
+// 			updatedBand.website = band.websiteUrl;
+// 			if (updatedBand.website == null) updatedBand.website = '';
+// 			UnvalidatedBand.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
+// 				if (err) console.log(err);
+// 				UnvalidatedBand.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const events = await Event.find();
+// 		if (events.length === 0)
+// 			console.log('No events found');
+
+// 		events.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				Event.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const unvalidatedEvents = await UnvalidatedEvent.find();
+// 		if (unvalidatedEvents.length === 0)
+// 			console.log('No unvalidatedEvents found');
+
+// 		unvalidatedEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const archivedEvents = await ArchivedEvent.find();
+// 		if (archivedEvents.length === 0)
+// 			console.log('No archivedEvents found');
+
+// 		archivedEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				ArchivedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const festivals = await Festival.find();
+// 		if (festivals.length === 0)
+// 			console.log('No festivals found');
+
+// 		festivals.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				Festival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const unvalidatedFestivals = await UnvalidatedFestival.find();
+// 		if (unvalidatedFestivals.length === 0)
+// 			console.log('No unvalidatedFestivals found');
+
+// 		unvalidatedFestivals.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const festivalEvents = await FestivalEvent.find();
+// 		if (festivalEvents.length === 0)
+// 			console.log('No festivalEvents found');
+
+// 		festivalEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				FestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+
+// 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
+// 		if (unvalidatedFestivalEvents.length === 0)
+// 			console.log('No unvalidatedFestivalEvents found');
+
+// 		unvalidatedFestivalEvents.forEach(object => {
+// 			let updatedObject = JSON.parse(JSON.stringify(object));
+// 			updatedObject.name = object.title;
+// 			if (updatedObject.name == null) updatedObject.name = '';
+// 			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+// 				if (err) console.log(err);
+// 				UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+// 					if (err) console.log(err);
+// 					console.log(update.name);
+// 				});
+// 			});
+// 		});
+// 		return res.status(200).json({ message: 'fertig' });
+// 	}
+// 	catch (err) {
+// 		console.log(err.name + ': ' + err.message);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+// 	}
+// });
 
 module.exports = router;

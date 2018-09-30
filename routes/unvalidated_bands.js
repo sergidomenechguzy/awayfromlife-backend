@@ -190,54 +190,45 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('unvalidated'), (req, res) => {
-	new UnvalidatedBand(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Band saved', token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('unvalidated'), async (req, res) => {
+	try {
+		await new UnvalidatedBand(res.locals.validated).save();
+		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // validate unvalidated band
-router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('validate'), (req, res) => {
-	new Band(res.locals.validated)
-		.save()
-		.then(() => {
-			UnvalidatedBand.remove({ _id: req.params._id }, (err, removedBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Band validated', token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('validate'), async (req, res) => {
+	try {
+		await new Band(res.locals.validated).save();
+		await UnvalidatedBand.remove({ _id: req.params._id });
+		return res.status(200).json({ message: 'Band validated', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post band to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('unvalidated'), (req, res) => {
-	const bandList = res.locals.validated;
-	let savedBands = 0;
-	bandList.forEach(band => {
-		new UnvalidatedBand(band)
-			.save()
-			.then(() => {
-				savedBands++;
-				if (bandList.length == savedBands)
-					return res.status(200).json({ message: savedBands + ' band(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedBand(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete band by id

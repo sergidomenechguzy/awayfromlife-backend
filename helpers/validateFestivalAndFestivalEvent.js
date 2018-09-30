@@ -7,7 +7,7 @@ module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
 			let responseFestival;
-			if (type == 'validate') responseFestival = await validateFestival.validateFestival(req.body.festival, type, { id: req.params.festivalId });
+			if (type == 'validate') responseFestival = await validateFestival.validateFestival(req.body.festival, type, { id: req.params.festivalId, festivalEventId: req.params.eventId });
 			else responseFestival = await validateFestival.validateFestival(req.body.festival, type);
 			if (typeof responseFestival == 'string') return res.status(400).json({ message: responseFestival, token: res.locals.token });
 

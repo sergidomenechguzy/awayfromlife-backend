@@ -225,54 +225,45 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('unvalidated', 'unvalidated'), (req, res) => {
-	new UnvalidatedEvent(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('unvalidated', 'unvalidated'), async (req, res) => {
+	try {
+		await new UnvalidatedEvent(res.locals.validated).save();
+		return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // validate unvalidated event
-router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('validate', 'unvalidated'), (req, res) => {
-	new Event(res.locals.validated)
-		.save()
-		.then(() => {
-			UnvalidatedEvent.remove({ _id: req.params._id }, (err, removedEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Event validated', token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
+	try {
+		await new Event(res.locals.validated).save();
+		await UnvalidatedEvent.remove({ _id: req.params._id });
+		return res.status(200).json({ message: 'Event validated', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post multiple events to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'location', 'date', 'bands']), validateEvent.validateList('unvalidated', 'unvalidated'), (req, res) => {
-	const eventList = res.locals.validated;
-	let savedEvents = 0;
-	eventList.forEach(event => {
-		new UnvalidatedEvent(event)
-			.save()
-			.then(() => {
-				savedEvents++;
-				if (eventList.length == savedEvents)
-					return res.status(200).json({ message: savedEvents + ' event(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'location', 'date', 'bands']), validateEvent.validateList('unvalidated', 'unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedEvent(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' event(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete event by id

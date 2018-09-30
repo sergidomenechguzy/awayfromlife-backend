@@ -48,22 +48,20 @@ router.post('/', token.checkToken(true), params.checkParameters(['name']), valid
 });
 
 // post multiple genres to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name']), validateGenre.validateList(), (req, res) => {
-	const genreList = res.locals.validated;
-	let savedGenres = 0;
-	genreList.forEach(genre => {
-		new Genre(genre)
-			.save()
-			.then(() => {
-				savedGenres++;
-				if (genreList.length == savedGenres)
-					return res.status(200).json({ message: savedGenres + ' genre(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name']), validateGenre.validateList(), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new Genre(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' genre(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // update genre by id

@@ -367,7 +367,7 @@ router.get('/filters', token.checkToken(false), (req, res) => {
 });
 
 // move old events to archived events collection
-router.get('/archive', token.checkToken(false), async (req, res) => {
+router.get('/archive', token.checkToken(true), async (req, res) => {
 	try {
 		const archived = await archive.events();
 		return res.status(200).json({ message: `${archived.length} event(s) moved to archive.`, token: res.locals.token });
@@ -379,35 +379,32 @@ router.get('/archive', token.checkToken(false), async (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('post', 'archive'), (req, res) => {
-	new ArchivedEvent(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Event saved', token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('post', 'archive'), async (req, res) => {
+	try {
+		await new ArchivedEvent(res.locals.validated).save();
+		return res.status(200).json({ message: 'Event saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post multiple events to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'location', 'date', 'bands']), validateEvent.validateList('post', 'archive'), (req, res) => {
-	const eventList = res.locals.validated;
-	let savedEvents = 0;
-	eventList.forEach(event => {
-		new ArchivedEvent(event)
-			.save()
-			.then(() => {
-				savedEvents++;
-				if (eventList.length == savedEvents)
-					return res.status(200).json({ message: savedEvents + ' event(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'location', 'date', 'bands']), validateEvent.validateList('post', 'archive'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new ArchivedEvent(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' event(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // update event by id

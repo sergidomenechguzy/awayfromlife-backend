@@ -27,7 +27,7 @@ const validateFestivalEvent = require('../helpers/validateFestivalEvent');
 router.get('/', token.checkToken(false), async (req, res) => {
 	try {
 		const festivalEvents = await FestivalEvent.find();
-		if (festivalEvents.length === 0) 
+		if (festivalEvents.length === 0)
 			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(festivalEvents, 'festivalEvent', 'name', 1);
@@ -82,30 +82,21 @@ router.get('/canceled', token.checkToken(true), (req, res) => {
 });
 
 // post event to database
-router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('post'), (req, res) => {
-	Festival.findById(req.params._id)
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
+router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('post'), async (req, res) => {
+	try {
+		const festival = await Festival.findById(req.params._id);
+		if (!festival)
+			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 
-			new FestivalEvent(res.locals.validated)
-				.save()
-				.then(event => {
-					festival.events.push(event._id);
-					Festival.findOneAndUpdate({ _id: req.params._id }, festival, (err, updatedFestival) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-
-		})
+		const newFestivalEvent = await new FestivalEvent(res.locals.validated).save();
+		festival.events.push(newFestivalEvent._id);
+		await Festival.findOneAndUpdate({ _id: req.params._id }, festival);
+		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // update event by id
@@ -128,7 +119,7 @@ router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
 			return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 
 		event.canceled = 1;
-		
+
 		await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, event);
 		return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
 	}

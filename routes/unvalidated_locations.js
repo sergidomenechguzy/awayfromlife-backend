@@ -160,54 +160,45 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('unvalidated'), (req, res) => {
-	new UnvalidatedLocation(res.locals.validated)
-		.save()
-		.then(() => {
-			return res.status(200).json({ message: 'Location saved', token: res.locals.token })
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('unvalidated'), async (req, res) => {
+	try {
+		await new UnvalidatedLocation(res.locals.validated).save();
+		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // validate unvalidated location
-router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('validate'), (req, res) => {
-	new Location(res.locals.validated)
-		.save()
-		.then(() => {
-			UnvalidatedLocation.remove({ _id: req.params._id }, (err, removedFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Location validated', token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('validate'), async (req, res) => {
+	try {
+		await new Location(res.locals.validated).save();
+		await UnvalidatedLocation.remove({ _id: req.params._id });
+		return res.status(200).json({ message: 'Location validated', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post multiple locations to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('unvalidated'), (req, res) => {
-	const locationList = res.locals.validated;
-	let savedLocations = 0;
-	locationList.forEach(location => {
-		new UnvalidatedLocation(location)
-			.save()
-			.then(() => {
-				savedLocations++;
-				if (locationList.length == savedLocations)
-					return res.status(200).json({ message: savedLocations + ' location(s) saved', token: res.locals.token });
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
-	});
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedLocation(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' location(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // delete location by id
