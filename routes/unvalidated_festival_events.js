@@ -95,7 +95,7 @@ router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkPa
 });
 
 // delete event by id
-router.delete('/:_id', token.checkToken(true), async (req, res) => {
+router.delete('/:festivalId/:_id', token.checkToken(true), async (req, res) => {
 	try {
 		const unvalidatedFestivalEvent = await UnvalidatedFestivalEvent.findById(req.params._id);
 		if (!unvalidatedFestivalEvent)

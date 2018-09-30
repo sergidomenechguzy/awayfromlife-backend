@@ -132,7 +132,7 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.che
 });
 
 // delete festival by id
-router.delete('/:_id', token.checkToken(true), async (req, res) => {
+router.delete('/:_id/:eventId', token.checkToken(true), async (req, res) => {
 	try {
 		const response = await deleteRoute.delete(req.params._id, 'unvalidFestival');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
