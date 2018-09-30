@@ -191,7 +191,7 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.ch
 });
 
 // delete festival by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
+router.delete('/:_id/:eventId', token.checkToken(true), (req, res) => {
 	deleteRoute.delete(req.params._id, 'unvalidFestival', (err, response) => {
 		if (err) {
 			console.log(err.name + ': ' + err.message);
