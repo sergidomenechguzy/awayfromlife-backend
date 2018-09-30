@@ -106,24 +106,19 @@ router.get('/page', token.checkToken(true), (req, res) => {
 });
 
 // get band by id
-router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	UnvalidatedBand.findById(req.params._id)
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBands, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const object = await UnvalidatedBand.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+
+		const dereferenced = await dereference.bandObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get all filter data

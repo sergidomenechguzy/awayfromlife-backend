@@ -26,7 +26,7 @@ const validateFestivalAndFestivalEvent = require('../helpers/validateFestivalAnd
 
 // festivals routes
 // get all festivals
-router.get('/', token.checkToken(false), async (req, res) => {
+router.get('/', token.checkToken(true), async (req, res) => {
 	try {
 		const unvalidatedFestivals = await UnvalidatedFestival.find();
 		if (unvalidatedFestivals.length === 0)
@@ -42,7 +42,7 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get all festivals with unvalidated festival events
-router.get('/unvalidated', token.checkToken(false), async (req, res) => {
+router.get('/unvalidated', token.checkToken(true), async (req, res) => {
 	try {
 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
 		if (unvalidatedFestivalEvents.length === 0)
@@ -84,24 +84,19 @@ router.get('/unvalidated', token.checkToken(false), async (req, res) => {
 });
 
 // get festival by id
-router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	UnvalidatedFestival.findById(req.params._id)
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const object = await UnvalidatedFestival.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 
-			dereference.festivalObject(festival, (err, responseFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestival, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.unvalidatedFestivalObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post festival and event to database

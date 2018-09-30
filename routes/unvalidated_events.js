@@ -132,24 +132,19 @@ router.get('/page', token.checkToken(true), (req, res) => {
 });
 
 // get event by id
-router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	UnvalidatedEvent.findById(req.params._id)
-		.then(event => {
-			if (!event)
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const object = await UnvalidatedEvent.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
-			dereference.eventObject(event, (err, responseEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvent, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.eventObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get all filter data

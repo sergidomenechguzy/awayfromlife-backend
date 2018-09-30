@@ -95,18 +95,18 @@ router.get('/page', token.checkToken(true), (req, res) => {
 });
 
 // get location by id
-router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	UnvalidatedLocation.findById(req.params._id)
-		.then(location => {
-			if (!location)
-				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const object = await UnvalidatedLocation.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No location with this ID', token: res.locals.token });
 
-			return res.status(200).json({ data: location, token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		return res.status(200).json({ data: object, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get all filter data

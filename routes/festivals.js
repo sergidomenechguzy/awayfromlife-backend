@@ -141,45 +141,35 @@ router.get('/page', token.checkToken(false), (req, res) => {
 });
 
 // get festival by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Festival.findById(req.params._id)
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Festival.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 
-			dereference.festivalObject(festival, (err, responseFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestival, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.festivalObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get festival by name-url
-router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Festival.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
-		.then(festival => {
-			if (!festival)
-				return res.status(200).json({ message: 'No festival found with this URL', token: res.locals.token });
+router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Festival.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		if (!object)
+			return res.status(400).json({ message: 'No festival found with this URL', token: res.locals.token });
 
-			dereference.festivalObject(festival, (err, responseFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestival, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.festivalObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get all filter data

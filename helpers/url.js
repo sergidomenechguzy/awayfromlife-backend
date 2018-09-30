@@ -54,7 +54,7 @@ const checkUrl = (object, model, url, urlList, counter) => {
 				resolve(response);
 			}
 
-			const savedObject = await collection[model].findOne({ url: url });
+			const savedObject = await collection[model].findOne({ url: new RegExp('^' + url + '$', 'i') });
 			if (!savedObject) {
 				object.url = url;
 				resolve(object);
@@ -84,7 +84,6 @@ module.exports.generateEventUrl = (object, model, urlList) => {
 			const copiedObject = JSON.parse(JSON.stringify(object));
 			const dereferenced = await dereference.eventObject(object);
 			copiedObject.url = generateUrlFromObject(dereferenced, model);
-			// const copiedObject = generateEventUrlFromObject(object, dereferenced.location.name);
 			const response = await checkEventUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
 			resolve(response);
 		}
@@ -106,7 +105,7 @@ const checkEventUrl = (object, model, url, urlList, counter) => {
 				resolve(response);
 			}
 
-			const savedEvent = await Event.findOne({ url: url });
+			const savedEvent = await Event.findOne({ url: new RegExp('^' + url + '$', 'i') });
 			if (savedEvent != undefined) {
 				if (object._id && model == 'event' && object._id.toString() == savedEvent._id.toString()) {
 					object.url = url;
@@ -120,7 +119,7 @@ const checkEventUrl = (object, model, url, urlList, counter) => {
 				}
 			}
 			else {
-				const savedArchivedEvent = await ArchivedEvent.findOne({ url: url });
+				const savedArchivedEvent = await ArchivedEvent.findOne({ url: new RegExp('^' + url + '$', 'i') });
 				if (savedArchivedEvent != undefined) {
 					if (object._id && model == 'archive' && object._id.toString() == savedArchivedEvent._id.toString()) {
 						object.url = url;
@@ -161,7 +160,7 @@ const generateUrlFromObject = (object, type) => {
 			url = object.name;
 	}
 	url = deUmlaut(url);
-	return url;
+	return url.toLocaleLowerCase();
 }
 
 const deUmlaut = (value) => {

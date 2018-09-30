@@ -43,35 +43,29 @@ router.get('/', token.checkToken(false), (req, res) => {
 });
 
 // get all locations including unvalidated locations
-router.get('/all', token.checkToken(false), (req, res) => {
-	Location.find()
-		.then(locations => {
-			UnvalidatedLocation.find()
-				.then(unvalidatedLocations => {
-					if (locations.length === 0 && unvalidatedLocations.length === 0)
-						return res.status(200).json({ message: 'No locations found', token: res.locals.token });
+router.get('/all', token.checkToken(false), async (req, res) => {
+	try {
+		const objects = await Location.find();
+		const unvalidatedObjects = await UnvalidatedLocation.find();
+		if (objects.length === 0 && unvalidatedObjects.length === 0)
+			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
-					locations.sort((a, b) => {
-						return a.name.localeCompare(b.name);
-					});
-					unvalidatedLocations.sort((a, b) => {
-						return a.name.localeCompare(b.name);
-					});
-					const allLocations = {
-						validated: locations,
-						unvalidated: unvalidatedLocations
-					};
-					return res.status(200).json({ data: allLocations, token: res.locals.token });
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		objects.sort((a, b) => {
+			return a.name.localeCompare(b.name);
 		});
+		unvalidatedObjects.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+		const allObjects = {
+			validated: objects,
+			unvalidated: unvalidatedObjects
+		};
+		return res.status(200).json({ data: allObjects, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated locations
@@ -133,33 +127,33 @@ router.get('/page', token.checkToken(false), (req, res) => {
 });
 
 // get location by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Location.findById(req.params._id)
-		.then(location => {
-			if (!location)
-				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Location.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No location with this ID', token: res.locals.token });
 
-			return res.status(200).json({ data: location, token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		return res.status(200).json({ data: object, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get location by name-url
-router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Location.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
-		.then(location => {
-			if (!location)
-				return res.status(400).json({ message: 'No location found with this URL', token: res.locals.token });
+router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Location.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		if (!object)
+			return res.status(400).json({ message: 'No location with this URL', token: res.locals.token });
 
-			return res.status(200).json({ data: location, token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		return res.status(200).json({ data: object, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get events by location id

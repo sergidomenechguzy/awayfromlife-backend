@@ -40,24 +40,19 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get event by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	FestivalEvent.findById(req.params._id)
-		.then(event => {
-			if (!event)
-				return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await FestivalEvent.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 
-			dereference.festivalEventObject(event, (err, responseEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvent, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.festivalEventObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get canceled events

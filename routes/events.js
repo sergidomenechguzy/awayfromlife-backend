@@ -44,41 +44,25 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get all events including unvalidated events
-router.get('/all', token.checkToken(false), (req, res) => {
-	Event.find()
-		.then(events => {
-			UnvalidatedEvent.find()
-				.then(unvalidatedEvents => {
-					if (events.length === 0 && unvalidatedEvents.length === 0)
-						return res.status(200).json({ message: 'No events found', token: res.locals.token });
+router.get('/all', token.checkToken(false), async (req, res) => {
+	try {
+		const objects = await Event.find();
+		const unvalidatedObjects = await UnvalidatedEvent.find();
+		if (objects.length === 0 && unvalidatedObjects.length === 0)
+			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-					dereference.eventObjectArray(events, 'name', 1, (err, responseEvents1) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						dereference.eventObjectArray(unvalidatedEvents, 'name', 1, (err, responseEvents2) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							const allEvents = {
-								validated: responseEvents1,
-								unvalidated: responseEvents2
-							};
-							return res.status(200).json({ data: allEvents, token: res.locals.token });
-						});
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(objects, 'event', 'name', 1);
+		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', 'name', 1);
+		const allObjects = {
+			validated: dereferenced,
+			unvalidated: dereferencedUnvalidated
+		};
+		return res.status(200).json({ data: allObjects, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated events
@@ -177,45 +161,35 @@ router.get('/page', token.checkToken(false), (req, res) => {
 });
 
 // get event by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Event.findById(req.params._id)
-		.then(event => {
-			if (!event)
-				return res.status(200).json({ message: 'No event found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Event.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
-			dereference.eventObject(event, (err, responseEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvent, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.eventObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get event by name-url
-router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
-		.then(event => {
-			if (!event)
-				return res.status(200).json({ message: 'No event found with this URL', token: res.locals.token });
+router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		if (!object)
+			return res.status(400).json({ message: 'No event found with this URL', token: res.locals.token });
 
-			dereference.eventObject(event, (err, responseEvent) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvent, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.eventObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get events by name

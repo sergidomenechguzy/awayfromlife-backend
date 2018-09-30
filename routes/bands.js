@@ -45,41 +45,25 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get all bands including unvalidated bands
-router.get('/all', token.checkToken(false), (req, res) => {
-	Band.find()
-		.then(bands => {
-			UnvalidatedBand.find()
-				.then(unvalidatedBands => {
-					if (bands.length === 0 && unvalidatedBands.length === 0)
-						return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+router.get('/all', token.checkToken(false), async (req, res) => {
+	try {
+		const objects = await Band.find();
+		const unvalidatedObjects = await UnvalidatedBand.find();
+		if (objects.length === 0 && unvalidatedObjects.length === 0)
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 
-					dereference.bandObjectArray(bands, 'name', 1, (err, responseBands1) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						dereference.bandObjectArray(unvalidatedBands, 'name', 1, (err, responseBands2) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							const allBands = {
-								validated: responseBands1,
-								unvalidated: responseBands2
-							};
-							return res.status(200).json({ data: allBands, token: res.locals.token });
-						});
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(objects, 'band', 'name', 1);
+		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'band', 'name', 1);
+		const allObjects = {
+			validated: dereferenced,
+			unvalidated: dereferencedUnvalidated
+		};
+		return res.status(200).json({ data: allObjects, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get paginated bands
@@ -152,45 +136,35 @@ router.get('/page', token.checkToken(false), (req, res) => {
 });
 
 // get band by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Band.findById(req.params._id)
-		.then(band => {
-			if (!band)
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Band.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
 
-			dereference.bandObject(band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBand, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.bandObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get band by name-url
-router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
-		.then(band => {
-			if (!band)
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		if (!object)
+			return res.status(400).json({ message: 'No band found with this URL', token: res.locals.token });
 
-			dereference.bandObject(band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBand, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.bandObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get all bands events
@@ -490,33 +464,6 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 // router.get('/update/website', async (req, res) => {
 // 	try {
-// 		const bands = await Band.find();
-// 		if (bands.length === 0)
-// 			console.log('No bands found');
-
-// 		bands.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.websiteUrl = object.website;
-// 			if (updatedObject.websiteUrl == null) updatedObject.websiteUrl = '';
-// 			Band.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				console.log(update.name);
-// 			});
-// 		});
-
-// 		const unvalidatedbands = await UnvalidatedBand.find();
-// 		if (unvalidatedbands.length === 0)
-// 			console.log('No unvalidatedBands found');
-
-// 		unvalidatedbands.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.websiteUrl = object.website;
-// 			if (updatedObject.websiteUrl == null) updatedObject.websiteUrl = '';
-// 			UnvalidatedBand.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
-
 // 		const events = await Event.find();
 // 		if (events.length === 0)
 // 			console.log('No events found');
@@ -524,7 +471,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		events.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -538,7 +485,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		unvalidatedEvents.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -552,7 +499,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		archivedEvents.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -566,7 +513,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		festivals.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -580,7 +527,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		unvalidatedFestivals.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -594,7 +541,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		festivalEvents.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
@@ -608,7 +555,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		unvalidatedFestivalEvents.forEach(object => {
 // 			let updatedObject = JSON.parse(JSON.stringify(object));
 // 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null) updatedObject.title = '';
+// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
 // 			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
 // 				if (err) console.log(err);
 // 				console.log(update.name);
