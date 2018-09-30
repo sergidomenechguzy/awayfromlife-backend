@@ -52,13 +52,41 @@ router.get('/', token.checkToken(true), (req, res) => {
 		});
 });
 
-
 // post report to database
 router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validate.reqReport(), (req, res) => {
 	new Report(res.locals.validated)
 		.save()
 		.then(() => {
 			return res.status(200).json({ message: 'Report saved', token: res.locals.token });
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// delete report and reported item by report id
+router.post('/accept/:_id', token.checkToken(true), (req, res) => {
+	Report.findOne({ _id: req.params._id })
+		.then(report => {
+			if (!report) 
+				return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
+			
+			const categories = {
+				event: 'validEvent',
+				location: 'validLocation',
+				band: 'validBand',
+				festival: 'validFestival'
+			};
+			deleteRoute.delete(report.item, categories[report.category], (err, response) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				if (response.status == 200)
+					return res.status(200).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
+				return res.status(response.status).json({ message: response.message, token: res.locals.token });
+			});
 		})
 		.catch(err => {
 			console.log(err.name + ': ' + err.message);
@@ -79,35 +107,6 @@ router.delete('/:_id', token.checkToken(true), (req, res) => {
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 				}
 				return res.status(200).json({ message: 'Report deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
-});
-
-// delete report and reported item by report id
-router.delete('/accept/:_id', token.checkToken(true), (req, res) => {
-	Report.findOne({ _id: req.params._id })
-		.then(report => {
-			if (!report) 
-				return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
-			
-			const categories = {
-				event: 'validEvent',
-				location: 'validLocation',
-				band: 'validBand',
-				festival: 'validFestival'
-			};
-			deleteRoute.delete(report.item, categories[report.category], (err, response) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				if (response.status == 200)
-					return res.status(200).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
-				return res.status(response.status).json({ message: response.message, token: res.locals.token });
 			});
 		})
 		.catch(err => {
