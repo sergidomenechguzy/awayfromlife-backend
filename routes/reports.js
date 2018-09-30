@@ -35,7 +35,6 @@ router.get('/', token.checkToken(false), async (req, res) => {
 	}
 });
 
-
 // post report to database
 router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validateReport.validateObject(), async (req, res) => {
 	try {
@@ -48,20 +47,8 @@ router.post('/', token.checkToken(false), params.checkParameters(['category', 'i
 	}
 });
 
-// delete report by id
-router.delete('/:_id', token.checkToken(true), async (req, res) => {
-	try {
-		const response = await deleteRoute.delete(req.params._id, 'report');
-		return res.status(response.status).json({ message: response.message, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-	}
-});
-
 // delete report and reported item by report id
-router.delete('/accept/:_id', token.checkToken(true), async (req, res) => {
+router.post('/accept/:_id', token.checkToken(true), async (req, res) => {
 	const categories = {
 		event: 'validEvent',
 		location: 'validLocation',
@@ -77,6 +64,18 @@ router.delete('/accept/:_id', token.checkToken(true), async (req, res) => {
 		const response = await deleteRoute.delete(report.item, categories[report.category]);
 		if (response.status == 200)
 			return res.status(response.status).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
+});
+
+// delete report by id
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'report');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
