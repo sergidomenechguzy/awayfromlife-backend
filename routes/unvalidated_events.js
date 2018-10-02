@@ -37,98 +37,93 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get paginated events
-router.get('/page', token.checkToken(true), (req, res) => {
-	let page = 1;
+router.get('/page', token.checkToken(true), async (req, res) => {
+	try {
+		let page = 1;
 
-	let perPage = 20;
-	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+		let perPage = 20;
+		if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = 'name';
-	if (req.query.sortBy === 'date' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
+		let sortBy = 'name';
+		if (req.query.sortBy === 'date' || req.query.sortBy === 'location') sortBy = req.query.sortBy;
 
-	let order = 1;
-	if (parseInt(req.query.order) === -1) order = -1;
+		let order = 1;
+		if (parseInt(req.query.order) === -1) order = -1;
 
-	let query = {};
-	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-		else query.name = new RegExp('^' + req.query.startWith, 'i');
-	}
+		let query = {};
+		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		}
 
-	UnvalidatedEvent.find(query)
-		.then(events => {
-			if (events.length === 0)
-				return res.status(200).json({ message: 'No events found', token: res.locals.token });
+		const events = await UnvalidatedEvent.find(query);
+		if (events.length === 0)
+			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-			dereference.eventObjectArray(events, sortBy, order, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		let dereferenced = await dereference.objectArray(events, 'event', sortBy, order);
+
+		if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
+			finalEvents = [];
+			dereferenced.forEach(event => {
+				let result = [];
+				if (req.query.city) {
+					const cityRegex = RegExp(req.query.city, 'i');
+					if (cityRegex.test(event.location.address.city) || cityRegex.test(event.location.address.county))
+						result.push(true);
+					else result.push(false);
 				}
-
-				if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
-					finalEvents = [];
-					responseEvents.forEach(responseEvent => {
-						let result = [];
-						if (req.query.city) {
-							const cityRegex = RegExp(req.query.city, 'i');
-							if (cityRegex.test(responseEvent.location.address.city) || cityRegex.test(responseEvent.location.address.county))
-								result.push(true);
-							else result.push(false);
-						}
-						else if (req.query.country) {
-							const countryRegex = RegExp(req.query.country, 'i');
-							if (countryRegex.test(responseEvent.location.address.country))
-								result.push(true);
-							else result.push(false);
-						}
-						if (req.query.genre) {
-							const genreRegex = RegExp(req.query.genre, 'i');
-							result.push(
-								responseEvent.bands.some(band => {
-									return band.genre.some(genre => {
-										return genreRegex.test(genre);
-									});
-								})
-							);
-						}
-						if (req.query.startDate && req.query.endDate) {
-							if (
-								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000)
-								&&
-								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000)
-							) result.push(true);
-							else result.push(false);
-						}
-						else if (req.query.startDate) {
-							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
-								result.push(true);
-							else result.push(false);
-						}
-						else if (req.query.endDate) {
-							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(responseEvent.date).valueOf() / 86400000))
-								result.push(true);
-							else result.push(false);
-						}
-						if (result.reduce((acc, current) => acc && current, true)) finalEvents.push(responseEvent);
-					});
-					responseEvents = finalEvents;
+				else if (req.query.country) {
+					const countryRegex = RegExp(req.query.country, 'i');
+					if (countryRegex.test(event.location.address.country))
+						result.push(true);
+					else result.push(false);
 				}
-
-				const count = responseEvents.length;
-				if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
-
-				responseEvents = responseEvents.slice((perPage * page) - perPage, (perPage * page));
-				return res.status(200).json({ data: responseEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+				if (req.query.genre) {
+					const genreRegex = RegExp(req.query.genre, 'i');
+					result.push(
+						event.bands.some(band => {
+							return band.genre.some(genre => {
+								return genreRegex.test(genre);
+							});
+						})
+					);
+				}
+				if (req.query.startDate && req.query.endDate) {
+					if (
+						Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.date).valueOf() / 86400000)
+						&&
+						Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.date).valueOf() / 86400000)
+					) result.push(true);
+					else result.push(false);
+				}
+				else if (req.query.startDate) {
+					if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.date).valueOf() / 86400000))
+						result.push(true);
+					else result.push(false);
+				}
+				else if (req.query.endDate) {
+					if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.date).valueOf() / 86400000))
+						result.push(true);
+					else result.push(false);
+				}
+				if (result.reduce((acc, current) => acc && current, true)) finalEvents.push(event);
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+			dereferenced = finalEvents;
+		}
+
+		const count = dereferenced.length;
+		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+
+		dereferenced = dereferenced.slice((perPage * page) - perPage, (perPage * page));
+		return res.status(200).json({ data: dereferenced, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // get event by id

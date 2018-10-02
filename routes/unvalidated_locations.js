@@ -37,7 +37,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get paginated locations
-router.get('/page', token.checkToken(false), async (req, res) => {
+router.get('/page', token.checkToken(true), async (req, res) => {
 	try {
 		let page = 1;
 
