@@ -27,8 +27,8 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		return res.status(200).json({ data: bugs, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -39,8 +39,8 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), val
 		return res.status(200).json({ message: 'Bug saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -51,8 +51,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 

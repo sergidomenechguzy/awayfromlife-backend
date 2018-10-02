@@ -30,8 +30,8 @@ router.get('/', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: genres, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -42,8 +42,8 @@ router.post('/', token.checkToken(true), params.checkParameters(['name']), valid
 		return res.status(200).json({ message: 'Genre saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -59,8 +59,8 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 		return res.status(200).json({ message: responseList.length + ' genre(s) saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -71,8 +71,8 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name']), va
 		return res.status(200).json({ message: 'Genre updated', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -83,8 +83,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 

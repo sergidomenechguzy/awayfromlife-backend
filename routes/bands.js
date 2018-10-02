@@ -39,8 +39,8 @@ router.get('/', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -61,8 +61,8 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: allObjects, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -126,8 +126,8 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: finalBands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -142,8 +142,8 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -158,8 +158,8 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -174,8 +174,8 @@ router.get('/events/:_id', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -190,8 +190,8 @@ router.get('/name/:name', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -217,8 +217,8 @@ router.get('/genre/:genre', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: genreBands, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -245,8 +245,8 @@ router.get('/genres', token.checkToken(false), async (req, res) => {
 
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -266,8 +266,8 @@ router.get('/labels', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: labelList, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -289,8 +289,8 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -353,8 +353,8 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: filters, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -365,8 +365,8 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -382,8 +382,8 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -394,8 +394,8 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 		return res.status(200).json({ message: 'Band updated', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -406,8 +406,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -533,8 +533,8 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		return res.status(200).json({ message: 'fertig' });
 // 	}
 // 	catch (err) {
-// 		console.log(err.name + ': ' + err.message);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 // 	}
 // });
 
@@ -699,8 +699,8 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 // 		return res.status(200).json({ message: 'fertig' });
 // 	}
 // 	catch (err) {
-// 		console.log(err.name + ': ' + err.message);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 // 	}
 // });
 

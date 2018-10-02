@@ -38,106 +38,102 @@ router.get('/', token.checkToken(false), async (req, res) => {
 	}
 	catch (err) {
 		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
 // get paginated festivals
-router.get('/page', token.checkToken(false), (req, res) => {
-	let page = 1;
 
-	let perPage = 20;
-	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+router.get('/page', token.checkToken(false), async (req, res) => {
+	try {
+		let page = 1;
 
-	let sortBy = 'name';
-	if (req.query.sortBy === 'city' || req.query.sortBy === 'country') sortBy = req.query.sortBy;
+		let perPage = 20;
+		if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let order = 1;
-	if (parseInt(req.query.order) === -1) order = -1;
+		let sortBy = 'name';
+		if (req.query.sortBy === 'city' || req.query.sortBy === 'country') sortBy = req.query.sortBy;
 
-	let query = {};
-	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-		else query.name = new RegExp('^' + req.query.startWith, 'i');
-	}
+		let order = 1;
+		if (parseInt(req.query.order) === -1) order = -1;
 
-	Festival.find(query)
-		.then(festivals => {
-			if (festivals.length === 0)
-				return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
+		let query = {};
+		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		}
 
-			dereference.festivalObjectArray(festivals, sortBy, order, (err, responseFestivals) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		const festivals = await Festival.find(query);
+		if (festivals.length === 0)
+			return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
+
+		let dereferenced = await dereference.objectArray(festivals, 'festival', sortBy, order);
+
+		if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
+			finalFestivals = [];
+			dereferenced.forEach(festival => {
+				let result = [];
+				if (req.query.city) {
+					const cityRegex = RegExp(req.query.city, 'i');
+					if (cityRegex.test(festival.address.city) || cityRegex.test(festival.address.county))
+						result.push(true);
+					else result.push(false);
 				}
-
-				if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
-					finalFestivals = [];
-					responseFestivals.forEach(responseFestival => {
-						let result = [];
-						if (req.query.city) {
-							const cityRegex = RegExp(req.query.city, 'i');
-							if (cityRegex.test(responseFestival.address.city) || cityRegex.test(responseFestival.address.county))
-								result.push(true);
-							else result.push(false);
-						}
-						else if (req.query.country) {
-							const countryRegex = RegExp(req.query.country, 'i');
-							if (countryRegex.test(responseFestival.address.country))
-								result.push(true);
-							else result.push(false);
-						}
-						if (req.query.genre) {
-							const genreRegex = RegExp(req.query.genre, 'i');
-							result.push(
-								responseFestival.genre.some(genre => {
-									return genreRegex.test(genre);
-								})
-							);
-						}
-						if (req.query.startDate || req.query.endDate) {
-							result.push(responseFestival.events.some(event => {
-								if (req.query.startDate && req.query.endDate) {
-									if (
-										Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000)
-										&&
-										Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000)
-									) return true;
-									else return false;
-								}
-								else if (req.query.startDate) {
-									if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000))
-										return true;
-									else return false;
-								}
-								else if (req.query.endDate) {
-									if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000))
-										return true;
-									else return false;
-								}
-								else return false;
-							}));
-						}
-						if (result.reduce((acc, current) => acc && current, true)) finalFestivals.push(responseFestival);
-					});
-					responseFestivals = finalFestivals;
+				else if (req.query.country) {
+					const countryRegex = RegExp(req.query.country, 'i');
+					if (countryRegex.test(festival.address.country))
+						result.push(true);
+					else result.push(false);
 				}
-
-				const count = responseFestivals.length;
-				if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
-
-				responseFestivals = responseFestivals.slice((perPage * page) - perPage, (perPage * page));
-				return res.status(200).json({ data: responseFestivals, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+				if (req.query.genre) {
+					const genreRegex = RegExp(req.query.genre, 'i');
+					result.push(
+						festival.genre.some(genre => {
+							return genreRegex.test(genre);
+						})
+					);
+				}
+				if (req.query.startDate || req.query.endDate) {
+					result.push(festival.events.some(event => {
+						if (req.query.startDate && req.query.endDate) {
+							if (
+								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000)
+								&&
+								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000)
+							) return true;
+							else return false;
+						}
+						else if (req.query.startDate) {
+							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000))
+								return true;
+							else return false;
+						}
+						else if (req.query.endDate) {
+							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000))
+								return true;
+							else return false;
+						}
+						else return false;
+					}));
+				}
+				if (result.reduce((acc, current) => acc && current, true)) finalFestivals.push(responseFestival);
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+			dereferenced = finalFestivals;
+		}
+
+		const count = dereferenced.length;
+		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+
+		dereferenced = dereferenced.slice((perPage * page) - perPage, (perPage * page));
+		return res.status(200).json({ data: dereferenced, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get festival by id
@@ -151,8 +147,8 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -167,8 +163,8 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -236,8 +232,8 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: filters, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -251,8 +247,8 @@ router.post('/', token.checkToken(true), params.checkParameters(['festival.name'
 		return res.status(200).json({ message: 'Festival and festival event saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -263,8 +259,8 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 		return res.status(200).json({ message: 'Festival updated', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -275,8 +271,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 

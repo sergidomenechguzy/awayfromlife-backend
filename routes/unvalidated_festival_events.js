@@ -32,8 +32,8 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -48,8 +48,8 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -66,8 +66,8 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['name', 's
 		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -89,8 +89,8 @@ router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkPa
 		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -111,8 +111,8 @@ router.delete('/:festivalId/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(200).json({ message: 'Festival event deleted', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 

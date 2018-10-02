@@ -34,8 +34,8 @@ router.get('/', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -50,30 +50,25 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
 // get canceled events
-router.get('/canceled', token.checkToken(true), (req, res) => {
-	FestivalEvent.find({ canceled: 1 })
-		.then(events => {
-			if (events.length === 0)
-				return res.status(200).json({ message: 'No canceled festival events found.', token: res.locals.token });
+router.get('/canceled', token.checkToken(false), async (req, res) => {
+	try {
+		const festivalEvents = await FestivalEvent.find({ canceled: 1 });
+		if (festivalEvents.length === 0)
+			return res.status(200).json({ message: 'No canceled festival events found.', token: res.locals.token });
 
-			dereference.festivalEventObjectArray(events, 'name', 1, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvents, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(festivalEvents, 'festivalEvent', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // post event to database
@@ -89,8 +84,8 @@ router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'st
 		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -101,8 +96,8 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'sta
 		return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -119,8 +114,8 @@ router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
 		return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 
@@ -131,8 +126,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
-		console.log(err.name + ': ' + err.message);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
 

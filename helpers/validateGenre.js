@@ -16,8 +16,8 @@ module.exports.validateObject = (type) => {
 			return next();
 		}
 		catch (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 		}
 	}
 }
@@ -38,8 +38,8 @@ module.exports.validateList = () => {
 			return next();
 		}
 		catch (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 		}
 	}
 }

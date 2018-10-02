@@ -107,7 +107,7 @@ if (process.env.NODE_ENV === 'production') {
 			await archive.events();
 		}
 		catch (err) {
-			console.log(err.name + ': ' + err.message);
+			console.log(err);
 		}
 	}, 86400000);
 }

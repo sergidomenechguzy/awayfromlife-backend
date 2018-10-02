@@ -70,8 +70,8 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 	categories.forEach((category, index, array) => {
 		if (category === 'events') eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
 			if (err) {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			}
 			results.events = eventResults;
 			counter++;
@@ -79,8 +79,8 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 		});
 		else if (category === 'locations') locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
 			if (err) {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			}
 			results.locations = locationResults;
 			counter++;
@@ -88,8 +88,8 @@ router.get('/:query', token.checkToken(false), (req, res) => {
 		});
 		else if (category === 'bands') bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
 			if (err) {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			}
 			results.bands = bandResults;
 			counter++;
@@ -131,18 +131,18 @@ router.get('/simple/:query', token.checkToken(false), (req, res) => {
 
 	eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
 		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 		}
 		locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
 			if (err) {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			}
 			bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
 				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					console.log(err);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 				}
 				
 				let counter = 0;

@@ -40,15 +40,15 @@ router.get('/logout', (req, res) => {
 
 				User.findOneAndUpdate({ _id: user.id }, user, (err, doc) => {
 					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						console.log(err);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 					}
 					res.status(200).json({ message: 'Successfully logged out.' });
 				});
 			})
 			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			});
 	});
 });
@@ -71,8 +71,8 @@ router.post('/login', (req, res) => {
 				
 				bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
 					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						console.log(err);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 					}
 					if (!isMatch) return res.status(400).json({ message: 'Wrong email or password' });
 
@@ -89,16 +89,16 @@ router.post('/login', (req, res) => {
 
 					User.findOneAndUpdate({ _id: user.id }, user, (err, doc) => {
 						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							console.log(err);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 						}
 						res.status(200).json({ message: 'You are logged in.', token: newToken });
 					});
 				})
 			})
 			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 			});
 	});
 });
@@ -121,15 +121,15 @@ router.post('/register', (req, res) => {
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(newUser.password, salt, (err, hash) => {
 				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					console.log(err);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 				}
 				newUser.password = hash;
 				newUser.save()
 					.then(res.status(200).json({ message: 'User registered' }))
 					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+						console.log(err);
+						return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 					});
 			});
 		});
@@ -154,16 +154,16 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 
 					bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
 						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+							console.log(err);
+							return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 						}
 						if (!isMatch) return res.status(400).json({ message: 'Wrong password' });
 
 						bcrypt.genSalt(10, (err, salt) => {
 							bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
 								if (err) {
-									console.log(err.name + ': ' + err.message);
-									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+									console.log(err);
+									return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 								}
 								const session = token.createSession();
 								const newToken = token.signJWT(user.id, session.sessionID);
@@ -183,8 +183,8 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 
 								User.findOneAndUpdate({ _id: decodedAuthToken.userID }, user, (err, doc) => {
 									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+										console.log(err);
+										return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 									}
 									return res.status(200).json({ message: 'Password changed', token: newToken });
 								});
@@ -193,8 +193,8 @@ router.post('/reset-password', token.checkToken(true), (req, res) => {
 					})
 				})
 				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+					console.log(err);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 				});
 		});
 	});
