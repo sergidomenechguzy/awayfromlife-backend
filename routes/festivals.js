@@ -173,77 +173,72 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(false), (req, res) => {
-	let filters = {
-		startWith: [],
-		cities: [],
-		countries: [],
-		genres: [],
-		firstDate: '',
-		lastDate: ''
-	};
-	Festival.find()
-		.then(festivals => {
-			if (festivals.length === 0)
-				return res.status(200).json({ data: filters, token: res.locals.token });
+router.get('/filters', token.checkToken(false), async (req, res) => {
+	try {
+		let filters = {
+			startWith: [],
+			cities: [],
+			countries: [],
+			genres: [],
+			firstDate: '',
+			lastDate: ''
+		};
+		const festivals = await Festival.find();
+		if (festivals.length === 0)
+			return res.status(200).json({ data: filters, token: res.locals.token });
 
-			dereference.festivalObjectArray(festivals, 'name', 1, (err, responseFestivals) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
+
+		dereferenced.forEach(festival => {
+			if (festival.name && !filters.startWith.includes(festival.name.charAt(0).toUpperCase())) {
+				if (festival.name.charAt(0).toUpperCase() === 'Ä') {
+					if (!filters.startWith.includes('A')) filters.startWith.push('A');
 				}
+				else if (festival.name.charAt(0).toUpperCase() === 'Ö') {
+					if (!filters.startWith.includes('O')) filters.startWith.push('O');
+				}
+				else if (festival.name.charAt(0).toUpperCase() === 'Ü') {
+					if (!filters.startWith.includes('U')) filters.startWith.push('U');
+				}
+				else if (/[A-Z]/.test(festival.name.charAt(0).toUpperCase()))
+					filters.startWith.push(festival.name.charAt(0).toUpperCase());
+				else if (!filters.startWith.includes('#'))
+					filters.startWith.push('#');
+			}
+			if (festival.address.city && !filters.cities.includes(festival.address.city))
+				filters.cities.push(festival.address.city);
+			if (festival.address.country && !filters.countries.includes(festival.address.country))
+				filters.countries.push(festival.address.country);
 
-				responseFestivals.forEach(festival => {
-					if (festival.name && !filters.startWith.includes(festival.name.charAt(0).toUpperCase())) {
-						if (festival.name.charAt(0).toUpperCase() === 'Ä') {
-							if (!filters.startWith.includes('A')) filters.startWith.push('A');
-						}
-						else if (festival.name.charAt(0).toUpperCase() === 'Ö') {
-							if (!filters.startWith.includes('O')) filters.startWith.push('O');
-						}
-						else if (festival.name.charAt(0).toUpperCase() === 'Ü') {
-							if (!filters.startWith.includes('U')) filters.startWith.push('U');
-						}
-						else if (/[A-Z]/.test(festival.name.charAt(0).toUpperCase()))
-							filters.startWith.push(festival.name.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#'))
-							filters.startWith.push('#');
-					}
-					if (festival.address.city && !filters.cities.includes(festival.address.city))
-						filters.cities.push(festival.address.city);
-					if (festival.address.country && !filters.countries.includes(festival.address.country))
-						filters.countries.push(festival.address.country);
-
-					festival.genre.forEach(genre => {
-						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
-					});
-
-					festival.events.forEach(event => {
-						if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
-							filters.firstDate = event.startDate;
-						if (!filters.lastDate || event.endDate.localeCompare(filters.lastDate) == 1)
-							filters.lastDate = event.endDate;
-					});
-				});
-				filters.startWith.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.cities.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.countries.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.genres.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				return res.status(200).json({ data: filters, token: res.locals.token });
+			festival.genre.forEach(genre => {
+				if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+
+			festival.events.forEach(event => {
+				if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+					filters.firstDate = event.startDate;
+				if (!filters.lastDate || event.endDate.localeCompare(filters.lastDate) == 1)
+					filters.lastDate = event.endDate;
+			});
 		});
+		filters.startWith.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.cities.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.countries.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.genres.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		return res.status(200).json({ data: filters, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post festival and event to database

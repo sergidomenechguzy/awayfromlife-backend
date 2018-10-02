@@ -96,25 +96,16 @@ module.exports.delete = (id, collection) => {
 					break;
 
 				case 'validFestival':
-					let validIds = [];
-					item.events.forEach(event => {
-						validIds.push({ _id: event });
-					});
 					await Promise.all([
-						FestivalEvent.remove({ $or: validIds }),
-						UnvalidatedFestivalEvent.remove({ $or: validIds }),
+						FestivalEvent.remove({ _id: { $in: item.events } }),
+						UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } }),
 						Report.remove({ category: 'festival', item: id })
 					]);
 					resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
 				case 'unvalidFestival':
-					let unvalidIds = [];
-					item.events.forEach(event => {
-						unvalidIds.push({ _id: event });
-					});
-
-					await UnvalidatedFestivalEvent.remove({ $or: unvalidIds });
+					await UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } });
 					resolve({ status: 200, message: 'Festival deleted' });
 					break;
 

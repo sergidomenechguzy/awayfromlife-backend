@@ -23,11 +23,11 @@ const validateEvent = require('../helpers/validateEvent');
 // get all events
 router.get('/', token.checkToken(true), async (req, res) => {
 	try {
-		const events = await UnvalidatedEvent.find();
-		if (events.length === 0)
+		const unvalidatedEvents = await UnvalidatedEvent.find();
+		if (unvalidatedEvents.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
+		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'event', 'name', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -148,75 +148,70 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(true), (req, res) => {
-	let filters = {
-		startWith: [],
-		cities: [],
-		countries: [],
-		genres: [],
-		firstDate: '',
-		lastDate: ''
-	};
-	UnvalidatedEvent.find()
-		.then(events => {
-			if (events.length === 0)
-				return res.status(200).json({ data: filters, token: res.locals.token });
+router.get('/filters', token.checkToken(true), async (req, res) => {
+	try {
+		let filters = {
+			startWith: [],
+			cities: [],
+			countries: [],
+			genres: [],
+			firstDate: '',
+			lastDate: ''
+		};
+		const unvalidatedEvents = await UnvalidatedEvent.find();
+		if (unvalidatedEvents.length === 0)
+			return res.status(200).json({ data: filters, token: res.locals.token });
 
-			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'event', 'date', 1);
+
+		filters.firstDate = dereferenced[0].date;
+		filters.lastDate = dereferenced[dereferenced.length - 1].date;
+
+		dereferenced.forEach(event => {
+			if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
+				if (event.name.charAt(0).toUpperCase() === 'Ä') {
+					if (!filters.startWith.includes('A')) filters.startWith.push('A');
 				}
+				else if (event.name.charAt(0).toUpperCase() === 'Ö') {
+					if (!filters.startWith.includes('O')) filters.startWith.push('O');
+				}
+				else if (event.name.charAt(0).toUpperCase() === 'Ü') {
+					if (!filters.startWith.includes('U')) filters.startWith.push('U');
+				}
+				else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
+					filters.startWith.push(event.name.charAt(0).toUpperCase());
+				else if (!filters.startWith.includes('#'))
+					filters.startWith.push('#');
+			}
+			if (event.location.address.city && !filters.cities.includes(event.location.address.city))
+				filters.cities.push(event.location.address.city);
+			if (event.location.address.country && !filters.countries.includes(event.location.address.country))
+				filters.countries.push(event.location.address.country);
 
-				filters.firstDate = responseEvents[0].date;
-				filters.lastDate = responseEvents[responseEvents.length - 1].date;
-
-				responseEvents.forEach(event => {
-					if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
-						if (event.name.charAt(0).toUpperCase() === 'Ä') {
-							if (!filters.startWith.includes('A')) filters.startWith.push('A');
-						}
-						else if (event.name.charAt(0).toUpperCase() === 'Ö') {
-							if (!filters.startWith.includes('O')) filters.startWith.push('O');
-						}
-						else if (event.name.charAt(0).toUpperCase() === 'Ü') {
-							if (!filters.startWith.includes('U')) filters.startWith.push('U');
-						}
-						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
-							filters.startWith.push(event.name.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#'))
-							filters.startWith.push('#');
-					}
-					if (event.location.address.city && !filters.cities.includes(event.location.address.city))
-						filters.cities.push(event.location.address.city);
-					if (event.location.address.country && !filters.countries.includes(event.location.address.country))
-						filters.countries.push(event.location.address.country);
-
-					event.bands.forEach(band => {
-						band.genre.forEach(genre => {
-							if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
-						});
-					});
+			event.bands.forEach(band => {
+				band.genre.forEach(genre => {
+					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
 				});
-				filters.startWith.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.cities.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.countries.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.genres.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				return res.status(200).json({ data: filters, token: res.locals.token });
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+		filters.startWith.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.cities.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.countries.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.genres.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		return res.status(200).json({ data: filters, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err.name + ': ' + err.message);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+	}
 });
 
 // post event to database
