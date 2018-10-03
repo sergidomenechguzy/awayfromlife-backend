@@ -6,6 +6,10 @@ const router = express.Router();
 require('../models/Event');
 const Event = mongoose.model('events');
 
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
+
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
@@ -21,421 +25,429 @@ const dereference = require('../helpers/dereference');
 
 // search route
 // get all search results with different possible parameters
-router.get('/:query', token.checkToken(false), (req, res) => {
-	let categories = ['events', 'locations', 'bands'];
-	if (req.query.categories) {
-		let queryCategories = req.query.categories.split(',');
-		let finalCategories = [];
-		queryCategories.forEach(category => {
-			if ((category === 'events' || category === 'locations' || category === 'bands') && !finalCategories.includes(category)) 
-				finalCategories.push(category);
+router.get('/:query', token.checkToken(false), async (req, res) => {
+	try {
+		let categories = ['events', 'festivals', 'locations', 'bands'];
+		if (req.query.categories != undefined) {
+			let queryCategories = req.query.categories.split(',');
+			let finalCategories = [];
+			queryCategories.forEach(category => {
+				if ((category === 'events' || category === 'festivals' || category === 'locations' || category === 'bands') && !finalCategories.includes(category))
+					finalCategories.push(category);
+			});
+			if (finalCategories.length > 0) categories = finalCategories;
+		}
+		if (req.query.genre != undefined && categories.includes('locations')) {
+			categories.splice(categories.indexOf('locations'), 1);
+		}
+
+		const categoryFunction = {
+			events: eventFind,
+			festivals: festivalFind,
+			bands: bandFind,
+			locations: locationFind
+		};
+
+		let results = {
+			events: [],
+			festivals: [],
+			locations: [],
+			bands: []
+		};
+
+		const queries = createQueries(req.query);
+		const promises = categories.map(async (category) => {
+			let result = await categoryFunction[category](queries[category], new RegExp(req.params.query, 'i'));
+			results[category] = result;
+			return result;
 		});
-		if (finalCategories.length > 0) categories = finalCategories;
+		await Promise.all(promises);
+		return res.status(200).json({ data: results, token: res.locals.token });
 	}
-
-	const eventSearchAttributes = [
-		['name', 'name'],
-		['date', 'date'],
-		['location.name', 'location name'],
-		['location.address.street', 'location address'],
-		['location.address.city', 'location city'],
-		['location.address.county', 'location county'],
-		['bands', 'bands']
-	];
-
-	const locationSearchAttributes = [
-		['name', 'name'],
-		['address.street', 'address'],
-		['address.city', 'city'],
-		['address.county', 'county'],
-		['address.country', 'country']
-	];
-
-	const bandSearchAttributes = [
-		['name', 'name'],
-		['genre', 'genre'],
-		['origin.name', 'origin city'],
-		['origin.country', 'origin country'],
-		['recordLabel', 'label'],
-		['releases', 'releases']
-	];
-
-	let results = {
-		events: [],
-		locations: [],
-		bands: []
-	};
-	let counter = 0;
-
-	categories.forEach((category, index, array) => {
-		if (category === 'events') eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-			}
-			results.events = eventResults;
-			counter++;
-			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
-		});
-		else if (category === 'locations') locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-			}
-			results.locations = locationResults;
-			counter++;
-			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
-		});
-		else if (category === 'bands') bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-			}
-			results.bands = bandResults;
-			counter++;
-			if (array.length === counter) return res.status(200).json({ data: results, token: res.locals.token });
-		});
-	});
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get a maximum of 6 search results without parameters
-router.get('/simple/:query', token.checkToken(false), (req, res) => {
-	const eventSearchAttributes = [
-		['name', 'name'],
-		['date', 'date'],
-		['location.name', 'location name'],
-		['location.address.street', 'location address'],
-		['location.address.city', 'location city'],
-		['location.address.county', 'location county'],
-		['bands', 'bands']
-	];
+router.get('/simple/:query', token.checkToken(false), async (req, res) => {
+	try {
+		const categories = ['events', 'festivals', 'locations', 'bands'];
+		const categoryFunction = {
+			events: eventFind,
+			festivals: festivalFind,
+			bands: bandFind,
+			locations: locationFind
+		};
+		const maxObjects = 8;
 
-	const locationSearchAttributes = [
-		['name', 'name'],
-		['address.street', 'address'],
-		['address.city', 'city'],
-		['address.county', 'county'],
-		['address.country', 'country']
-	];
-
-	const bandSearchAttributes = [
-		['name', 'name'],
-		['genre', 'genre'],
-		['origin.name', 'origin city'],
-		['origin.country', 'origin country'],
-		['recordLabel', 'label'],
-		['releases', 'releases']
-	];
-
-	let results = [];
-
-	eventFind(req, res, eventSearchAttributes, (err, eventResults) => {
-		if (err) {
-			console.log(err);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-		}
-		locationFind(req, res, locationSearchAttributes, (err, locationResults) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-			}
-			bandFind(req, res, bandSearchAttributes, (err, bandResults) => {
-				if (err) {
-					console.log(err);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-				}
-				
-				let counter = 0;
-
-				while (results.length < 6) {
-					const prev = results.length;
-					if (eventResults.length > counter && results.length < 6) 
-						results.push(eventResults[counter]);
-					if (locationResults.length > counter && results.length < 6) 
-						results.push(locationResults[counter]);
-					if (bandResults.length > counter && results.length < 6) 
-						results.push(bandResults[counter]);
-					if (prev === results.length) break;
-					counter++;
-				}
-
-				results.sort((a, b) => {
-					if (a.category === 'Event') return -1;
-					if (a.category === 'Location') {
-						if (b.category === 'Event') return 1;
-						else return -1;
-					}
-					if (a.category === 'Band') return 1;
-				});
-				return res.status(200).json({ data: results, token: res.locals.token });
-			});
+		const queries = createQueries({});
+		const promises = categories.map(async (category) => {
+			let result = await categoryFunction[category](queries[category], RegExp(req.params.query, 'i'));
+			return result;
 		});
-	});
+		const resultLists = await Promise.all(promises);
+
+		let results = [];
+		let counter = 0;
+
+		while (results.length < maxObjects) {
+			const previousLength = results.length;
+			resultLists.forEach(list => {
+				if (list.length > counter && results.length < maxObjects)
+					results.push(list[counter]);
+			});
+			if (previousLength === results.length) break;
+			counter++;
+		}
+		results.sort((a, b) => a.category.localeCompare(b.category));
+		return res.status(200).json({ data: results, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
-const eventFind = (req, res, eventSearchAttributes, next) => {
-	const regex = RegExp(req.params.query, 'i');
-	eventResults = [];
+const eventFind = (queries, regex) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const eventSearchAttributes = [
+				['name', 'name'],
+				['date', 'date'],
+				['location.name', 'location name'],
+				['location.address.street', 'location address'],
+				['location.address.city', 'location city'],
+				['location.address.county', 'location county'],
+				['bands', 'bands']
+			];
+			eventResults = [];
 
-	let eventQuery = {
-		attributes: [],
-		values: [],
-		genre: []
-	};
-	if (req.query.city) {
-		eventQuery.attributes.push('location.address.city');
-		eventQuery.values.push(new RegExp(req.query.city, 'i'));
-		eventQuery.attributes.push('location.address.county');
-		eventQuery.values.push(new RegExp(req.query.city, 'i'));
-	}
-	else if (req.query.country) {
-		eventQuery.attributes.push('location.address.country');
-		eventQuery.values.push(new RegExp(req.query.country, 'i'));
-	}
-	if (req.query.genre) {
-		const genres = req.query.genre.split(',');
-		genres.forEach(genre => {
-			eventQuery.genre.push(new RegExp('^' + genre + '$', 'i'));
-		});
-	}
+			const events = await Event.find();
+			const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
 
-	Event.find()
-		.then(events => {
-			dereference.eventObjectArray(events, 'name', 1, (err, responseEvents) => {
-				if (err) return next(err, null);
-
-				responseEvents.forEach(event => {
-					if (
-						(
-							eventQuery.attributes.length == 0
-							||
-							eventQuery.attributes.some((attribute, index) => {
-								let value = attribute.split('.').reduce((prev, curr) => {
-									return prev[curr];
-								}, event);
-								return eventQuery.values[index].test(value);
-							})
-						)
-						&&
-						(
-							eventQuery.genre.length == 0
-							||
-							event.bands.some(band => {
-								return eventQuery.genre.some(currentGenre => {
-									return band.genre.some(genre => {
-										return currentGenre.test(genre);
-									});
-								});
-							})
-						)
-					) {
-
-						eventSearchAttributes.some((attribute, index) => {
-							let value = attribute[0].split('.').reduce((prev, curr) => {
+			dereferenced.forEach(event => {
+				if (
+					(
+						queries.attributes.length == 0
+						||
+						queries.attributes.some((attribute, index) => {
+							let value = attribute.split('.').reduce((prev, curr) => {
 								return prev[curr];
 							}, event);
+							return queries.values[index].test(value);
+						})
+					)
+					&&
+					(
+						queries.genres.length == 0
+						||
+						event.bands.some(band => {
+							return queries.genres.some(currentGenre => {
+								return band.genre.some(genre => {
+									return currentGenre.test(genre);
+								});
+							});
+						})
+					)
+				) {
+					eventSearchAttributes.some(attribute => {
+						let value = attribute[0].split('.').reduce((prev, curr) => {
+							return prev[curr];
+						}, event);
 
-							if (attribute[0] === 'bands') {
-								let bandString = '';
-								const match = value.some(currentBand => {
+						if (attribute[0] === 'bands') {
+							let bandString = '';
+							return value.some(currentBand => {
+								if (regex.test(currentBand.name)) {
+									value.forEach((band, index, array) => {
+										bandString += band.name;
+										if (index < array.length - 1) bandString += ', ';
+									});
+									value = bandString;
+									eventResults.push(buildObject(event, 'Event', attribute, value));
+									return true;
+								}
+							});
+						}
+						else if (regex.test(value)) {
+							eventResults.push(buildObject(event, 'Event', attribute, value));
+							return true;
+						}
+						return false;
+					});
+				}
+			});
+			resolve(eventResults);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+const festivalFind = (queries, regex) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const festivalSearchAttributes = [
+				['name', 'name'],
+				['events.date', 'date'],
+				['address.street', 'address'],
+				['address.city', 'city'],
+				['address.county', 'county'],
+				['address.country', 'country'],
+				['events.bands', 'bands']
+			];
+			festivalResults = [];
+
+			const festivals = await Festival.find(queries.query);
+			const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
+
+			dereferenced.forEach(festival => {
+				if (
+					queries.genres.length == 0
+					||
+					queries.genres.some(currentGenre => {
+						return festival.genre.some(genre => {
+							return currentGenre.test(genre);
+						});
+					})
+				) {
+					festivalSearchAttributes.some(attribute => {
+
+
+						if (attribute[0] === 'events.bands') {
+							let value = '';
+							return festival.events.some(currentFestivalEvent => {
+								return currentFestivalEvent.bands.some(currentBand => {
 									if (regex.test(currentBand.name)) {
-										value.forEach((band, index, array) => {
-											bandString += band.name;
-											if (index < array.length - 1) bandString += ', ';
+										currentFestivalEvent.bands.forEach((band, index, array) => {
+											value += band.name;
+											if (index < array.length - 1) value += ', ';
 										});
-										value = bandString;
-										eventResults.push({
-											category: 'Event',
-											data: event,
-											match: {
-												attribute: 'event.' + attribute[0],
-												pretty: attribute[1],
-												value: value
-											}
-										});
+										let finalAttribute = [attribute[0], `\'${currentFestivalEvent.name}\', ${attribute[1]}`];
+										festivalResults.push(buildObject(festival, 'Festival', finalAttribute, value));
 										return true;
 									}
-								});
-								return match;
-							}
-							else if (regex.test(value)) {
-								eventResults.push({
-									category: 'Event',
-									data: event,
-									match: {
-										attribute: 'event.' + attribute[0],
-										pretty: attribute[1],
-										value: value
-									}
-								});
+								})
+							});
+						}
+						else if (attribute[0] === 'events.date') {
+							let value = '';
+							return festival.events.some(currentFestivalEvent => {
+								const date = regex.toString().slice(1, regex.toString().length - 2);
+								if (currentFestivalEvent.startDate.localeCompare(date) == -1 && currentFestivalEvent.endDate.localeCompare(date) == 1) {
+									value = `${currentFestivalEvent.startDate} - ${currentFestivalEvent.endDate}`;
+									let finalAttribute = [attribute[0], `\'${currentFestivalEvent.name}\', time period`];
+									festivalResults.push(buildObject(festival, 'Festival', finalAttribute, value));
+									return true;
+								}
+							});
+						}
+						else {
+							let value = attribute[0].split('.').reduce((prev, curr) => {
+								return prev[curr];
+							}, festival);
+							if (regex.test(value)) {
+								festivalResults.push(buildObject(festival, 'Festival', attribute, value));
 								return true;
 							}
 							return false;
-						});
-					}
-				});
-				return next(null, eventResults);
+						}
+
+					});
+				}
 			});
-		})
-		.catch(err => {
-			return next(err, null);
-		});
+			resolve(festivalResults);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
 }
 
-const locationFind = (req, res, locationSearchAttributes, next) => {
-	const regex = RegExp(req.params.query, 'i');
-	locationResults = [];
+const locationFind = (queries, regex) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const locationSearchAttributes = [
+				['name', 'name'],
+				['address.street', 'address'],
+				['address.city', 'city'],
+				['address.county', 'county'],
+				['address.country', 'country']
+			];
+			locationResults = [];
 
-	let locationQuery = {};
-	if (req.query.genre) return next(null, locationResults);
+			const locations = await Location.find(queries);
 
-	if (req.query.city) 
-		locationQuery = { 
-			$or: [
-				{ 'address.city': new RegExp(req.query.city, 'i') }, 
-				{ 'address.county': new RegExp(req.query.city, 'i') }
-			] 
-		};
-	else if (req.query.country) 
-		locationQuery = { 'address.country': RegExp(req.query.country, 'i') };
-
-	Location.find(locationQuery)
-		.then(locations => {
 			locations.forEach(location => {
-				locationSearchAttributes.some((attribute, index) => {
+				locationSearchAttributes.some(attribute => {
 					let value = attribute[0].split('.').reduce((prev, curr) => {
 						return prev[curr];
 					}, location);
 
 					if (regex.test(value)) {
-						locationResults.push({
-							category: 'Location',
-							data: location,
-							match: {
-								attribute: 'location.' + attribute[0],
-								pretty: attribute[1],
-								value: value
-							}
-						});
+						locationResults.push(buildObject(location, 'Location', attribute, value));
 						return true;
 					}
 					return false;
 				});
 			});
-			return next(null, locationResults);
-		})
-		.catch(err => {
-			return next(err, null);
-		});
+
+			resolve(locationResults);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
 }
 
-const bandFind = (req, res, bandSearchAttributes, next) => {
-	const regex = RegExp(req.params.query, 'i');
-	bandResults = [];
+const bandFind = (queries, regex) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const bandSearchAttributes = [
+				['name', 'name'],
+				['genre', 'genre'],
+				['origin.name', 'origin city'],
+				['origin.country', 'origin country'],
+				['recordLabel', 'label'],
+				['releases', 'releases']
+			];
+			bandResults = [];
 
-	let bandQuery = {};
-	if (req.query.city) {
-		const cityString = 'origin.name';
-		bandQuery[cityString] = RegExp(req.query.city, 'i');
-	}
-	else if (req.query.country) {
-		const countryString = 'origin.country';
-		bandQuery[countryString] = RegExp(req.query.country, 'i');
-	}
+			const bands = await Band.find(queries.query);
+			const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
 
-	let genreList = [];
-	if (req.query.genre != undefined) {
-		const genres = req.query.genre.split(',');
-		genres.forEach(genre => {
-			genreList.push(new RegExp('^' + genre + '$', 'i'));
-		});
-	}
-
-	Band.find(bandQuery)
-		.then(bands => {
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) return next(err, null);
-
-				responseBands.forEach(band => {
-					if
-					(
-						genreList.length == 0
-						||
-						genreList.some(currentGenre => {
-							return band.genre.some(genre => {
-								return currentGenre.test(genre);
-							});
-						})
-					) {
-						bandSearchAttributes.some((attribute, index) => {
-							let value = attribute[0].split('.').reduce((prev, curr) => {
-								return prev[curr];
-							}, band);
-		
-							if (attribute[0] === 'releases') {
-								let releaseString = '';
-								const match = value.some(currentRelease => {
-									if (regex.test(currentRelease.releaseName)) {
-										value.forEach((release, index, array) => {
-											releaseString += release.releaseName;
-											if (index < array.length - 1) releaseString += ', ';
-										});
-										value = releaseString;
-										bandResults.push({
-											category: 'Band',
-											data: band,
-											match: {
-												attribute: 'band.' + attribute[0],
-												pretty: attribute[1],
-												value: value
-											}
-										});
-										return true;
-									}
-								});
-								return match;
-							}
-							else if (attribute[0] === 'genre') {
-								const match = value.some(currentGenre => {
-									if (regex.test(currentGenre)) {
-										value = value.join(', ');
-										bandResults.push({
-											category: 'Band',
-											data: band,
-											match: {
-												attribute: 'band.' + attribute[0],
-												pretty: attribute[1],
-												value: value
-											}
-										});
-										return true;
-									}
-								});
-								return match;
-							}
-							else if (regex.test(value)) {
-								bandResults.push({
-									category: 'Band',
-									data: band,
-									match: {
-										attribute: 'band.' + attribute[0],
-										pretty: attribute[1],
-										value: value
-									}
-								});
-								return true;
-							}
-							return false;
+			dereferenced.forEach(band => {
+				if (
+					queries.genres.length == 0
+					||
+					queries.genres.some(currentGenre => {
+						return band.genre.some(genre => {
+							return currentGenre.test(genre);
 						});
-					}
-				});
-	
-				return next(null, bandResults);
+					})
+				) {
+					bandSearchAttributes.some(attribute => {
+						let value = attribute[0].split('.').reduce((prev, curr) => {
+							return prev[curr];
+						}, band);
+
+						if (attribute[0] === 'releases') {
+							let releaseString = '';
+							const match = value.some(currentRelease => {
+								if (regex.test(currentRelease.releaseName)) {
+									value.forEach((release, index, array) => {
+										releaseString += release.releaseName;
+										if (index < array.length - 1) releaseString += ', ';
+									});
+									value = releaseString;
+									bandResults.push(buildObject(band, 'Band', attribute, value));
+									return true;
+								}
+							});
+							return match;
+						}
+						else if (attribute[0] === 'genre') {
+							const match = value.some(currentGenre => {
+								if (regex.test(currentGenre)) {
+									value = value.join(', ');
+									bandResults.push(buildObject(band, 'Band', attribute, value));
+									return true;
+								}
+							});
+							return match;
+						}
+						else if (regex.test(value)) {
+							bandResults.push(buildObject(band, 'Band', attribute, value));
+							return true;
+						}
+						return false;
+					});
+				}
 			});
-		})
-		.catch(err => {
-			return next(err, null);
+
+			resolve(bandResults);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+const createQueries = (queries) => {
+	let eventQuery = {
+		attributes: [],
+		values: [],
+		genres: []
+	};
+	let festivalQuery = {
+		query: {},
+		genres: []
+	};
+	let locationQuery = {};
+	let bandQuery = {
+		query: {},
+		genres: []
+	};
+
+	if (queries.city != undefined) {
+		eventQuery.attributes.push('location.address.city');
+		eventQuery.values.push(new RegExp(queries.city, 'i'));
+		eventQuery.attributes.push('location.address.county');
+		eventQuery.values.push(new RegExp(queries.city, 'i'));
+
+		festivalQuery.query = {
+			$or: [
+				{ 'address.city': new RegExp(queries.city, 'i') },
+				{ 'address.county': new RegExp(queries.city, 'i') }
+			]
+		};
+
+		locationQuery = {
+			$or: [
+				{ 'address.city': new RegExp(queries.city, 'i') },
+				{ 'address.county': new RegExp(queries.city, 'i') }
+			]
+		};
+
+		bandQuery.query = { 'origin.name': RegExp(queries.city, 'i') };
+	}
+	else if (queries.country != undefined) {
+		eventQuery.attributes.push('location.address.country');
+		eventQuery.values.push(new RegExp(queries.country, 'i'));
+
+		festivalQuery.query = { 'address.country': RegExp(queries.country, 'i') };
+
+		locationQuery = { 'address.country': RegExp(queries.country, 'i') };
+
+		bandQuery.query = { 'origin.country': RegExp(queries.country, 'i') };
+	}
+
+	if (queries.genre != undefined) {
+		const genres = queries.genre.split(',');
+		genres.forEach(genre => {
+			const genreRegex = new RegExp('^' + genre + '$', 'i');
+			eventQuery.genres.push(genreRegex);
+			festivalQuery.genres.push(genreRegex);
+			bandQuery.genres.push(genreRegex);
 		});
+	}
+
+	return { events: eventQuery, festivals: festivalQuery, locations: locationQuery, bands: bandQuery };
+}
+
+const buildObject = (object, category, attribute, value) => {
+	return {
+		category: category,
+		data: object,
+		match: {
+			attribute: `${category.toLowerCase()}.${attribute[0]}`,
+			pretty: attribute[1],
+			value: value
+		}
+	};
 }
 
 module.exports = router;
