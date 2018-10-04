@@ -5,6 +5,10 @@ const router = express.Router();
 // load location model
 require('../models/Location');
 const Location = mongoose.model('unvalidated_locations');
+const ValidLocation = mongoose.model('locations');
+
+// load delete route
+const deleteRoute = require('./controller/delete');
 
 // load params.js
 const params = require('../config/params');
@@ -20,9 +24,9 @@ const validate_multiple = require('../config/validate-multiple');
 router.get('/', token.checkToken(true), (req, res) => {
 	Location.find()
 		.then(locations => {
-			if (locations.length === 0) 
+			if (locations.length === 0)
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-			
+
 			locations.sort((a, b) => {
 				return a.name.localeCompare(b.name);
 			});
@@ -55,12 +59,12 @@ router.get('/page', token.checkToken(true), (req, res) => {
 		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
 		else query.name = new RegExp('^' + req.query.startWith, 'i');
 	}
-	if (req.query.city) 
+	if (req.query.city)
 		query.$or = [
-			{ 'address.city': new RegExp(req.query.city, 'i') }, 
+			{ 'address.city': new RegExp(req.query.city, 'i') },
 			{ 'address.county': new RegExp(req.query.city, 'i') }
 		];
-	
+
 	else if (req.query.country) {
 		const countryString = 'address.country';
 		query[countryString] = RegExp(req.query.country, 'i');
@@ -68,7 +72,7 @@ router.get('/page', token.checkToken(true), (req, res) => {
 
 	Location.find(query)
 		.then(locations => {
-			if (locations.length === 0) 
+			if (locations.length === 0)
 				return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
 			const count = locations.length;
@@ -96,9 +100,9 @@ router.get('/page', token.checkToken(true), (req, res) => {
 router.get('/byid/:_id', token.checkToken(true), (req, res) => {
 	Location.findOne({ _id: req.params._id })
 		.then(location => {
-			if (!location) 
+			if (!location)
 				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			
+
 			return res.status(200).json({ data: location, token: res.locals.token });
 		})
 		.catch(err => {
@@ -116,9 +120,9 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 	};
 	Location.find()
 		.then(locations => {
-			if (locations.length === 0) 
+			if (locations.length === 0)
 				return res.status(200).json({ data: filters, token: res.locals.token });
-			
+
 			locations.forEach(location => {
 				if (location.name && !filters.startWith.includes(location.name.charAt(0).toUpperCase())) {
 					if (location.name.charAt(0).toUpperCase() === 'Ä') {
@@ -130,14 +134,14 @@ router.get('/filters', token.checkToken(true), (req, res) => {
 					else if (location.name.charAt(0).toUpperCase() === 'Ü') {
 						if (!filters.startWith.includes('U')) filters.startWith.push('U');
 					}
-					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase())) 
+					else if (/[A-Z]/.test(location.name.charAt(0).toUpperCase()))
 						filters.startWith.push(location.name.charAt(0).toUpperCase());
-					else if (!filters.startWith.includes('#')) 
+					else if (!filters.startWith.includes('#'))
 						filters.startWith.push('#');
 				}
-				if (location.address.city && !filters.cities.includes(location.address.city)) 
+				if (location.address.city && !filters.cities.includes(location.address.city))
 					filters.cities.push(location.address.city);
-				if (location.address.country && !filters.countries.includes(location.address.country)) 
+				if (location.address.country && !filters.countries.includes(location.address.country))
 					filters.countries.push(location.address.country);
 			});
 			filters.startWith.sort((a, b) => {
@@ -170,6 +174,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 		});
 });
 
+// validate unvalidated location
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqLocation('validate'), (req, res) => {
+	new ValidLocation(res.locals.validated)
+		.save()
+		.then(() => {
+			Location.remove({ _id: req.params._id }, (err, removedFestival) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Location validated', token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post multiple locations to database
 router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate_multiple.reqLocationList('unvalidated'), (req, res) => {
 	const locationList = res.locals.validated;
@@ -191,23 +214,13 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['n
 
 // delete location by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Location.findOne({ _id: req.params._id })
-		.then(location => {
-			if (!location) 
-				return res.status(400).json({ message: 'No location found with this ID', token: res.locals.token });
-			
-			Location.remove({ _id: req.params._id }, (err, location) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Location deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'unvalidLocation', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

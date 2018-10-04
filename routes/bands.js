@@ -15,6 +15,9 @@ const Event = mongoose.model('events');
 require('../models/Genre');
 const Genre = mongoose.model('genres');
 
+// load delete route
+const deleteRoute = require('./controller/delete');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -199,17 +202,11 @@ router.get('/byurl/:url', token.checkToken(false), (req, res) => {
 
 // get all bands events
 router.get('/events/:_id', token.checkToken(false), (req, res) => {
-	let eventList = [];
-
-	Event.find()
+	Event.find({ bands: req.params._id })
 		.then(events => {
-			events.forEach(event => {
-				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
-			});
+			if (events.length === 0) return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
 
-			if (eventList.length === 0) return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
-
-			dereference.eventObjectArray(eventList, 'date', 1, (err, responseEvents) => {
+			dereference.eventObjectArray(events, 'date', 1, (err, responseEvents) => {
 				if (err) {
 					console.log(err.name + ': ' + err.message);
 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
@@ -470,43 +467,13 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 
 // delete band by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			Band.remove({ _id: req.params._id }, (err, band) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-
-				Event.find()
-					.then(events => {
-						events.forEach(event => {
-							const index = event.bands.indexOf(req.params._id);
-							if (index > -1) {
-								event.bands.splice(index, 1);
-								Event.findOneAndUpdate({ _id: event._id }, event, (err, updatedEvent) => {
-									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									}
-								});
-							}
-						});
-						return res.status(200).json({ message: 'Band deleted', token: res.locals.token });
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'validBand', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

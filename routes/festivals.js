@@ -12,9 +12,8 @@ require('../models/Festival_Event');
 const Event = mongoose.model('festival_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_festival_events');
 
-// load genre model
-require('../models/Genre');
-const Genre = mongoose.model('genres');
+// load delete route
+const deleteRoute = require('./controller/delete');
 
 // load params.js
 const params = require('../config/params');
@@ -24,6 +23,8 @@ const token = require('../config/token');
 const dereference = require('../config/dereference');
 // load url.js
 const url = require('../config/url');
+// load validate.js
+const validate = require('../config/validate');
 
 // festivals routes
 // get all festivals
@@ -166,72 +167,112 @@ router.get('/byid/:_id', token.checkToken(false), (req, res) => {
 		});
 });
 
+// get festival by title-url
+router.get('/byurl/:url', token.checkToken(false), (req, res) => {
+	Festival.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
+		.then(festival => {
+			if (!festival) 
+				return res.status(200).json({ message: 'No festival found with this URL', token: res.locals.token });
+			
+			dereference.festivalObject(festival, (err, responseFestival) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ data: responseFestival, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
+// get all filter data
+router.get('/filters', token.checkToken(false), (req, res) => {
+	let filters = {
+		startWith: [],
+		cities: [],
+		countries: [],
+		genres: [],
+		firstDate: '',
+		lastDate: ''
+	};
+	Festival.find()
+		.then(festivals => {
+			if (festivals.length === 0) 
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			
+			dereference.festivalObjectArray(festivals, 'title', 1, (err, responseFestivals) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				
+				responseFestivals.forEach(festival => {
+					if (festival.title && !filters.startWith.includes(festival.title.charAt(0).toUpperCase())) {
+						if (festival.title.charAt(0).toUpperCase() === 'Ä') {
+							if (!filters.startWith.includes('A')) filters.startWith.push('A');
+						}
+						else if (festival.title.charAt(0).toUpperCase() === 'Ö') {
+							if (!filters.startWith.includes('O')) filters.startWith.push('O');
+						}
+						else if (festival.title.charAt(0).toUpperCase() === 'Ü') {
+							if (!filters.startWith.includes('U')) filters.startWith.push('U');
+						}
+						else if (/[A-Z]/.test(festival.title.charAt(0).toUpperCase())) 
+							filters.startWith.push(festival.title.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#')) 
+							filters.startWith.push('#');
+					}
+					if (festival.address.city && !filters.cities.includes(festival.address.city))
+						filters.cities.push(festival.address.city);
+					if (festival.address.country && !filters.countries.includes(festival.address.country)) 
+						filters.countries.push(festival.address.country);
+
+					festival.genre.forEach(genre => {
+						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+					});
+
+					festival.events.forEach(event => {
+						if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+							filters.firstDate = event.startDate;
+						if (!filters.lastDate || event.endDate.localeCompare(filters.lastDate) == 1)
+							filters.lastDate = event.endDate;
+					});
+				});
+				filters.startWith.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.cities.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.countries.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				filters.genres.sort((a, b) => {
+					return a.localeCompare(b);
+				});
+				return res.status(200).json({ data: filters, token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post festival and event to database
-router.post('/', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), (req, res) => {
-	Genre.find()
-		.then(genres => {
-			let finalGenres = [];
-			if (
-				req.body.festival.genre.some(reqGenre => {
-					return !genres.some(savedGenre => {
-						if (savedGenre.name == reqGenre) {
-							finalGenres.push(savedGenre._id);
-							return true;
-						}
-						return false;
-					});
-				})
-			) return res.status(400).json({ message: 'Attribute \'genre\' has to be an array of names of genres from the database with 1-3 entries.' });
-
-			const newFestival = {
-				title: req.body.festival.title,
-				url: '',
-				description: req.body.festival.description,
-				genre: finalGenres,
-				events: [],
-				address: {
-					street: req.body.festival.address.street,
-					administrative: req.body.festival.address.administrative,
-					city: req.body.festival.address.city,
-					county: req.body.festival.address.county,
-					country: req.body.festival.address.country,
-					postcode: req.body.festival.address.postcode,
-					lat: req.body.festival.address.lat,
-					lng: req.body.festival.address.lng,
-					value: req.body.festival.address.value
-				},
-				ticketLink: req.body.festival.ticketLink,
-				website: req.body.festival.website,
-				facebookUrl: req.body.festival.facebookUrl,
-			};
-
-			const newEvent = {
-				title: req.body.event.title,
-				startDate: req.body.event.startDate,
-				endDate: req.body.event.endDate,
-				bands: req.body.event.bands,
-				canceled: req.body.event.canceled
-			};
-
-			new Event(newEvent)
+router.post('/', token.checkToken(true), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('post'), (req, res) => {
+	new Event(res.locals.validated.event)
+		.save()
+		.then(event => {
+			let newFestival = res.locals.validated.festival;
+			newFestival.events = [event._id];
+			new Festival(newFestival)
 				.save()
-				.then(event => {
-					newFestival.events = [event._id];
-					url.generateUrl(newFestival, Festival, (err, responseFestival) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						new Festival(responseFestival)
-							.save()
-							.then(() => {
-								return res.status(200).json({ message: 'Festival and event saved', token: res.locals.token });
-							})
-							.catch(err => {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							});
-					});
+				.then(() => {
+					return res.status(200).json({ message: 'Festival and event saved', token: res.locals.token });
 				})
 				.catch(err => {
 					console.log(err.name + ': ' + err.message);
@@ -244,71 +285,26 @@ router.post('/', token.checkToken(false), params.checkParameters(['festival.titl
 		});
 });
 
-// // update festival by id
-// router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'startDate', 'endDate']), (req, res) => {
-// 	Festival.findOne({ _id: req.params._id })
-// 		.then(festival => {
-// 			if (!festival) 
-// 				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-
-// 			const update = {
-// 				_id: req.params._id,
-// 				title: req.body.title,
-// 				startDate: req.body.startDate,
-// 				endDate: req.body.endDate,
-// 				bands: req.body.bands ? req.body.bands : festival.bands,
-// 				canceled: req.body.canceled ? req.body.canceled : festival.canceled
-// 			};
-
-// 			Festival.findOneAndUpdate({ _id: req.params._id }, update, (err, festival) => {
-// 				if (err) {
-// 					console.log(err.name + ': ' + err.message);
-// 					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-// 				}
-// 				return res.status(200).json({ message: 'Event updated', token: res.locals.token });
-// 			});
-// 		})
-// 		.catch(err => {
-// 			console.log(err.name + ': ' + err.message);
-// 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-// 		});
-// });
+// update festival by id
+router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validate.reqFestival(), (req, res) => {
+	Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, (err, festival) => {
+		if (err) {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		}
+		return res.status(200).json({ message: 'Festival updated', token: res.locals.token });
+	});
+});
 
 // delete festival by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Festival.findOne({ _id: req.params._id })
-		.then(festival => {
-			if (!festival) 
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-			const ids = [];
-			festival.events.forEach(event => {
-				ids.push({_id: event});
-			});
-			
-			Festival.remove({ _id: req.params._id }, (err, removedFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				Event.remove({ $or: ids}, (err, events) => {
-					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					}
-					UnvalidatedEvent.remove({ $or: ids}, (err, events) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						return res.status(200).json({ message: 'Festival deleted', token: res.locals.token });
-					});
-				});
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'validFestival', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

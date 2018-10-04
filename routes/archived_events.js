@@ -11,6 +11,9 @@ const Event = mongoose.model('archived_events');
 require('../models/Location');
 const Location = mongoose.model('locations');
 
+// load delete route
+const deleteRoute = require('./controller/delete');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -426,23 +429,13 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['title', 'lo
 
 // delete location by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Event.findOne({ _id: req.params._id })
-		.then(event => {
-			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			
-			Event.remove({ _id: req.params._id }, (err, event) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'archiveEvent', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;

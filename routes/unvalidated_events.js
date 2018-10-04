@@ -5,6 +5,10 @@ const router = express.Router();
 // load event model
 require('../models/Event');
 const Event = mongoose.model('unvalidated_events');
+const ValidEvent = mongoose.model('events');
+
+// load delete route
+const deleteRoute = require('./controller/delete');
 
 // load params.js
 const params = require('../config/params');
@@ -240,6 +244,25 @@ router.post('/', token.checkToken(false), params.checkParameters(['title', 'loca
 		});
 });
 
+// validate unvalidated event
+router.post('/validate/:_id', token.checkToken(false), params.checkParameters(['title', 'location', 'date', 'bands']), validate.reqEvent('validate', 'unvalidated'), (req, res) => {
+	new ValidEvent(res.locals.validated)
+		.save()
+		.then(() => {
+			Event.remove({ _id: req.params._id }, (err, removedEvent) => {
+				if (err) {
+					console.log(err.name + ': ' + err.message);
+					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+				}
+				return res.status(200).json({ message: 'Event validated', token: res.locals.token });
+			});
+		})
+		.catch(err => {
+			console.log(err.name + ': ' + err.message);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		});
+});
+
 // post multiple events to database
 router.post('/multiple', token.checkToken(false), params.checkListParameters(['title', 'location', 'date', 'bands']), validate_multiple.reqEventList('unvalidated', 'unvalidated'), (req, res) => {
 	const eventList = res.locals.validated;
@@ -261,23 +284,13 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['t
 
 // delete event by id
 router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Event.findOne({ _id: req.params._id })
-		.then(event => {
-			if (!event) 
-				return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
-			
-			Event.remove({ _id: req.params._id }, (err, event) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ message: 'Event deleted', token: res.locals.token });
-			});
-		})
-		.catch(err => {
+	deleteRoute.delete(req.params._id, 'unvalidEvent', (err, response) => {
+		if (err) {
 			console.log(err.name + ': ' + err.message);
 			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	});
 });
 
 module.exports = router;
