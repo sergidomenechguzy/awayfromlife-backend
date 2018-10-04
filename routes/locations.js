@@ -355,8 +355,8 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 // update location by id
 router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('put'), async (req, res) => {
 	try {
-		await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Location updated', token: res.locals.token });
+		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

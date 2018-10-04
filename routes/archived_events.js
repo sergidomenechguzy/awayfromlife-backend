@@ -355,8 +355,9 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 // update event by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('put', 'archive'), async (req, res) => {
 	try {
-		await ArchivedEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Event updated', token: res.locals.token });
+		const updated = await ArchivedEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.eventObject(updated);
+		return res.status(200).json({ message: 'Event updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

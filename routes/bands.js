@@ -390,8 +390,9 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 // update band by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('put'), async (req, res) => {
 	try {
-		await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Band updated', token: res.locals.token });
+		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.bandObject(updated);
+		return res.status(200).json({ message: 'Band updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

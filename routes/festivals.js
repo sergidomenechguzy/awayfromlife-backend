@@ -255,8 +255,9 @@ router.post('/', token.checkToken(true), params.checkParameters(['festival.name'
 // update festival by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateFestival.validateObject(), async (req, res) => {
 	try {
-		await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Festival updated', token: res.locals.token });
+		const updated = await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.festivalObject(updated);
+		return res.status(200).json({ message: 'Festival updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

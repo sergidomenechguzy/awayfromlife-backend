@@ -67,8 +67,8 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 // update genre by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name']), validateGenre.validateObject('put'), async (req, res) => {
 	try {
-		await Genre.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Genre updated', token: res.locals.token });
+		const updated = await Genre.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		return res.status(200).json({ message: 'Genre updated', data: updated, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

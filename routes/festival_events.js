@@ -92,8 +92,9 @@ router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'st
 // update event by id
 router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('put'), async (req, res) => {
 	try {
-		await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated);
-		return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
+		const updated = await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.festivalEventObject(updated);
+		return res.status(200).json({ message: 'Festival event updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -110,8 +111,9 @@ router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
 
 		event.canceled = 1;
 
-		await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, event);
-		return res.status(200).json({ message: 'Festival event updated', token: res.locals.token });
+		const updated = await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, event, { new: true });
+		const dereferenced = await dereference.festivalEventObject(updated);
+		return res.status(200).json({ message: 'Festival event canceled', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
