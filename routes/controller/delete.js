@@ -115,8 +115,16 @@ module.exports.delete = (id, collection) => {
 						resolve({ status: 200, message: 'Festival event deleted' });
 
 					festival.events.splice(festival.events.indexOf(id), 1);
-					await Festival.findOneAndUpdate({ _id: festival._id }, festival);
-					resolve({ status: 200, message: 'Festival event deleted' });
+					const festivalEvents = await FestivalEvent.find({ _id: { $in: festival.events } });
+					if (festivalEvents.length == 0) {
+						await UnvalidatedFestivalEvent.remove({ _id: { $in: festival.events } });
+						await Festival.remove({ _id: festival._id });
+						resolve({ status: 200, message: 'Festival event deleted' });
+					}
+					else {
+						await Festival.findOneAndUpdate({ _id: festival._id }, festival);
+						resolve({ status: 200, message: 'Festival event deleted' });
+					}
 					break;
 
 				default:
