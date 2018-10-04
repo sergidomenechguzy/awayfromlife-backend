@@ -25,44 +25,46 @@ module.exports.createSession = () => {
 }
 
 module.exports.checkToken = (forbidden) => {
-	return async (req, res, next) => {
-		try {
-			if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') {
-				if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
-				return next();
-			}
-			const decodedAuthToken = jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret);
-
-			const user = await User.findById(decodedAuthToken.userID);
-			if (!user) {
-				if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
-				return next();
-			}
-
-			let sessionIndex;
-			if (
-				!user.currentSessions.some((session, index, array) => {
-					if (session.sessionID === decodedAuthToken.sessionID && session.expireTime > Math.floor(Date.now() / 1000)) {
-						sessionIndex = index;
-						return true
-					};
-					return false;
-				})
-			) {
-				if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
-				return next();
-			}
-
-			const exp = Math.floor(Date.now() / 1000) + expTime;
-			user.currentSessions[sessionIndex].expireTime = exp;
-			await User.findOneAndUpdate({ _id: decodedAuthToken.userID }, user);
-
-			res.locals.token = jwt.sign({ userID: decodedAuthToken.userID, sessionID: decodedAuthToken.sessionID, exp: exp }, secrets.authSecret);
+	return (req, res, next) => {
+		if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') {
+			if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
 			return next();
 		}
-		catch (err) {
-			console.log(err);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-		}
+		jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, async (err, decodedAuthToken) => {
+			if (err) return res.status(400).json({ message: 'Invalid token' });
+			
+			try {
+				const user = await User.findById(decodedAuthToken.userID);
+				if (!user) {
+					if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
+					return next();
+				}
+
+				let sessionIndex;
+				if (
+					!user.currentSessions.some((session, index, array) => {
+						if (session.sessionID === decodedAuthToken.sessionID && session.expireTime > Math.floor(Date.now() / 1000)) {
+							sessionIndex = index;
+							return true
+						};
+						return false;
+					})
+				) {
+					if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
+					return next();
+				}
+
+				const exp = Math.floor(Date.now() / 1000) + expTime;
+				user.currentSessions[sessionIndex].expireTime = exp;
+				await User.findOneAndUpdate({ _id: decodedAuthToken.userID }, user);
+
+				res.locals.token = jwt.sign({ userID: decodedAuthToken.userID, sessionID: decodedAuthToken.sessionID, exp: exp }, secrets.authSecret);
+				return next();
+			}
+			catch (err) {
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+			}
+		});
 	}
 }

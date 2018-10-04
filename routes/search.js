@@ -70,7 +70,7 @@ router.get('/:query', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get a maximum of 6 search results without parameters
+// get a maximum of 8 search results without parameters
 router.get('/simple/:query', token.checkToken(false), async (req, res) => {
 	try {
 		const categories = ['events', 'festivals', 'locations', 'bands'];
