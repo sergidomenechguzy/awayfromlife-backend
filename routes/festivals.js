@@ -43,7 +43,6 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get paginated festivals
-
 router.get('/page', token.checkToken(false), async (req, res) => {
 	try {
 		let page = 1;
@@ -160,6 +159,29 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 			return res.status(400).json({ message: 'No festival found with this URL', token: res.locals.token });
 
 		const dereferenced = await dereference.festivalObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get similar festivals
+router.get('/similar', token.checkToken(false), async (req, res) => {
+	try {
+		if (!req.query.name || !req.query.city)
+			return res.status(400).json({ message: 'Parameter(s) missing: name and city are required.' });
+		let query = {};
+		query.name = new RegExp('^' + req.query.name + '$', 'i');
+		const cityString = 'address.city';
+		query[cityString] = new RegExp('^' + req.query.city + '$', 'i');
+
+		const festivals = await Festival.find(query);
+		if (festivals.length === 0)
+			return res.status(200).json({ message: 'No similar festivals found.', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {

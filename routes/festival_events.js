@@ -71,6 +71,36 @@ router.get('/canceled', token.checkToken(false), async (req, res) => {
 	}
 });
 
+// get similar events
+router.get('/similar', token.checkToken(false), async (req, res) => {
+	try {
+		if (!req.query.festival || !req.query.startDate || !req.query.endDate)
+			return res.status(400).json({ message: 'Parameter(s) missing: festival, startDate and endDate are required.' });
+
+		const festival = await Festival.findById(req.query.festival);
+		if (!festival)
+			return res.status(400).json({ message: 'No festival found with this ID.', token: res.locals.token });
+
+		const dereferenced = await dereference.festivalObject(festival);
+		let similarFestivalEvent;
+		dereferenced.events.some(festivalEvent => {
+			if ((festivalEvent.startDate.localeCompare(req.query.endDate) <= 0) && (festivalEvent.endDate.localeCompare(req.query.startDate) >= 0)) {
+				similarFestivalEvent = festivalEvent;
+				return true;
+			}
+			return false;
+		});
+		if (similarFestivalEvent == undefined)
+			return res.status(200).json({ message: 'No similar festival events found.', token: res.locals.token });
+
+		return res.status(200).json({ data: similarFestivalEvent, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // post event to database
 router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('post'), async (req, res) => {
 	try {

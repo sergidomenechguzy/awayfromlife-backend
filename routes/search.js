@@ -57,7 +57,7 @@ router.get('/:query', token.checkToken(false), async (req, res) => {
 
 		const queries = createQueries(req.query);
 		const promises = categories.map(async (category) => {
-			let result = await categoryFunction[category](queries[category], new RegExp(req.params.query, 'i'));
+			let result = await categoryFunction[category](queries[category], new RegExp(req.params.query.trim(), 'i'));
 			results[category] = result;
 			return result;
 		});
@@ -84,7 +84,7 @@ router.get('/simple/:query', token.checkToken(false), async (req, res) => {
 
 		const queries = createQueries({});
 		const promises = categories.map(async (category) => {
-			let result = await categoryFunction[category](queries[category], RegExp(req.params.query, 'i'));
+			let result = await categoryFunction[category](queries[category], RegExp(req.params.query.trim(), 'i'));
 			return result;
 		});
 		const resultLists = await Promise.all(promises);

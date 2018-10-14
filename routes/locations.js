@@ -101,7 +101,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			query[countryString] = RegExp(req.query.country, 'i');
 		}
 
-		const locations = await Location.find(query);
+		let locations = await Location.find(query);
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 

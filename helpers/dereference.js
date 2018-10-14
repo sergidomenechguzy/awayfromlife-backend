@@ -51,10 +51,11 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 				const result = await functions[model](object);
 				return result;
 			});
-			const objectList = await Promise.all(promises);
-			const sortedList = sort[model](objectList, sortBy, order);
+			let objectList = await Promise.all(promises);
+			if (sortBy != false)
+				objectList = sort[model](objectList, sortBy, order);
 
-			resolve(sortedList);
+			resolve(objectList);
 		}
 		catch (err) {
 			reject(err);
