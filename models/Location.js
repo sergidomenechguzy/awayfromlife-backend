@@ -11,37 +11,50 @@ const LocationSchema = new Schema({
 		type: String
 	},
 	address: {
-		street: {
-			type: String,
-			required: true
+		default: {
+			street: {
+				type: String,
+				required: true
+			},
+			administrative: {
+				type: String
+			},
+			city: {
+				type: String,
+				required: true
+			},
+			county: {
+				type: String
+			},
+			country: {
+				type: String,
+				required: true
+			},
+			postcode: {
+				type: String
+			},
+			lat: {
+				type: Number,
+				required: true
+			},
+			lng: {
+				type: Number,
+				required: true
+			},
+			value: {
+				type: String
+			}
 		},
-		administrative: {
-			type: String
-		},
-		city: {
-			type: String,
-			required: true
-		},
-		county: {
-			type: String
-		},
-		country: {
-			type: String,
-			required: true
-		},
-		postcode: {
-			type: String
-		},
-		lat: {
-			type: Number,
-			required: true
-		},
-		lng: {
-			type: Number,
-			required: true
-		},
-		value: {
-			type: String,
+		international: {
+			street: {
+				type: String
+			},
+			city: {
+				type: [String]
+			},
+			country: {
+				type: [String]
+			}
 		}
 	},
 	status: {

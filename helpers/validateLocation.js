@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const algoliasearch = require('algoliasearch');
+const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 // load location model
 require('../models/Location');
@@ -86,6 +88,9 @@ const validateLocation = (data, type, options) => {
 			if (!(data.address.value == undefined || typeof data.address.value == 'string'))
 				resolve('Attribute \'address.value\' can be left out or has to be a string.');
 
+			if (!(typeof data.address.countryCode == 'string' && data.address.countryCode.length > 0))
+				resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
+
 			if (!(data.status == undefined || (typeof data.status == 'string' && (data.status == 'opened' || data.status == 'closed'))))
 				resolve('Attribute \'status\' can be left out or has to be either \'opened\' or \'closed\' as a string.');
 
@@ -97,6 +102,37 @@ const validateLocation = (data, type, options) => {
 
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
+
+
+			const res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode });
+
+			let address = {
+				street: res.hits[0].locale_names.default[0],
+				city: [],
+				country: []
+			}
+
+			if (res.hits[0].city) {
+				for (attribute in res.hits[0].city) {
+					if (!address.city.includes(res.hits[0].city[attribute][0]))
+						address.city.push(res.hits[0].city[attribute][0]);
+				}
+			}
+			if (res.hits[0].county) {
+				for (attribute in res.hits[0].county) {
+					if (!address.city.includes(res.hits[0].county[attribute][0]))
+						address.city.push(res.hits[0].county[attribute][0]);
+				}
+			}
+			if (res.hits[0].administrative && !address.city.includes(res.hits[0].administrative[0]))
+				address.city.push(res.hits[0].administrative[0]);
+
+			if (res.hits[0].country) {
+				for (attribute in res.hits[0].country) {
+					if (!address.country.includes(res.hits[0].country[attribute]))
+						address.country.push(res.hits[0].country[attribute]);
+				}
+			}
 
 
 			if (type == 'put' || type == 'validate') {
@@ -112,15 +148,18 @@ const validateLocation = (data, type, options) => {
 					name: data.name,
 					url: '',
 					address: {
-						street: data.address.street,
-						administrative: data.address.administrative != undefined ? data.address.administrative : object.address.administrative,
-						city: data.address.city,
-						county: data.address.county != undefined ? data.address.county : object.address.county,
-						country: data.address.country,
-						postcode: data.address.postcode != undefined ? data.address.postcode : object.address.postcode,
-						lat: data.address.lat,
-						lng: data.address.lng,
-						value: data.address.value != undefined ? data.address.value : object.address.value
+						default: {
+							street: data.address.street,
+							administrative: data.address.administrative != undefined ? data.address.administrative : object.address.administrative,
+							city: data.address.city,
+							county: data.address.county != undefined ? data.address.county : object.address.county,
+							country: data.address.country,
+							postcode: data.address.postcode != undefined ? data.address.postcode : object.address.postcode,
+							lat: data.address.lat,
+							lng: data.address.lng,
+							value: data.address.value != undefined ? data.address.value : object.address.value
+						},
+						international: address
 					},
 					status: data.status != undefined ? data.status : object.status,
 					information: data.information != undefined ? data.information : object.information,
@@ -136,15 +175,18 @@ const validateLocation = (data, type, options) => {
 					name: data.name,
 					url: '',
 					address: {
-						street: data.address.street,
-						administrative: data.address.administrative != undefined ? data.address.administrative : '',
-						city: data.address.city,
-						county: data.address.county != undefined ? data.address.county : '',
-						country: data.address.country,
-						postcode: data.address.postcode != undefined ? data.address.postcode : '',
-						lat: data.address.lat,
-						lng: data.address.lng,
-						value: data.address.value != undefined ? data.address.value : ''
+						default: {
+							street: data.address.street,
+							administrative: data.address.administrative != undefined ? data.address.administrative : '',
+							city: data.address.city,
+							county: data.address.county != undefined ? data.address.county : '',
+							country: data.address.country,
+							postcode: data.address.postcode != undefined ? data.address.postcode : '',
+							lat: data.address.lat,
+							lng: data.address.lng,
+							value: data.address.value != undefined ? data.address.value : ''
+						},
+						international: address
 					},
 					status: data.status != undefined ? data.status : 'opened',
 					information: data.information != undefined ? data.information : '',

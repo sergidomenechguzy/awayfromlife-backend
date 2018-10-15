@@ -34,16 +34,18 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 			event: eventObject,
 			festivalEvent: festivalEventObject,
 			festival: festivalObject,
-			unvalidatedFestival: unvalidatedFestivalObject,
-			report: reportObject
+			location: locationObject,
+			report: reportObject,
+			unvalidatedFestival: unvalidatedFestivalObject
 		};
 		const sort = {
 			band: bandSort,
 			event: eventSort,
 			festivalEvent: festivalEventSort,
 			festival: festivalSort,
-			unvalidatedFestival: festivalSort,
-			report: reportSort
+			location: locationSort,
+			report: reportSort,
+			unvalidatedFestival: festivalSort
 		};
 
 		try {
@@ -107,8 +109,9 @@ const eventObject = module.exports.eventObject = (event) => {
 		if (typeof event == 'string') resolve(event);
 
 		try {
-			const location = await Location.findById(event.location);
+			let location = await Location.findById(event.location);
 			if (!location) location = 'Location not found';
+			location = await locationObject(location);
 
 			// if (event.bands.length === 0) {
 			// 	const responseEvent = {
@@ -191,42 +194,6 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 	});
 }
 
-const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (unvalidatedFestival) => {
-	return new Promise(async (resolve, reject) => {
-		if (typeof unvalidatedFestival == 'string') resolve(unvalidatedFestival);
-
-		try {
-			const promises = unvalidatedFestival.genre.map(async (genreID) => {
-				let result = await Genre.findById(genreID);
-				if (!result) result = 'Genre not found';
-				return result.name;
-			});
-			const genreList = await Promise.all(promises);
-
-			genreList.sort((a, b) => {
-				return a.localeCompare(b);
-			});
-
-			const responseFestival = {
-				_id: unvalidatedFestival._id,
-				name: unvalidatedFestival.name,
-				url: unvalidatedFestival.url,
-				description: unvalidatedFestival.description,
-				genre: genreList,
-				events: unvalidatedFestival.events,
-				address: unvalidatedFestival.address,
-				ticketLink: unvalidatedFestival.ticketLink,
-				website: unvalidatedFestival.website,
-				facebookUrl: unvalidatedFestival.facebookUrl
-			};
-			resolve(responseFestival);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
-
 const festivalObject = module.exports.festivalObject = (festival) => {
 	return new Promise(async (resolve, reject) => {
 		if (typeof festival == 'string') resolve(festival);
@@ -275,6 +242,21 @@ const festivalObject = module.exports.festivalObject = (festival) => {
 	});
 }
 
+const locationObject = module.exports.locationObject = (location) => {
+	return new Promise(async (resolve, reject) => {
+		if (typeof location == 'string') resolve(location);
+
+		try {
+			let responseLocation = JSON.parse(JSON.stringify(location));
+			responseLocation.address = location.address.default;
+			resolve(responseLocation);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
 const reportObject = module.exports.reportObject = (report) => {
 	return new Promise(async (resolve, reject) => {
 		if (typeof report == 'string') resolve(report);
@@ -288,19 +270,18 @@ const reportObject = module.exports.reportObject = (report) => {
 		const functions = {
 			band: bandObject,
 			event: eventObject,
-			festival: festivalObject
+			festival: festivalObject,
+			location: locationObject
 		};
 
 		try {
 			const object = await model[report.category].findById(report.item);
-			let dereferenced;
-			if (report.category != 'location')
-				dereferenced = await functions[report.category](object);
+			const dereferenced = await functions[report.category](object);
 
 			responseReport = {
 				_id: report._id,
 				category: report.category,
-				item: (dereferenced != undefined) ? dereferenced : object,
+				item: dereferenced,
 				description: report.description
 			}
 			resolve(responseReport);
@@ -357,6 +338,42 @@ const reportObject = module.exports.reportObject = (report) => {
 // 	});
 // }
 
+const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (unvalidatedFestival) => {
+	return new Promise(async (resolve, reject) => {
+		if (typeof unvalidatedFestival == 'string') resolve(unvalidatedFestival);
+
+		try {
+			const promises = unvalidatedFestival.genre.map(async (genreID) => {
+				let result = await Genre.findById(genreID);
+				if (!result) result = 'Genre not found';
+				return result.name;
+			});
+			const genreList = await Promise.all(promises);
+
+			genreList.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+
+			const responseFestival = {
+				_id: unvalidatedFestival._id,
+				name: unvalidatedFestival.name,
+				url: unvalidatedFestival.url,
+				description: unvalidatedFestival.description,
+				genre: genreList,
+				events: unvalidatedFestival.events,
+				address: unvalidatedFestival.address,
+				ticketLink: unvalidatedFestival.ticketLink,
+				website: unvalidatedFestival.website,
+				facebookUrl: unvalidatedFestival.facebookUrl
+			};
+			resolve(responseFestival);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
 const bandSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
@@ -387,7 +404,7 @@ const eventSort = (objectList, sortBy, order) => {
 		}
 		else if (sortBy === 'date') {
 			if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
-				return a[sortBy].localeCompare(b[sortBy]);
+			return a[sortBy].localeCompare(b[sortBy]);
 		}
 		else {
 			if (order === -1) return b.name.localeCompare(a.name);
@@ -413,6 +430,17 @@ const festivalEventSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
+		if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
+		return a[sortBy].localeCompare(b[sortBy]);
+	});
+}
+
+const locationSort = (objectList, sortBy, order) => {
+	return objectList.sort((a, b) => {
+		if (sortBy == 'street' || sortBy == 'city') {
+			if (order === -1) return b.address[sortBy].localeCompare(a.address[sortBy]);
+			return a.address[sortBy].localeCompare(b.address[sortBy]);
+		}
 		if (order === -1) return b[sortBy].localeCompare(a[sortBy]);
 		return a[sortBy].localeCompare(b[sortBy]);
 	});

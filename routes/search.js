@@ -272,10 +272,13 @@ const locationFind = (queries, regex) => {
 		try {
 			const locationSearchAttributes = [
 				['name', 'name'],
-				['address.street', 'address'],
-				['address.city', 'city'],
-				['address.county', 'county'],
-				['address.country', 'country']
+				['address.default.street', 'address'],
+				['address.default.city', 'city'],
+				['address.default.county', 'county'],
+				['address.default.country', 'country'],
+				['address.international.street', 'address'],
+				['address.international.city', 'city'],
+				['address.international.country', 'country']
 			];
 			locationResults = [];
 
@@ -287,8 +290,18 @@ const locationFind = (queries, regex) => {
 						return prev[curr];
 					}, location);
 
-					if (regex.test(value)) {
-						locationResults.push(buildObject(location, 'Location', attribute, value));
+					if (Array.isArray(value)) {
+						value.some(valueString => {
+							if (regex.test(valueString)) {
+								const dereferenced = dereference.locationObject(location);
+								locationResults.push(buildObject(dereferenced, 'Location', attribute, value));
+								return true;
+							}
+						});
+					}
+					else if (regex.test(value)) {
+						const dereferenced = dereference.locationObject(location);
+						locationResults.push(buildObject(dereferenced, 'Location', attribute, value));
 						return true;
 					}
 					return false;
@@ -407,8 +420,10 @@ const createQueries = (queries) => {
 
 		locationQuery = {
 			$or: [
-				{ 'address.city': new RegExp(queries.city, 'i') },
-				{ 'address.county': new RegExp(queries.city, 'i') }
+				{ 'address.default.city': new RegExp(queries.city, 'i') },
+				{ 'address.default.administrative': new RegExp(queries.city, 'i') },
+				{ 'address.default.county': new RegExp(queries.city, 'i') },
+				{ 'address.international.city': new RegExp(queries.city, 'i') }
 			]
 		};
 
@@ -420,7 +435,12 @@ const createQueries = (queries) => {
 
 		festivalQuery.query = { 'address.country': RegExp(queries.country, 'i') };
 
-		locationQuery = { 'address.country': RegExp(queries.country, 'i') };
+		locationQuery = {
+			$or: [
+				{ 'address.default.country': RegExp(queries.country, 'i') },
+				{ 'address.international.country': new RegExp(queries.country, 'i') }
+			]
+		};
 
 		bandQuery.query = { 'origin.country': RegExp(queries.country, 'i') };
 	}

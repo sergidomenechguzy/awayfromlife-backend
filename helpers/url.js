@@ -149,7 +149,7 @@ const generateUrlFromObject = (object, type) => {
 	
 	switch (type) {
 		case 'location':
-			url = object.name + '--' + object.address.city;
+			url = object.name + '--' + object.address.default.city;
 			break;
 		case 'event':
 		case 'archive':

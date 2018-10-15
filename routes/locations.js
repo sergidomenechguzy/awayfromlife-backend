@@ -148,7 +148,8 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No location with this URL', token: res.locals.token });
 
-		return res.status(200).json({ data: object, token: res.locals.token });
+		const dereferenced = await dereference.locationObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -324,7 +325,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('post'), async (req, res) => {
 	try {
 		await new Location(res.locals.validated).save();
 		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
@@ -336,7 +337,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'addres
 });
 
 // post multiple locations to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('post'), async (req, res) => {
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateList('post'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
@@ -353,7 +354,7 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 });
 
 // update location by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('put'), async (req, res) => {
+router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
