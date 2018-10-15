@@ -280,33 +280,41 @@ const locationFind = (queries, regex) => {
 				['address.international.city', 'city'],
 				['address.international.country', 'country']
 			];
-			locationResults = [];
 
 			const locations = await Location.find(queries);
 
-			locations.forEach(location => {
-				locationSearchAttributes.some(attribute => {
-					let value = attribute[0].split('.').reduce((prev, curr) => {
-						return prev[curr];
-					}, location);
+			const promises = locations.map(async (location) => {
+				let matchedAttribute;
+				let matchedValue;
+				if (
+					locationSearchAttributes.some(attribute => {
+						let value = attribute[0].split('.').reduce((prev, curr) => {
+							return prev[curr];
+						}, location);
 
-					if (Array.isArray(value)) {
-						value.some(valueString => {
-							if (regex.test(valueString)) {
-								const dereferenced = dereference.locationObject(location);
-								locationResults.push(buildObject(dereferenced, 'Location', attribute, value));
-								return true;
-							}
-						});
-					}
-					else if (regex.test(value)) {
-						const dereferenced = dereference.locationObject(location);
-						locationResults.push(buildObject(dereferenced, 'Location', attribute, value));
-						return true;
-					}
-					return false;
-				});
+						if (Array.isArray(value)) {
+							return value.some(valueString => {
+								if (regex.test(valueString)) {
+									matchedAttribute = attribute;
+									matchedValue = valueString;
+									return true;
+								}
+							});
+						}
+						else if (regex.test(value)) {
+							matchedAttribute = attribute;
+							matchedValue = value;
+							return true;
+						}
+						return false;
+					})
+				) {
+					const dereferenced = await dereference.locationObject(location);
+					return buildObject(dereferenced, 'Location', matchedAttribute, matchedValue);
+				}
 			});
+			let locationResults = await Promise.all(promises);
+			locationResults = locationResults.filter(locationObject => locationObject != null);
 
 			resolve(locationResults);
 		}

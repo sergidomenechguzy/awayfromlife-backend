@@ -25,10 +25,8 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		if (unvalidatedLocations.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
-			unvalidatedLocations.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		return res.status(200).json({ data: unvalidatedLocations, token: res.locals.token });
+		const dereferenced = await dereference.objectArray(unvalidatedLocations, 'location', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -60,13 +58,17 @@ router.get('/page', token.checkToken(true), async (req, res) => {
 		}
 		if (req.query.city) {
 			query.$or = [
-				{ 'address.city': new RegExp(req.query.city, 'i') },
-				{ 'address.county': new RegExp(req.query.city, 'i') }
+				{ 'address.default.city': new RegExp(req.query.city, 'i') },
+				{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'address.default.county': new RegExp(req.query.city, 'i') },
+				{ 'address.international.city': new RegExp(req.query.city, 'i') }
 			];
 		}
 		else if (req.query.country) {
-			const countryString = 'address.country';
-			query[countryString] = RegExp(req.query.country, 'i');
+			query.$or = [
+				{ 'address.default.country': RegExp(req.query.country, 'i') },
+				{ 'address.international.country': new RegExp(req.query.country, 'i') }
+			];
 		}
 
 		const locations = await UnvalidatedLocation.find(query);
@@ -76,17 +78,10 @@ router.get('/page', token.checkToken(true), async (req, res) => {
 		const count = locations.length;
 		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
 
-		locations.sort((a, b) => {
-			if (sortBy.length === 2) {
-				if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
-				return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
-			}
-			if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-			return a[sortBy[0]].localeCompare(b[sortBy[0]]);
-		});
-		locations = locations.slice((perPage * page) - perPage, (perPage * page));
+		let dereferenced = await dereference.objectArray(locations, 'location', sortBy, order);
+		dereferenced = dereferenced.slice((perPage * page) - perPage, (perPage * page));
 
-		return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+		return res.status(200).json({ data: dereferenced, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -101,7 +96,8 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No location with this ID', token: res.locals.token });
 
-		return res.status(200).json({ data: object, token: res.locals.token });
+			const dereferenced = await dereference.locationObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -137,10 +133,10 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 				else if (!filters.startWith.includes('#'))
 					filters.startWith.push('#');
 			}
-			if (location.address.city && !filters.cities.includes(location.address.city))
-				filters.cities.push(location.address.city);
-			if (location.address.country && !filters.countries.includes(location.address.country))
-				filters.countries.push(location.address.country);
+			if (location.address.default.city && !filters.cities.includes(location.address.default.city))
+				filters.cities.push(location.address.default.city);
+			if (location.address.default.country && !filters.countries.includes(location.address.default.country))
+				filters.countries.push(location.address.default.country);
 		});
 		filters.startWith.sort((a, b) => {
 			return a.localeCompare(b);
@@ -160,7 +156,7 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('unvalidated'), async (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('unvalidated'), async (req, res) => {
 	try {
 		await new UnvalidatedLocation(res.locals.validated).save();
 		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
@@ -172,7 +168,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 });
 
 // validate unvalidated location
-router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateObject('validate'), async (req, res) => {
+router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('validate'), async (req, res) => {
 	try {
 		await new Location(res.locals.validated).save();
 		await UnvalidatedLocation.remove({ _id: req.params._id });
@@ -185,7 +181,7 @@ router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['n
 });
 
 // post multiple locations to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateLocation.validateList('unvalidated'), async (req, res) => {
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateList('unvalidated'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {

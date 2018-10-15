@@ -104,33 +104,38 @@ const validateLocation = (data, type, options) => {
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
 
-			const res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode });
+			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode });
+			if (res.hits[0] == undefined)
+				res = await places.search({ query: `${data.address.street}, ${data.address.county}`, language: data.countryCode });
 
 			let address = {
-				street: res.hits[0].locale_names.default[0],
+				street: '',
 				city: [],
 				country: []
-			}
+			};
+			if (res.hits[0] != undefined) {
+				address.street = res.hits[0].locale_names.default[0];
 
-			if (res.hits[0].city) {
-				for (attribute in res.hits[0].city) {
-					if (!address.city.includes(res.hits[0].city[attribute][0]))
-						address.city.push(res.hits[0].city[attribute][0]);
+				if (res.hits[0].city) {
+					for (attribute in res.hits[0].city) {
+						if (!address.city.includes(res.hits[0].city[attribute][0]))
+							address.city.push(res.hits[0].city[attribute][0]);
+					}
 				}
-			}
-			if (res.hits[0].county) {
-				for (attribute in res.hits[0].county) {
-					if (!address.city.includes(res.hits[0].county[attribute][0]))
-						address.city.push(res.hits[0].county[attribute][0]);
+				if (res.hits[0].county) {
+					for (attribute in res.hits[0].county) {
+						if (!address.city.includes(res.hits[0].county[attribute][0]))
+							address.city.push(res.hits[0].county[attribute][0]);
+					}
 				}
-			}
-			if (res.hits[0].administrative && !address.city.includes(res.hits[0].administrative[0]))
-				address.city.push(res.hits[0].administrative[0]);
+				if (res.hits[0].administrative && !address.city.includes(res.hits[0].administrative[0]))
+					address.city.push(res.hits[0].administrative[0]);
 
-			if (res.hits[0].country) {
-				for (attribute in res.hits[0].country) {
-					if (!address.country.includes(res.hits[0].country[attribute]))
-						address.country.push(res.hits[0].country[attribute]);
+				if (res.hits[0].country) {
+					for (attribute in res.hits[0].country) {
+						if (!address.country.includes(res.hits[0].country[attribute]))
+							address.country.push(res.hits[0].country[attribute]);
+					}
 				}
 			}
 

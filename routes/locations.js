@@ -31,10 +31,8 @@ router.get('/', token.checkToken(false), async (req, res) => {
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
-		locations.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		return res.status(200).json({ data: locations, token: res.locals.token });
+		const dereferenced = await dereference.objectArray(locations, 'location', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -50,15 +48,11 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		if (objects.length === 0 && unvalidatedObjects.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
-		objects.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		unvalidatedObjects.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
+		const dereferenced = await dereference.objectArray(objects, 'location', 'name', 1);
+		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'location', 'name', 1);
 		const allObjects = {
-			validated: objects,
-			unvalidated: unvalidatedObjects
+			validated: dereferenced,
+			unvalidated: dereferencedUnvalidated
 		};
 		return res.status(200).json({ data: allObjects, token: res.locals.token });
 	}
@@ -92,33 +86,30 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		}
 		if (req.query.city) {
 			query.$or = [
-				{ 'address.city': new RegExp(req.query.city, 'i') },
-				{ 'address.county': new RegExp(req.query.city, 'i') }
+				{ 'address.default.city': new RegExp(req.query.city, 'i') },
+				{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'address.default.county': new RegExp(req.query.city, 'i') },
+				{ 'address.international.city': new RegExp(req.query.city, 'i') }
 			];
 		}
 		else if (req.query.country) {
-			const countryString = 'address.country';
-			query[countryString] = RegExp(req.query.country, 'i');
+			query.$or = [
+				{ 'address.default.country': RegExp(req.query.country, 'i') },
+				{ 'address.international.country': new RegExp(req.query.country, 'i') }
+			];
 		}
 
-		let locations = await Location.find(query);
+		const locations = await Location.find(query);
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
 		const count = locations.length;
 		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
 
-		locations.sort((a, b) => {
-			if (sortBy.length === 2) {
-				if (order === -1) return b[sortBy[0]][sortBy[1]].localeCompare(a[sortBy[0]][sortBy[1]]);
-				return a[sortBy[0]][sortBy[1]].localeCompare(b[sortBy[0]][sortBy[1]]);
-			}
-			if (order === -1) return b[sortBy[0]].localeCompare(a[sortBy[0]]);
-			return a[sortBy[0]].localeCompare(b[sortBy[0]]);
-		});
-		locations = locations.slice((perPage * page) - perPage, (perPage * page));
+		let dereferenced = await dereference.objectArray(locations, 'location', sortBy, order);
+		dereferenced = dereferenced.slice((perPage * page) - perPage, (perPage * page));
 
-		return res.status(200).json({ data: locations, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+		return res.status(200).json({ data: dereferenced, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -133,7 +124,8 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No location with this ID', token: res.locals.token });
 
-		return res.status(200).json({ data: object, token: res.locals.token });
+		const dereferenced = await dereference.locationObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -180,10 +172,8 @@ router.get('/name/:name', token.checkToken(false), async (req, res) => {
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No location found with this name', token: res.locals.token });
 
-		locations.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		return res.status(200).json({ data: locations, token: res.locals.token });
+		const dereferenced = await dereference.objectArray(locations, 'location', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -194,14 +184,20 @@ router.get('/name/:name', token.checkToken(false), async (req, res) => {
 // get all locations in one city
 router.get('/city/:city', token.checkToken(false), async (req, res) => {
 	try {
-		const locations = await Location.find({ $or: [{ 'address.city': new RegExp(req.params.city, 'i') }, { 'address.county': new RegExp(req.params.city, 'i') }] });
+		const query = {
+			$or: [
+				{ 'address.default.city': new RegExp(req.params.city, 'i') },
+				{ 'address.default.administrative': new RegExp(req.params.city, 'i') },
+				{ 'address.default.county': new RegExp(req.params.city, 'i') },
+				{ 'address.international.city': new RegExp(req.params.city, 'i') }
+			]
+		};
+		const locations = await Location.find(query);
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No locations found in this city', token: res.locals.token });
 
-		locations.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		return res.status(200).json({ data: locations, token: res.locals.token });
+		const dereferenced = await dereference.objectArray(locations, 'location', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -215,8 +211,8 @@ router.get('/cities', token.checkToken(false), async (req, res) => {
 		const locations = await Location.find();
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
-		
-		let citiesList = locations.map(location => location.address.city);
+
+		let citiesList = locations.map(location => location.address.default.city);
 		const uniqueCities = new Set(citiesList);
 		citiesList = Array.from(uniqueCities);
 		citiesList.sort((a, b) => {
@@ -240,21 +236,21 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 					$or: [
 						{
 							name: new RegExp('^' + req.query.name + '$', 'i'),
-							'address.city': new RegExp('^' + req.query.city + '$', 'i')
+							'address.default.city': new RegExp('^' + req.query.city + '$', 'i')
 						},
-						{ 'address.street': new RegExp(req.query.address, 'i') }
+						{ 'address.default.street': new RegExp(req.query.address, 'i') }
 					]
 				};
 			}
 			else {
 				query.name = new RegExp('^' + req.query.name + '$', 'i');
-				const cityString = 'address.city';
+				const cityString = 'address.default.city';
 				query[cityString] = new RegExp('^' + req.query.city + '$', 'i');
 			}
 		}
 		else {
 			if (req.query.address) {
-				const addressString = 'address.street';
+				const addressString = 'address.default.street';
 				query[addressString] = new RegExp(req.query.address, 'i');
 			}
 			else {
@@ -302,10 +298,10 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 				else if (!filters.startWith.includes('#'))
 					filters.startWith.push('#');
 			}
-			if (location.address.city && !filters.cities.includes(location.address.city))
-				filters.cities.push(location.address.city);
-			if (location.address.country && !filters.countries.includes(location.address.country))
-				filters.countries.push(location.address.country);
+			if (location.address.default.city && !filters.cities.includes(location.address.default.city))
+				filters.cities.push(location.address.default.city);
+			if (location.address.default.country && !filters.countries.includes(location.address.default.country))
+				filters.countries.push(location.address.default.country);
 		});
 		filters.startWith.sort((a, b) => {
 			return a.localeCompare(b);
