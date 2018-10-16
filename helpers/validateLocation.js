@@ -162,7 +162,8 @@ const validateLocation = (data, type, options) => {
 							postcode: data.address.postcode != undefined ? data.address.postcode : object.address.postcode,
 							lat: data.address.lat,
 							lng: data.address.lng,
-							value: data.address.value != undefined ? data.address.value : object.address.value
+							value: data.address.value != undefined ? data.address.value : object.address.value,
+							countryCode: data.address.countryCode
 						},
 						international: address
 					},
@@ -189,7 +190,8 @@ const validateLocation = (data, type, options) => {
 							postcode: data.address.postcode != undefined ? data.address.postcode : '',
 							lat: data.address.lat,
 							lng: data.address.lng,
-							value: data.address.value != undefined ? data.address.value : ''
+							value: data.address.value != undefined ? data.address.value : '',
+							countryCode: data.address.countryCode
 						},
 						international: address
 					},

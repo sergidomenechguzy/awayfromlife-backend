@@ -14,6 +14,8 @@ const deleteRoute = require('./controller/delete');
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
+// load dereference.js
+const dereference = require('../helpers/dereference');
 // load validateLocation.js
 const validateLocation = require('../helpers/validateLocation');
 
