@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const algoliasearch = require('algoliasearch');
+const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 // load festival model
 require('../models/Festival');

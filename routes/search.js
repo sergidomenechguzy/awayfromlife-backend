@@ -158,15 +158,17 @@ const eventFind = (queries, regex) => {
 						}, event);
 
 						if (attribute[0] === 'bands') {
-							let bandString;
 							return value.some(band => {
 								if (regex.test(band.name)) {
-									bandString = [band.name];
+									let bandString = [band.name];
 									event.bands.some(currentBand => {
+										if (bandString.length == 3) {
+											bandString.push('...');
+											return true;
+										}
 										if (currentBand.name != band.name) {
 											bandString.push(currentBand.name);
 										}
-										if (bandString.length == 3) return true;
 										return false;
 									});
 									value = bandString.join(', ');
@@ -207,7 +209,6 @@ const festivalFind = (queries, regex) => {
 
 			const dateAttribute = ['events.date', 'date'];
 			const bandAttribute = ['events.bands', 'bands'];
-			festivalResults = [];
 
 			const festivals = await Festival.find(queries.query);
 
@@ -260,7 +261,7 @@ const festivalFind = (queries, regex) => {
 									matchedAttribute = [bandAttribute[0], `\'${festivalEvent.name}\', ${bandAttribute[1]}`];
 									matchedValue = [band.name];
 									festivalEvent.bands.some(currentBand => {
-										if (bandString.length == 3) {
+										if (matchedValue.length == 3) {
 											matchedValue.push('...');
 											return true;
 										}
@@ -283,65 +284,6 @@ const festivalFind = (queries, regex) => {
 			let festivalResults = await Promise.all(promises);
 			festivalResults = festivalResults.filter(festivalObject => festivalObject != null);
 
-
-
-			// const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
-
-			// dereferenced.forEach(festival => {
-			// 	if (
-			// 		queries.genres.length == 0
-			// 		||
-			// 		queries.genres.some(currentGenre => {
-			// 			return festival.genre.some(genre => {
-			// 				return currentGenre.test(genre);
-			// 			});
-			// 		})
-			// 	) {
-			// 		festivalSearchAttributes.some(attribute => {
-
-
-			// 			if (attribute[0] === 'events.bands') {
-			// 				let value = '';
-			// 				return festival.events.some(currentFestivalEvent => {
-			// 					return currentFestivalEvent.bands.some(currentBand => {
-			// 						if (regex.test(currentBand.name)) {
-			// 							currentFestivalEvent.bands.forEach((band, index, array) => {
-			// 								value += band.name;
-			// 								if (index < array.length - 1) value += ', ';
-			// 							});
-			// 							let finalAttribute = [attribute[0], `\'${currentFestivalEvent.name}\', ${attribute[1]}`];
-			// 							festivalResults.push(buildObject(festival, 'Festival', finalAttribute, value));
-			// 							return true;
-			// 						}
-			// 					})
-			// 				});
-			// 			}
-			// 			else if (attribute[0] === 'events.date') {
-			// 				let value = '';
-			// 				return festival.events.some(currentFestivalEvent => {
-			// 					const date = regex.toString().slice(1, regex.toString().length - 2);
-			// 					if (currentFestivalEvent.startDate.localeCompare(date) == -1 && currentFestivalEvent.endDate.localeCompare(date) == 1) {
-			// 						value = `${currentFestivalEvent.startDate} - ${currentFestivalEvent.endDate}`;
-			// 						let finalAttribute = [attribute[0], `\'${currentFestivalEvent.name}\', time period`];
-			// 						festivalResults.push(buildObject(festival, 'Festival', finalAttribute, value));
-			// 						return true;
-			// 					}
-			// 				});
-			// 			}
-			// 			else {
-			// 				let value = attribute[0].split('.').reduce((prev, curr) => {
-			// 					return prev[curr];
-			// 				}, festival);
-			// 				if (regex.test(value)) {
-			// 					festivalResults.push(buildObject(festival, 'Festival', attribute, value));
-			// 					return true;
-			// 				}
-			// 				return false;
-			// 			}
-
-			// 		});
-			// 	}
-			// });
 			resolve(festivalResults);
 		}
 		catch (err) {

@@ -64,6 +64,20 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
 			else query.name = new RegExp('^' + req.query.startWith, 'i');
 		}
+		if (req.query.city) {
+			query.$or = [
+				{ 'address.default.city': new RegExp(req.query.city, 'i') },
+				{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'address.default.county': new RegExp(req.query.city, 'i') },
+				{ 'address.international.city': new RegExp(req.query.city, 'i') }
+			];
+		}
+		else if (req.query.country) {
+			query.$or = [
+				{ 'address.default.country': RegExp(req.query.country, 'i') },
+				{ 'address.international.country': new RegExp(req.query.country, 'i') }
+			];
+		}
 
 		const festivals = await Festival.find(query);
 		if (festivals.length === 0)
@@ -71,22 +85,10 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 
 		let dereferenced = await dereference.objectArray(festivals, 'festival', sortBy, order);
 
-		if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
+		if (req.query.genre || req.query.startDate || req.query.endDate) {
 			finalFestivals = [];
 			dereferenced.forEach(festival => {
 				let result = [];
-				if (req.query.city) {
-					const cityRegex = RegExp(req.query.city, 'i');
-					if (cityRegex.test(festival.address.city) || cityRegex.test(festival.address.county))
-						result.push(true);
-					else result.push(false);
-				}
-				else if (req.query.country) {
-					const countryRegex = RegExp(req.query.country, 'i');
-					if (countryRegex.test(festival.address.country))
-						result.push(true);
-					else result.push(false);
-				}
 				if (req.query.genre) {
 					const genreRegex = RegExp(req.query.genre, 'i');
 					result.push(
@@ -97,29 +99,13 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				}
 				if (req.query.startDate || req.query.endDate) {
 					result.push(festival.events.some(event => {
-						if (req.query.startDate && req.query.endDate) {
-							if (
-								Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000)
-								&&
-								Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000)
-							) return true;
-							else return false;
-						}
-						else if (req.query.startDate) {
-							if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.startDate).valueOf() / 86400000))
-								return true;
-							else return false;
-						}
-						else if (req.query.endDate) {
-							if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.startDate).valueOf() / 86400000))
-								return true;
-							else return false;
-						}
-						else return false;
+						return (event.startDate.localeCompare(req.query.endDate) <= 0) && (event.endDate.localeCompare(req.query.startDate) >= 0);
 					}));
 				}
-				if (result.reduce((acc, current) => acc && current, true)) finalFestivals.push(responseFestival);
+				if (result.reduce((acc, current) => acc && current, true)) finalFestivals.push(festival);
 			});
+			if (finalFestivals.length === 0)
+				return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
 			dereferenced = finalFestivals;
 		}
 
@@ -172,10 +158,15 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 	try {
 		if (!req.query.name || !req.query.city)
 			return res.status(400).json({ message: 'Parameter(s) missing: name and city are required.' });
-		let query = {};
-		query.name = new RegExp('^' + req.query.name + '$', 'i');
-		const cityString = 'address.city';
-		query[cityString] = new RegExp('^' + req.query.city + '$', 'i');
+		let query = {
+			name: new RegExp('^' + req.query.name + '$', 'i'),
+			$or: [
+				{ 'address.default.city': new RegExp(req.query.city, 'i') },
+				{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'address.default.county': new RegExp(req.query.city, 'i') },
+				{ 'address.international.city': new RegExp(req.query.city, 'i') }
+			]
+		};
 
 		const festivals = await Festival.find(query);
 		if (festivals.length === 0)
@@ -203,8 +194,8 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 		};
 		const festivals = await Festival.find();
 		if (festivals.length === 0)
-			return res.status(200).json({ data: filters, token: res.locals.token });
-
+		return res.status(200).json({ data: filters, token: res.locals.token });
+		
 		const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
 
 		dereferenced.forEach(festival => {
@@ -260,7 +251,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
 	try {
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
 		let newFestival = res.locals.validated.festival;
@@ -275,7 +266,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['festival.name'
 });
 
 // update festival by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng']), validateFestival.validateObject(), async (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateFestival.validateObject(), async (req, res) => {
 	try {
 		const updated = await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.festivalObject(updated);
