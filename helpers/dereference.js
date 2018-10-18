@@ -229,7 +229,7 @@ const festivalObject = module.exports.festivalObject = (festival) => {
 				description: festival.description,
 				genre: genreList,
 				events: dereferenced,
-				address: festival.address,
+				address: festival.address.default,
 				ticketLink: festival.ticketLink,
 				website: festival.website,
 				facebookUrl: festival.facebookUrl

@@ -106,6 +106,9 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 			if (!(data.address.value == undefined || typeof data.address.value == 'string'))
 				resolve('Attribute \'address.value\' can be left out or has to be a string.');
 
+			if (!(typeof data.address.countryCode == 'string' && data.address.countryCode.length > 0))
+				resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
+
 			if (!(data.ticketLink == undefined || typeof data.ticketLink == 'string'))
 				resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
 
@@ -114,6 +117,41 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
+
+			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode });
+			if (res.hits[0] == undefined)
+				res = await places.search({ query: `${data.address.street}, ${data.address.county}`, language: data.countryCode });
+
+			let address = {
+				street: '',
+				city: [],
+				country: []
+			};
+			if (res.hits[0] != undefined) {
+				address.street = res.hits[0].locale_names.default[0];
+
+				if (res.hits[0].city) {
+					for (attribute in res.hits[0].city) {
+						if (!address.city.includes(res.hits[0].city[attribute][0]))
+							address.city.push(res.hits[0].city[attribute][0]);
+					}
+				}
+				if (res.hits[0].county) {
+					for (attribute in res.hits[0].county) {
+						if (!address.city.includes(res.hits[0].county[attribute][0]))
+							address.city.push(res.hits[0].county[attribute][0]);
+					}
+				}
+				if (res.hits[0].administrative && !address.city.includes(res.hits[0].administrative[0]))
+					address.city.push(res.hits[0].administrative[0]);
+
+				if (res.hits[0].country) {
+					for (attribute in res.hits[0].country) {
+						if (!address.country.includes(res.hits[0].country[attribute]))
+							address.country.push(res.hits[0].country[attribute]);
+					}
+				}
+			}
 
 
 			if (type == 'put' || type == 'validate') {
@@ -136,15 +174,19 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 					genre: finalGenres,
 					events: type == 'put' ? object.events : [],
 					address: {
-						street: data.address.street,
-						administrative: data.address.administrative != undefined ? data.address.administrative : object.address.administrative,
-						city: data.address.city,
-						county: data.address.county != undefined ? data.address.county : object.address.county,
-						country: data.address.country,
-						postcode: data.address.postcode != undefined ? data.address.postcode : object.address.postcode,
-						lat: data.address.lat,
-						lng: data.address.lng,
-						value: data.address.value != undefined ? data.address.value : object.address.value
+						default: {
+							street: data.address.street,
+							administrative: data.address.administrative != undefined ? data.address.administrative : object.address.administrative,
+							city: data.address.city,
+							county: data.address.county != undefined ? data.address.county : object.address.county,
+							country: data.address.country,
+							postcode: data.address.postcode != undefined ? data.address.postcode : object.address.postcode,
+							lat: data.address.lat,
+							lng: data.address.lng,
+							value: data.address.value != undefined ? data.address.value : object.address.value,
+							countryCode: data.address.countryCode
+						},
+						international: address
 					},
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					website: data.website != undefined ? data.website : object.website,
@@ -163,15 +205,19 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 					genre: finalGenres,
 					events: [],
 					address: {
-						street: data.address.street,
-						administrative: data.address.administrative != undefined ? data.address.administrative : '',
-						city: data.address.city,
-						county: data.address.county != undefined ? data.address.county : '',
-						country: data.address.country,
-						postcode: data.address.postcode != undefined ? data.address.postcode : '',
-						lat: data.address.lat,
-						lng: data.address.lng,
-						value: data.address.value != undefined ? data.address.value : ''
+						default: {
+							street: data.address.street,
+							administrative: data.address.administrative != undefined ? data.address.administrative : '',
+							city: data.address.city,
+							county: data.address.county != undefined ? data.address.county : '',
+							country: data.address.country,
+							postcode: data.address.postcode != undefined ? data.address.postcode : '',
+							lat: data.address.lat,
+							lng: data.address.lng,
+							value: data.address.value != undefined ? data.address.value : '',
+							countryCode: data.address.countryCode
+						},
+						international: address
 					},
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : '',
 					website: data.website != undefined ? data.website : '',

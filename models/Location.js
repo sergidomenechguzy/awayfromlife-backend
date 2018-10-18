@@ -45,7 +45,8 @@ const LocationSchema = new Schema({
 				type: String
 			},
 			countryCode: {
-				type: String
+				type: String,
+				required: true
 			}
 		},
 		international: {
