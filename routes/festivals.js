@@ -99,7 +99,9 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				}
 				if (req.query.startDate || req.query.endDate) {
 					result.push(festival.events.some(event => {
-						return (event.startDate.localeCompare(req.query.endDate) <= 0) && (event.endDate.localeCompare(req.query.startDate) >= 0);
+						const matchedStartDate = req.query.startDate ? (event.startDate.localeCompare(req.query.startDate) >= 0) : true;
+						const matchedEndDate = req.query.startDate ? (event.startDate.localeCompare(req.query.endDate) <= 0) : true;
+						return matchedStartDate && matchedEndDate;
 					}));
 				}
 				if (result.reduce((acc, current) => acc && current, true)) finalFestivals.push(festival);

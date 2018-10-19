@@ -394,7 +394,7 @@ const bandSort = (objectList, sortBy, order) => {
 	});
 }
 
-const eventSort = (objectList, sortBy, order) => {
+const eventSort = module.exports.eventSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
