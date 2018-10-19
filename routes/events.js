@@ -344,7 +344,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 			lastDate: ''
 		};
 		const events = await Event.find();
-		if (events.length === 0)
+		if (events.length == 0 && req.query.includeFestivals != 'true')
 			return res.status(200).json({ data: filters, token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
@@ -379,6 +379,48 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 				});
 			});
 		});
+
+		if (req.query.includeFestivals == 'true') {
+			const festivals = await Festival.find();
+			if (events.length == 0 && festivals.length == 0)
+				return res.status(200).json({ data: filters, token: res.locals.token });
+
+			const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
+
+			dereferenced.forEach(festival => {
+				if (festival.address.city && !filters.cities.includes(festival.address.city))
+					filters.cities.push(festival.address.city);
+				if (festival.address.country && !filters.countries.includes(festival.address.country))
+					filters.countries.push(festival.address.country);
+
+				festival.genre.forEach(genre => {
+					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+				});
+
+				festival.events.forEach(event => {
+					if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
+						if (event.name.charAt(0).toUpperCase() === 'Ä') {
+							if (!filters.startWith.includes('A')) filters.startWith.push('A');
+						}
+						else if (event.name.charAt(0).toUpperCase() === 'Ö') {
+							if (!filters.startWith.includes('O')) filters.startWith.push('O');
+						}
+						else if (event.name.charAt(0).toUpperCase() === 'Ü') {
+							if (!filters.startWith.includes('U')) filters.startWith.push('U');
+						}
+						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
+							filters.startWith.push(event.name.charAt(0).toUpperCase());
+						else if (!filters.startWith.includes('#'))
+							filters.startWith.push('#');
+					}
+					if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+						filters.firstDate = event.startDate;
+					if (!filters.lastDate || event.startDate.localeCompare(filters.lastDate) == 1)
+						filters.lastDate = event.startDate;
+				});
+			});
+		}
+
 		filters.startWith.sort((a, b) => {
 			return a.localeCompare(b);
 		});
