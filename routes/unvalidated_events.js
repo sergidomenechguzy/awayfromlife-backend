@@ -37,7 +37,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get paginated events
-router.get('/page', token.checkToken(true), async (req, res) => {
+router.get('/page', token.checkToken(false), async (req, res) => {
 	try {
 		let page = 1;
 
@@ -63,62 +63,58 @@ router.get('/page', token.checkToken(true), async (req, res) => {
 		if (events.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-		let dereferenced = await dereference.objectArray(events, 'event', sortBy, order);
+		const eventPromises = events.map(async (event) => {
+			const matchedStartDate = req.query.startDate ? (event.date.localeCompare(req.query.startDate) >= 0) : true;
+			const matchedEndDate = req.query.endDate ? (event.date.localeCompare(req.query.endDate) <= 0) : true;
+			if (!(matchedStartDate && matchedEndDate))
+				return null;
 
-		if (req.query.city || req.query.country || req.query.genre || req.query.startDate || req.query.endDate) {
-			finalEvents = [];
-			dereferenced.forEach(event => {
-				let result = [];
+			if (req.query.city || req.query.country) {
+				let locationQuery = { _id: event.location };
 				if (req.query.city) {
-					const cityRegex = RegExp(req.query.city, 'i');
-					if (cityRegex.test(event.location.address.city) || cityRegex.test(event.location.address.county))
-						result.push(true);
-					else result.push(false);
+					locationQuery.$or = [
+						{ 'address.default.city': new RegExp(req.query.city, 'i') },
+						{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+						{ 'address.default.county': new RegExp(req.query.city, 'i') },
+						{ 'address.international.city': new RegExp(req.query.city, 'i') }
+					];
 				}
-				else if (req.query.country) {
-					const countryRegex = RegExp(req.query.country, 'i');
-					if (countryRegex.test(event.location.address.country))
-						result.push(true);
-					else result.push(false);
+				else {
+					locationQuery.$or = [
+						{ 'address.default.country': RegExp(req.query.country, 'i') },
+						{ 'address.international.country': new RegExp(req.query.country, 'i') }
+					];
 				}
-				if (req.query.genre) {
-					const genreRegex = RegExp(req.query.genre, 'i');
-					result.push(
-						event.bands.some(band => {
-							return band.genre.some(genre => {
-								return genreRegex.test(genre);
-							});
-						})
-					);
-				}
-				if (req.query.startDate && req.query.endDate) {
-					if (
-						Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.date).valueOf() / 86400000)
-						&&
-						Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.date).valueOf() / 86400000)
-					) result.push(true);
-					else result.push(false);
-				}
-				else if (req.query.startDate) {
-					if (Math.floor(moment(req.query.startDate).valueOf() / 86400000) <= Math.floor(moment(event.date).valueOf() / 86400000))
-						result.push(true);
-					else result.push(false);
-				}
-				else if (req.query.endDate) {
-					if (Math.floor(moment(req.query.endDate).valueOf() / 86400000) >= Math.floor(moment(event.date).valueOf() / 86400000))
-						result.push(true);
-					else result.push(false);
-				}
-				if (result.reduce((acc, current) => acc && current, true)) finalEvents.push(event);
-			});
-			dereferenced = finalEvents;
-		}
+				const location = await Location.findOne(locationQuery);
+				if (location == undefined)
+					return null;
+			}
 
-		const count = dereferenced.length;
+			let dereferenced = await dereference.eventObject(event);
+			if (req.query.genre) {
+				const genreRegex = RegExp(req.query.genre, 'i');
+
+				if (
+					!dereferenced.bands.some(band => {
+						return band.genre.some(genre => {
+							return genreRegex.test(genre);
+						});
+					})
+				)
+					return null;
+			}
+			dereferenced.isFestival = false;
+			return dereferenced;
+		});
+		let finalEvents = await Promise.all(eventPromises);
+		finalEvents = finalEvents.filter(eventObject => eventObject != null);
+		finalEvents = dereference.eventSort(finalEvents, sortBy, order);
+
+		const count = finalEvents.length;
 		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
 
-		dereferenced = dereferenced.slice((perPage * page) - perPage, (perPage * page));
-		return res.status(200).json({ data: dereferenced, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+		finalEvents = finalEvents.slice((perPage * page) - perPage, (perPage * page));
+		return res.status(200).json({ data: finalEvents, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
