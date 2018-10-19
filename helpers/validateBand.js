@@ -60,7 +60,7 @@ const validateBand = (data, type, options) => {
 		const urlList = optionsChecked.urlList || [];
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			let genreList = [];
@@ -163,7 +163,7 @@ const validateBand = (data, type, options) => {
 					resolve('No band found with this ID');
 
 				let newBand = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					genre: finalGenres,
 					origin: {
@@ -190,7 +190,7 @@ const validateBand = (data, type, options) => {
 			}
 			else {
 				let newBand = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					genre: finalGenres,
 					origin: {

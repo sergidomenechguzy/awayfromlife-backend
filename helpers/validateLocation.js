@@ -58,7 +58,7 @@ const validateLocation = (data, type, options) => {
 		const urlList = optionsChecked.urlList || [];
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(typeof data.address.street == 'string' && data.address.street.length > 0))
@@ -150,7 +150,7 @@ const validateLocation = (data, type, options) => {
 					resolve('No location found with this ID');
 
 				let newLocation = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					address: {
 						default: {
@@ -178,7 +178,7 @@ const validateLocation = (data, type, options) => {
 			}
 			else {
 				let newLocation = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					address: {
 						default: {

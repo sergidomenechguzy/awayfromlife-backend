@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 // load event model
 require('../models/Event');
@@ -65,7 +66,7 @@ const validateEvent = (data, type, collection, options) => {
 		const urlList = optionsChecked.urlList || [];
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(data.description == undefined || typeof data.description == 'string'))
@@ -83,8 +84,8 @@ const validateEvent = (data, type, collection, options) => {
 			if (!locationIds.includes(locationId))
 				resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
 
-			if (!(typeof data.date == 'string' && data.date.length > 0))
-				resolve('Attribute \'date\' has to be a string with 1 or more characters.');
+			if (!(typeof data.date == 'string' && data.date.length > 0 && moment(data.date, 'YYYY-MM-DD', true).isValid()))
+				resolve('Attribute \'date\' has to be a string in the \'YYYY-MM-DD\' date format.');
 
 			if (!(data.time == undefined || typeof data.time == 'string'))
 				resolve('Attribute \'time\' can be left out or has to be a string.');
@@ -138,7 +139,7 @@ const validateEvent = (data, type, collection, options) => {
 					resolve('No event found with this ID');
 
 				let newEvent = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					description: data.description != undefined ? data.description : object.description,
 					location: locationId,
@@ -155,7 +156,7 @@ const validateEvent = (data, type, collection, options) => {
 			}
 			else {
 				let newEvent = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					description: data.description != undefined ? data.description : '',
 					location: locationId,

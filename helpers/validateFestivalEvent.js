@@ -54,14 +54,14 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 		const id = optionsChecked.id || '';
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
-			if (!(typeof data.startDate == 'string' && data.startDate.length > 0))
-				resolve('Attribute \'startDate\' has to be a string with 1 or more characters.');
+			if (!(typeof data.startDate == 'string' && data.startDate.length > 0 && moment(data.startDate, 'YYYY-MM-DD', true).isValid()))
+				resolve('Attribute \'startDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
 
-			if (!(typeof data.endDate == 'string' && data.endDate.length > 0))
-				resolve('Attribute \'endDate\' has to be a string with 1 or more characters.');
+			if (!(typeof data.endDate == 'string' && data.endDate.length > 0 && moment(data.endDate, 'YYYY-MM-DD', true).isValid()))
+				resolve('Attribute \'endDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
 
 			let bandList = [];
 			if (!(Array.isArray(data.bands) && data.bands.length > 0))
@@ -109,7 +109,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					resolve('No festival event found with this ID');
 
 				let newFestivalEvent = {
-					name: data.name,
+					name: data.name.trim(),
 					startDate: data.startDate,
 					endDate: data.endDate,
 					bands: bandList,
@@ -120,7 +120,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			}
 			else {
 				let newFestivalEvent = {
-					name: data.name,
+					name: data.name.trim(),
 					startDate: data.startDate,
 					endDate: data.endDate,
 					bands: bandList,

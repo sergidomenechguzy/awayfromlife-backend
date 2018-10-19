@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const moment = require('moment');
 const router = express.Router();
 
 // load event model
@@ -27,8 +26,6 @@ const token = require('../config/token');
 const dereference = require('../helpers/dereference');
 // load validateEvent.js
 const validateEvent = require('../helpers/validateEvent');
-
-moment.locale('de');
 
 // events routes
 // get all events

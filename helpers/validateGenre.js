@@ -52,7 +52,7 @@ const validateGenre = (data, type, options) => {
 		const nameList = optionsChecked.nameList || [];
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			const genres = await Genre.find();
@@ -65,7 +65,7 @@ const validateGenre = (data, type, options) => {
 				if (index < 0 || genres[index]._id.toString() == id) {
 					let newGenre = {
 						_id: id,
-						name: data.name
+						name: data.name.trim()
 					};
 					resolve(newGenre);
 				}
@@ -78,7 +78,7 @@ const validateGenre = (data, type, options) => {
 					resolve('All the names of the genres have to be different.');
 
 				let newGenre = {
-					name: data.name
+					name: data.name.trim()
 				};
 				resolve(newGenre);
 			}

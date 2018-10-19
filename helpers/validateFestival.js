@@ -39,7 +39,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 		const urlList = optionsChecked.urlList || [];
 
 		try {
-			if (!(typeof data.name == 'string' && data.name.length > 0))
+			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(data.description == undefined || typeof data.description == 'string'))
@@ -170,7 +170,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 					resolve('Festival event ID not found in the festival\'s festival events list');
 
 				let newFestival = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					description: data.description != undefined ? data.description : object.description,
 					genre: finalGenres,
@@ -201,7 +201,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 			}
 			else {
 				let newFestival = {
-					name: data.name,
+					name: data.name.trim(),
 					url: '',
 					description: data.description != undefined ? data.description : '',
 					genre: finalGenres,
