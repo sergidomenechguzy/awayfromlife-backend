@@ -159,7 +159,6 @@ const validateBand = module.exports.validateBand = (data, type, options) => {
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
 			let res = await places.search({ query: data.origin.value ? data.origin.value : `${data.origin.city}, ${data.origin.country}`, language: data.countryCode, type: 'city' });
-			resolve(res.hits[0]);
 
 			let origin = {
 				city: [],
