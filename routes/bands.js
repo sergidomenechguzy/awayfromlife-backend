@@ -625,7 +625,6 @@ router.get('/updateAddress', async (req, res) => {
 			}
 
 			const update = await validateBand.validateBand(newBand, 'put', { id: band._id });
-			return update;
 			const updated = await Band.findOneAndUpdate({ _id: band._id }, update, { new: true });
 			return updated;
 		});
