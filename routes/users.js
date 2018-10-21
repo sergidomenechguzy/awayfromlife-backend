@@ -85,7 +85,7 @@ router.post('/register', token.checkToken(true), (req, res) => {
 		try {
 			if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
 			const user = await User.findOne({ email: decodedToken.email });
-			if (user) return res.status(400).json({ message: 'Email-address already registered.' });
+			if (user) return res.status(400).json({ message: 'Email address already registered.' });
 
 			const hash = await bcrypt.hash(decodedToken.password, 10);
 			const newUser = {
