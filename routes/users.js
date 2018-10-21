@@ -30,7 +30,7 @@ router.get('/logout', (req, res) => {
 			updatedUser.currentSessions = user.currentSessions.filter(session => (!(session.sessionID == decodedAuthToken.sessionID) && (session.expireTime > Math.floor(Date.now() / 1000))));
 
 			await User.findOneAndUpdate({ _id: user.id }, updatedUser);
-			res.status(200).json({ message: 'Successfully logged out.' });
+			return res.status(200).json({ message: 'Successfully logged out.' });
 		}
 		catch (err) {
 			console.log(err);
@@ -66,7 +66,7 @@ router.post('/login', (req, res) => {
 			updatedUser.currentSessions.push(session);
 
 			await User.findOneAndUpdate({ _id: user.id }, updatedUser);
-			res.status(200).json({ message: 'You are logged in.', token: newToken });
+			return res.status(200).json({ message: 'You are logged in.', token: newToken });
 		}
 		catch (err) {
 			console.log(err);
@@ -76,7 +76,7 @@ router.post('/login', (req, res) => {
 });
 
 // register by register-token in body
-router.post('/register', (req, res) => {
+router.post('/register', token.checkToken(true), (req, res) => {
 	if (req.body.token == undefined) return res.status(400).json({ message: 'Token missing' });
 
 	jwt.verify(req.body.token, secrets.frontEndSecret, async (err, decodedToken) => {
@@ -84,6 +84,8 @@ router.post('/register', (req, res) => {
 
 		try {
 			if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+			const user = await User.findOne({ email: decodedToken.email });
+			if (user) return res.status(400).json({ message: 'Email-address already registered.' });
 
 			const hash = await bcrypt.hash(decodedToken.password, 10);
 			const newUser = {
@@ -92,7 +94,7 @@ router.post('/register', (req, res) => {
 				password: hash
 			};
 			await new User(newUser).save();
-			res.status(200).json({ message: 'User registered' });
+			return res.status(200).json({ message: 'User registered', token: res.locals.token });
 		}
 		catch (err) {
 			console.log(err);
