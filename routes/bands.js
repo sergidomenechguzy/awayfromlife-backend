@@ -446,7 +446,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 router.get('/updateAddress', async (req, res) => {
 	try {
 		const bands = await Band.find();
-		const promises = bands.map(async (band) => {
+		const promises1 = bands.map(async (band) => {
 			let res = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
 			let newBand = JSON.parse(JSON.stringify(band));
 			newBand.origin.city = res.hits[0].locale_names[0];
@@ -619,10 +619,10 @@ router.get('/updateAddress', async (req, res) => {
 			const updated = await Band.findOneAndUpdate({ _id: band._id }, update, { new: true });
 			return updated;
 		});
-		const bandList = await Promise.all(promises);
+		const bandList = await Promise.all(promises1);
 
 		const locations = await Location.find();
-		const promises = locations.map(async (location) => {
+		const promises2 = locations.map(async (location) => {
 			let newLocation = JSON.parse(JSON.stringify(location));
 
 			switch (location.address.country) {
@@ -793,10 +793,10 @@ router.get('/updateAddress', async (req, res) => {
 			const updated = await Location.findOneAndUpdate({ _id: location._id }, update, { new: true });
 			return updated;
 		});
-		const locationList = await Promise.all(promises);
+		const locationList = await Promise.all(promises2);
 
 		const festivals = await Festival.find();
-		const promises = festivals.map(async (festival) => {
+		const promises3 = festivals.map(async (festival) => {
 			let newFestival = JSON.parse(JSON.stringify(festival));
 
 			switch (festival.address.country) {
@@ -967,7 +967,7 @@ router.get('/updateAddress', async (req, res) => {
 			const updated = await Festival.findOneAndUpdate({ _id: festival._id }, update, { new: true });
 			return updated;
 		});
-		const festivalList = await Promise.all(promises);
+		const festivalList = await Promise.all(promises3);
 
 		return res.status(200).json({ message: 'Locations updated', data: { bands: bandList, locations: locationList, festivals: festivalList }, token: res.locals.token });
 	}
