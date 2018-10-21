@@ -7,11 +7,6 @@ const FestivalSchema = new Schema({
 		type: String,
 		required: true
 	},
-	//###
-	title: {
-		type: String
-	},
-	//###
 	url: {
 		type: String
 	},
@@ -74,36 +69,7 @@ const FestivalSchema = new Schema({
 			country: {
 				type: [String]
 			}
-		}, //###
-		//###
-		street: {
-			type: String
-		},
-		administrative: {
-			type: String
-		},
-		city: {
-			type: String
-		},
-		county: {
-			type: String
-		},
-		country: {
-			type: String
-		},
-		postcode: {
-			type: String
-		},
-		lat: {
-			type: Number
-		},
-		lng: {
-			type: Number
-		},
-		value: {
-			type: String
 		}
-		//###
 	},
 	ticketLink: {
 		type: String
