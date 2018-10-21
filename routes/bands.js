@@ -456,9 +456,9 @@ router.get('/updateAddress', async (req, res) => {
 	try {
 		const bands = await Band.find();
 		const promises1 = bands.map(async (band) => {
-			let resAlg = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
+			// let resAlg = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
 			let newBand = JSON.parse(JSON.stringify(band));
-			newBand.origin.city = resAlg.hits[0].locale_names[0];
+			// newBand.origin.city = resAlg.hits[0].locale_names[0];
 
 			switch (band.origin.country) {
 				case 'Australien':
@@ -623,6 +623,7 @@ router.get('/updateAddress', async (req, res) => {
 				default:
 					newBand.origin.countryCode = 'en';
 			}
+			return newBand;
 
 			const update = await validateBand.validateBand(newBand, 'put', { id: band._id });
 			const updated = await Band.findOneAndUpdate({ _id: band._id }, update, { new: true });
@@ -978,7 +979,7 @@ router.get('/updateAddress', async (req, res) => {
 		// });
 		// const festivalList = await Promise.all(promises3);
 
-		return res.status(200).json({ message: 'Locations updated', data: /*{ bands: */bandList/*, locations: locationList, festivals: festivalList }*/, token: res.locals.token });
+		return res.status(200).json({ message: 'Objects updated', data: /*{ bands: */bandList/*, locations: locationList, festivals: festivalList }*/, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
