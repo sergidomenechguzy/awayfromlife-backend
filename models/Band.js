@@ -15,31 +15,71 @@ const BandSchema = new Schema({
 		required: true
 	},
 	origin: {
+		default: {
+			city: {
+				type: String,
+				required: true
+			},
+			administrative: {
+				type: String
+			},
+			country: {
+				type: String,
+				required: true
+			},
+			postcode: {
+				type: String
+			},
+			lat: {
+				type: Number,
+				required: true
+			},
+			lng: {
+				type: Number,
+				required: true
+			},
+			value: {
+				type: String,
+			},
+			countryCode: {
+				type: String,
+				required: true
+			}
+		},
+		international: {
+			city: {
+				type: [String]
+			},
+			country: {
+				type: [String]
+			}
+		},//###
+		//###
 		name: {
-			type: String,
-			required: true
+			type: String
+		},
+		city: {
+			type: String
 		},
 		administrative: {
 			type: String
 		},
 		country: {
-			type: String,
-			required: true
+			type: String
 		},
 		postcode: {
 			type: String
 		},
 		lat: {
-			type: Number,
-			required: true
+			type: Number
 		},
 		lng: {
-			type: Number,
-			required: true
+			type: Number
 		},
 		value: {
 			type: String,
 		}
+		//###
 	},
 	history: {
 		type: String
@@ -58,9 +98,14 @@ const BandSchema = new Schema({
 	foundingDate: {
 		type: String
 	},
+	website: {
+		type: String
+	},
+	//###
 	websiteUrl: {
 		type: String
 	},
+	//###
 	bandcampUrl: {
 		type: String
 	},

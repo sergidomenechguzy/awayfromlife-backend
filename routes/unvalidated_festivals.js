@@ -4,13 +4,13 @@ const router = express.Router();
 
 // load festival model
 require('../models/Festival');
-const Festival = mongoose.model('unvalidated_festivals');
-const ValidFestival = mongoose.model('festivals');
+const Festival = mongoose.model('festivals');
+const UnvalidatedFestival = mongoose.model('unvalidated_festivals');
 
 // load event model
 require('../models/Festival_Event');
-const Event = mongoose.model('unvalidated_festival_events');
-const ValidEvent = mongoose.model('festival_events');
+const FestivalEvent = mongoose.model('festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -20,185 +20,127 @@ const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
-// load url.js
-const url = require('../config/url');
-// load validate.js
-const validate = require('../config/validate');
+const dereference = require('../helpers/dereference');
+// load validateFestivalAndFestivalEvent.js
+const validateFestivalAndFestivalEvent = require('../helpers/validateFestivalAndFestivalEvent');
 
 // festivals routes
 // get all festivals
-router.get('/', token.checkToken(true), (req, res) => {
-	Festival.find()
-		.then(festivals => {
-			if (festivals.length === 0)
-				return res.status(200).json({ message: 'No festivals found', token: res.locals.token });
+router.get('/', token.checkToken(true), async (req, res) => {
+	try {
+		const unvalidatedFestivals = await UnvalidatedFestival.find();
+		if (unvalidatedFestivals.length === 0)
+			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-			dereference.unvalidatedFestivalObjectArray(festivals, 'title', 1, (err, responseFestivals) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestivals, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.objectArray(unvalidatedFestivals, 'unvalidatedFestival', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get all festivals with unvalidated festival events
-router.get('/unvalidated', token.checkToken(false), (req, res) => {
-	Event.find()
-		.then(events => {
-			if (events.length === 0)
-				return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
+router.get('/unvalidated', token.checkToken(true), async (req, res) => {
+	try {
+		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
+		if (unvalidatedFestivalEvents.length === 0)
+			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-			dereference.festivalEventObjectArray(events, 'title', 1, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		const dereferencedFestivalEvents = await dereference.objectArray(unvalidatedFestivalEvents, 'festivalEvent', 'name', 1);
+
+		const promises = dereferencedFestivalEvents.map((event) => {
+			return new Promise(async (resolve, reject) => {
+				try {
+					const validFestival = await Festival.findOne({ events: event._id });
+					if (!validFestival) {
+						const unvalidFestival = await UnvalidatedFestival.findOne({ events: event._id });
+						if (!unvalidFestival) resolve(`No festival found for the festival event: (_id: ${event._id}, name: ${event.name}).`);
+						else {
+							const finalFestival = await dereference.unvalidatedFestivalObject(unvalidFestival);
+							resolve({ validated: false, festival: finalFestival, event: event });
+						}
+					}
+					else {
+						const finalFestival = await dereference.unvalidatedFestivalObject(validFestival);
+						resolve({ validated: true, festival: finalFestival, event: event });
+					}
 				}
-
-				responseList = [];
-				responseEvents.forEach(event => {
-					ValidFestival.findOne({ events: event._id })
-						.then(validFestival => {
-							if (!validFestival) {
-								Festival.findOne({ events: event._id })
-									.then(festival => {
-										if (!festival)
-											return res.status(200).json({ message: 'No festival found', token: res.locals.token });
-
-										dereference.unvalidatedFestivalObject(festival, (err, responseFestivals) => {
-											if (err) {
-												console.log(err.name + ': ' + err.message);
-												return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-											}
-											responseList.push({ validated: false, festival: responseFestivals, event: event });
-											if (responseList.length == events.length)
-												return res.status(200).json({ data: responseList, token: res.locals.token });
-										});
-									})
-									.catch(err => {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									});
-							}
-							else {
-								dereference.unvalidatedFestivalObject(validFestival, (err, responseFestivals) => {
-									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									}
-									responseList.push({ validated: true, festival: responseFestivals, event: event });
-									if (responseList.length == events.length)
-										return res.status(200).json({ data: responseList, token: res.locals.token });
-								});
-							}
-						})
-						.catch(err => {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						});
-				});
+				catch (err) {
+					reject(err);
+				}
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ data: responseList, token: res.locals.token });
+	}
+	catch (err) {
+		if (typeof err == 'string')
+			return res.status(400).json({ message: err, token: res.locals.token });
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get festival by id
-router.get('/byid/:_id', token.checkToken(true), (req, res) => {
-	Festival.findOne({ _id: req.params._id })
-		.then(festival => {
-			if (!festival)
-				return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
+router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const object = await UnvalidatedFestival.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
 
-			dereference.festivalObject(festival, (err, responseFestival) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseFestival, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const dereferenced = await dereference.unvalidatedFestivalObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('unvalidated'), (req, res) => {
-	new Event(res.locals.validated.event)
-		.save()
-		.then(event => {
-			let newFestival = res.locals.validated.festival;
-			newFestival.events = [event._id];
-			new Festival(newFestival)
-				.save()
-				.then(() => {
-					return res.status(200).json({ message: 'Festival and event saved', token: res.locals.token });
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/', token.checkToken(false), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('unvalidated'), async (req, res) => {
+	try {
+		const newUnvalidatedFestivalEvent = await new UnvalidatedFestivalEvent(res.locals.validated.event).save();
+		let newUnvalidatedFestival = res.locals.validated.festival;
+		newUnvalidatedFestival.events = [newUnvalidatedFestivalEvent._id];
+		await new UnvalidatedFestival(newUnvalidatedFestival).save();
+		return res.status(200).json({ message: 'Festival and festival event saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // validate unvalidated festival and festival event
-router.post('/validate/:festivalId/:eventId', token.checkToken(false), params.checkParameters(['festival.title', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'event.title', 'event.startDate', 'event.endDate', 'event.bands']), validate.reqFestivalAndEvent('validate'), (req, res) => {
-	new ValidEvent(res.locals.validated.event)
-		.save()
-		.then(event => {
-			let newFestival = res.locals.validated.festival;
-			newFestival.events = [event._id];
-			new ValidFestival(newFestival)
-				.save()
-				.then(() => {
-					Festival.remove({ _id: req.params.festivalId }, (err, removedFestival) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						Event.remove({ _id: req.params.eventId }, (err, events) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							return res.status(200).json({ message: 'Festival and event validated', token: res.locals.token });
-						});
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('validate'), async (req, res) => {
+	try {
+		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
+		let newFestival = res.locals.validated.festival;
+		newFestival.events = [newFestivalEvent._id];
+		await new Festival(newFestival).save();
+		await UnvalidatedFestival.remove({ _id: req.params.festivalId });
+		await UnvalidatedFestivalEvent.remove({ _id: req.params.eventId });
+		return res.status(200).json({ message: 'Festival and festival event validated', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // delete festival by id
-router.delete('/:_id/:eventId', token.checkToken(true), (req, res) => {
-	deleteRoute.delete(req.params._id, 'unvalidFestival', (err, response) => {
-		if (err) {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		}
+router.delete('/:_id/:eventId', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'unvalidFestival');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
-	});
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 module.exports = router;

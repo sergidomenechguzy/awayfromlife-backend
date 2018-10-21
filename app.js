@@ -102,7 +102,12 @@ app.listen(port, () => {
 });
 
 if (process.env.NODE_ENV === 'production') {
-	setInterval(() => archive.events((err, response) => {
-		if (err) console.log(err.name + ': ' + err.message);
-	}), 86400000);
+	setInterval(async () => {
+		try {
+			await archive.events();
+		}
+		catch (err) {
+			console.log(err);
+		}
+	}, 86400000);
 }

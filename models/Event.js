@@ -3,10 +3,15 @@ const Schema = mongoose.Schema;
 
 // create event schema
 const EventSchema = new Schema({
-	title: {
+	name: {
 		type: String,
 		required: true
 	},
+	//###
+	title: {
+		type: String
+	},
+	//###
 	url: {
 		type: String
 	},

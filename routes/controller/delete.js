@@ -30,153 +30,129 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 require('../../models/Report');
 const Report = mongoose.model('reports');
 
+// load gernre model
+require('../../models/Genre');
+const Genre = mongoose.model('genres');
+
+// load bug model
+require('../../models/Bug');
+const Bug = mongoose.model('bugs');
+
+// load feedback model
+require('../../models/Feedback');
+const Feedback = mongoose.model('feedback');
+
 // delete object by id from specified collection and delete or update all connected objects
-module.exports.delete = (id, collection, next) => {
-	const categories = {
-		validEvent: { model: Event, string: 'Event' },
-		archiveEvent: { model: ArchivedEvent, string: 'Event' },
-		unvalidEvent: { model: UnvalidatedEvent, string: 'Event' },
-		validLocation: { model: Location, string: 'Location' },
-		unvalidLocation: { model: UnvalidatedLocation, string: 'Location' },
-		validBand: { model: Band, string: 'Band' },
-		unvalidBand: { model: UnvalidatedBand, string: 'Band' },
-		validFestival: { model: Festival, string: 'Festival' },
-		unvalidFestival: { model: UnvalidatedFestival, string: 'Festival' },
-		validFestivalEvent: { model: FestivalEvent, string: 'Festival event' }
-	};
+module.exports.delete = (id, collection) => {
+	return new Promise(async (resolve, reject) => {
+		const categories = {
+			validEvent: { model: Event, string: 'Event' },
+			archiveEvent: { model: ArchivedEvent, string: 'Event' },
+			unvalidEvent: { model: UnvalidatedEvent, string: 'Event' },
+			validLocation: { model: Location, string: 'Location' },
+			unvalidLocation: { model: UnvalidatedLocation, string: 'Location' },
+			validBand: { model: Band, string: 'Band' },
+			unvalidBand: { model: UnvalidatedBand, string: 'Band' },
+			validFestival: { model: Festival, string: 'Festival' },
+			unvalidFestival: { model: UnvalidatedFestival, string: 'Festival' },
+			validFestivalEvent: { model: FestivalEvent, string: 'Festival event' },
+			genre: { model: Genre, string: 'Genre' },
+			bug: { model: Bug, string: 'Bug' },
+			feedback: { model: Feedback, string: 'Feedback' },
+			report: { model: Report, string: 'Report' }
+		};
 
-	categories[collection].model.findOne({ _id: id })
-		.then(item => {
+		try {
+			const item = await categories[collection].model.findById(id);
 			if (!item)
-				return next(null, { status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
+				resolve({ status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
+			await categories[collection].model.remove({ _id: id });
+			switch (collection) {
+				case 'validEvent':
+					await Report.remove({ category: 'event', item: id });
+					resolve({ status: 200, message: 'Event deleted' });
+					break;
 
-			categories[collection].model.remove({ _id: id }, (err, deleted) => {
-				if (err) return next(err, null);
+				case 'validBand':
+					await Promise.all([
+						deleteBandFromEvents(Event, id),
+						deleteBandFromEvents(ArchivedEvent, id),
+						deleteBandFromEvents(UnvalidatedEvent, id),
+						deleteBandFromEvents(FestivalEvent, id),
+						deleteBandFromEvents(UnvalidatedFestivalEvent, id),
+						Report.remove({ category: 'band', item: id })
+					]);
+					resolve({ status: 200, message: 'Band deleted' });
+					break;
 
-				switch (collection) {
-					case 'validEvent':
-						deleteReports('event', id, (err) => {
-							if (err) return next(err, null);
-							return next(null, { status: 200, message: 'Event deleted' });
-						});
-						break;
-					case 'validBand':
-						bandupdateFunction(Event, id, (err) => {
-							if (err) return next(err, null);
-							bandupdateFunction(ArchivedEvent, id, (err) => {
-								if (err) return next(err, null);
-								bandupdateFunction(UnvalidatedEvent, id, (err) => {
-									if (err) return next(err, null);
-									bandupdateFunction(FestivalEvent, id, (err) => {
-										if (err) return next(err, null);
-										bandupdateFunction(UnvalidatedFestivalEvent, id, (err) => {
-											if (err) return next(err, null);
-											deleteReports('band', id, (err) => {
-												if (err) return next(err, null);
-												return next(null, { status: 200, message: 'Band deleted' });
-											});
-										});
-									});
-								});
-							});
-						});
-						break;
-					case 'validLocation':
-						Event.remove({ location: id }, (err, location) => {
-							if (err) return next(err, null);
-							ArchivedEvent.remove({ location: id }, (err, location) => {
-								if (err) return next(err, null);
-								UnvalidatedEvent.remove({ location: id }, (err, location) => {
-									if (err) return next(err, null);
-									deleteReports('location', id, (err) => {
-										if (err) return next(err, null);
-										return next(null, { status: 200, message: 'Location deleted' });
-									});
-								});
-							});
-						});
-						break;
-					case 'validFestival':
-						let validIds = [];
-						item.events.forEach(event => {
-							validIds.push({ _id: event });
-						});
+				case 'validLocation':
+					await Promise.all([
+						Event.remove({ location: id }),
+						ArchivedEvent.remove({ location: id }),
+						UnvalidatedEvent.remove({ location: id }),
+						Report.remove({ category: 'location', item: id })
+					]);
+					resolve({ status: 200, message: 'Location deleted' });
+					break;
 
-						FestivalEvent.remove({ $or: validIds }, (err, events) => {
-							if (err) return next(err, null);
-							UnvalidatedFestivalEvent.remove({ $or: validIds }, (err, events) => {
-								if (err) return next(err, null);
-								deleteReports('festival', id, (err) => {
-									if (err) return next(err, null);
-									return next(null, { status: 200, message: 'Festival deleted' });
-								});
-							});
-						});
-						break;
-					case 'unvalidFestival':
-						let unvalidIds = [];
-						item.events.forEach(event => {
-							unvalidIds.push({ _id: event });
-						});
+				case 'validFestival':
+					await Promise.all([
+						FestivalEvent.remove({ _id: { $in: item.events } }),
+						UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } }),
+						Report.remove({ category: 'festival', item: id })
+					]);
+					resolve({ status: 200, message: 'Festival deleted' });
+					break;
 
-						UnvalidatedFestivalEvent.remove({ $or: unvalidIds }, (err, events) => {
-							if (err) return next(err, null);
-							return next(null, { status: 200, message: 'Festival deleted' });
-						});
-						break;
-					case 'validFestivalEvent':
-						Festival.findOne({ events: id })
-							.then(festival => {
-								if (!festival)
-									return next(null, { status: 200, message: 'Festival event deleted' });
+				case 'unvalidFestival':
+					await UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } });
+					resolve({ status: 200, message: 'Festival deleted' });
+					break;
 
-								festival.events.splice(festival.events.indexOf(id), 1);
-								Festival.findOneAndUpdate({ _id: festival._id }, festival, (err, updatedFestival) => {
-									if (err) return next(err, null);
-									return next(null, { status: 200, message: 'Festival event deleted' });
-								});
-							})
-							.catch(err => {
-								return next(err, null);
-							});
-						break;
-					default:
-						return next(null, { status: 200, message: categories[collection].string + ' deleted' });
-				}
-			});
-		})
-		.catch(err => {
-			return next(err, null);
-		});
-}
+				case 'validFestivalEvent':
+					const festival = await Festival.findOne({ events: id });
+					if (!festival)
+						resolve({ status: 200, message: 'Festival event deleted' });
 
-const bandupdateFunction = (collection, id, next) => {
-	collection.find({ bands: id })
-		.then(events => {
-			if (events.length == 0) return next(null);
-
-			let counter = 0;
-
-			events.forEach((event, listIndex, array) => {
-				event.bands.splice(event.bands.indexOf(id), 1);
-				collection.findOneAndUpdate({ _id: event._id }, event, (err, updatedEvent) => {
-					if (err) return next(err);
-
-					counter++;
-					if (counter == array.length) {
-						return next(null);
+					festival.events.splice(festival.events.indexOf(id), 1);
+					const festivalEvents = await FestivalEvent.find({ _id: { $in: festival.events } });
+					if (festivalEvents.length == 0) {
+						await UnvalidatedFestivalEvent.remove({ _id: { $in: festival.events } });
+						await Festival.remove({ _id: festival._id });
+						resolve({ status: 200, message: 'Festival event deleted' });
 					}
-				});
-			});
-		})
-		.catch(err => {
-			return next(err);
-		});
+					else {
+						await Festival.findOneAndUpdate({ _id: festival._id }, festival);
+						resolve({ status: 200, message: 'Festival event deleted' });
+					}
+					break;
+
+				default:
+					resolve({ status: 200, message: categories[collection].string + ' deleted' });
+			}
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
 }
 
-const deleteReports = (collection, id, next) => {
-	Report.remove({ category: collection, item: id }, (err, reports) => {
-		if (err) return next(err);
-		return next(null);
+const deleteBandFromEvents = (collection, id, next) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const events = await collection.find({ bands: id });
+			if (events.length == 0) resolve();
+
+			const promises = events.map(async (event) => {
+				event.bands.splice(event.bands.indexOf(id), 1);
+				const result = await collection.findOneAndUpdate({ _id: event._id }, event);
+				return result;
+			});
+			await Promise.all(promises);
+			resolve();
+		}
+		catch (err) {
+			reject(err);
+		}
 	});
 }

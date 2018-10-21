@@ -18,7 +18,7 @@
 - `?perPage` - how many events per page
 - `?sortBy` - the attribute the events get sorted by
 - `?order` - the sorting order (1 for ascending, -1 for descending)
-- `?startWith` - only get events with a title starting with this character (A-Z, # for numbers and other characters)
+- `?startWith` - only get events with a name starting with this character (A-Z, # for numbers and other characters)
 - `?city` - only get events in this city
 - `?country` - only get events in this country
 - `?genre` - only get events with bands of this genre
@@ -34,17 +34,17 @@
 
 **`api/archived-events/byurl/:url`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get single archived event by title url
+	get single archived event by name url
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `:url` - archived event collection unique url
 
-**`api/archived-events/title/:title`**
+**`api/archived-events/name/:name`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get archived events by title
+	get archived events by name
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
-- `:title` - searched archived event title query
+- `:name` - searched archived event name query
 
 **`api/archived-events/city/:city`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -87,7 +87,7 @@
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **yes**
 - `request-body` - event object
-	- required attributes: `title, location, startDate`
+	- required attributes: `name, location, startDate`
 	- optional attributes: `description,  bands, canceled, ticketLink`
 
 ## put
@@ -98,7 +98,7 @@
 	authorization needed: **yes**
 - `:_id` - archived-event collection unique ID
 - `request-body` - event object
-	- required attributes: `title, location, startDate`
+	- required attributes: `name, location, startDate`
 	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## delete
@@ -144,7 +144,7 @@
 
 **`api/bands/byurl/:url`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get single band by title url
+	get single band by name url
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `:url` - band collection unique url
@@ -204,7 +204,7 @@
 	authorization needed: **yes**
 - `request-body` - band object
 	- required attributes: `name, genre, origin.name, origin.country, origin.lat, origin.lng`
-	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, websiteUrl, bandcampUrl, soundcloudUrl, facebookUrl`
+	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, website, bandcampUrl, soundcloudUrl, facebookUrl`
 
 ## put
 **`api/bands/:_id`**
@@ -215,7 +215,7 @@
 - `:_id` - band collection unique ID
 - `request-body` - band object
 	- required attributes: `name, genre, origin.name, origin.country, origin.lat, origin.lng`
-	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, websiteUrl, bandcampUrl, soundcloudUrl, facebookUrl`
+	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, website, bandcampUrl, soundcloudUrl, facebookUrl`
 
 ## delete
 **`api/bands/:_id`**
@@ -274,7 +274,7 @@
 - `?perPage` - how many events per page
 - `?sortBy` - the attribute the events get sorted by
 - `?order` - the sorting order (1 for ascending, -1 for descending)
-- `?startWith` - only get events with a title starting with this character (A-Z, # for numbers and other characters)
+- `?startWith` - only get events with a name starting with this character (A-Z, # for numbers and other characters)
 - `?city` - only get events in this city
 - `?country` - only get events in this country
 - `?genre` - only get events with bands of this genre
@@ -290,17 +290,17 @@
 
 **`api/events/byurl/:url`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get single event by title url
+	get single event by name url
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `:url` - event collection unique url
 
-**`api/events/title/:title`**
+**`api/events/name/:name`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get events by title
+	get events by name
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
-- `:title` - searched event title query
+- `:name` - searched event name query
 
 **`api/events/city/:city`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -343,7 +343,7 @@
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **yes**
 - `request-body` - event object
-	- required attributes: `title, location, startDate`
+	- required attributes: `name, location, startDate`
 	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## put
@@ -354,7 +354,7 @@
 	authorization needed: **yes**
 - `:_id` - event collection unique ID
 - `request-body` - event object
-	- required attributes: `title, location, startDate`
+	- required attributes: `name, location, startDate`
 	- optional attributes: `description, bands, canceled, ticketLink`
 
 **`api/events/cancel/:_id`**
@@ -438,7 +438,7 @@
 
 **`api/locations/byurl/:url`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
-	get single location by title url
+	get single location by name url
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `:url` - location collection unique url
@@ -616,7 +616,7 @@
 	authorization needed: **no**
 - `request-body` - band object
 	- required attributes: `name, genre, origin.name, origin.country, origin.lat, origin.lng`
-	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, websiteUrl, bandcampUrl, soundcloudUrl, facebookUrl`
+	- optional attributes: `origin.administrative, origin.postcode, origin.value, history, recordLabel, releases, foundingDate, website, bandcampUrl, soundcloudUrl, facebookUrl`
 
 ## delete
 **`api/unvalidated-bands/:_id`**
@@ -646,7 +646,7 @@
 - `?perPage` - how many events per page
 - `?sortBy` - the attribute the events get sorted by
 - `?order` - the sorting order (1 for ascending, -1 for descending)
-- `?startWith` - only get events with a title starting with this character (A-Z, # for numbers and other characters)
+- `?startWith` - only get events with a name starting with this character (A-Z, # for numbers and other characters)
 - `?city` - only get events in this city
 - `?country` - only get events in this country
 - `?genre` - only get events with bands of this genre
@@ -673,7 +673,7 @@
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
 	authorization needed: **no**
 - `request-body` - event object
-	- required attributes: `title, location, startDate`
+	- required attributes: `name, location, startDate`
 	- optional attributes: `description, bands, canceled, ticketLink`
 
 ## delete
