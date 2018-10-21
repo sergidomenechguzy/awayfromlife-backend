@@ -53,33 +53,7 @@ const BandSchema = new Schema({
 			country: {
 				type: [String]
 			}
-		},//###
-		//###
-		name: {
-			type: String
-		},
-		city: {
-			type: String
-		},
-		administrative: {
-			type: String
-		},
-		country: {
-			type: String
-		},
-		postcode: {
-			type: String
-		},
-		lat: {
-			type: Number
-		},
-		lng: {
-			type: Number
-		},
-		value: {
-			type: String,
 		}
-		//###
 	},
 	history: {
 		type: String
@@ -101,11 +75,6 @@ const BandSchema = new Schema({
 	website: {
 		type: String
 	},
-	//###
-	websiteUrl: {
-		type: String
-	},
-	//###
 	bandcampUrl: {
 		type: String
 	},
