@@ -85,7 +85,7 @@ const bandObject = module.exports.bandObject = (band) => {
 				name: band.name,
 				url: band.url,
 				genre: genreList,
-				origin: band.origin,
+				origin: band.origin.default,
 				history: band.history,
 				recordLabel: band.recordLabel,
 				releases: band.releases,
@@ -112,22 +112,6 @@ const eventObject = module.exports.eventObject = (event) => {
 			let location = await Location.findById(event.location);
 			if (!location) location = 'Location not found';
 			location = await locationObject(location);
-
-			// if (event.bands.length === 0) {
-			// 	const responseEvent = {
-			// 		_id: event._id,
-			// 		name: event.name,
-			// 		url: event.url,
-			// 		description: event.description,
-			// 		location: location,
-			// 		date: event.date,
-			// 		time: event.time,
-			// 		bands: [],
-			// 		canceled: event.canceled,
-			// 		ticketLink: event.ticketLink
-			// 	};
-			// 	resolve(responseEvent);
-			// }
 
 			const promises = event.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);
@@ -378,9 +362,9 @@ const bandSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
-		if (sortBy === 'origin.name') {
-			if (order === -1) return b.origin.name.localeCompare(a.origin.name);
-			return a.origin.name.localeCompare(b.origin.name);
+		if (sortBy === 'origin.city') {
+			if (order === -1) return b.origin.city.localeCompare(a.origin.city);
+			return a.origin.city.localeCompare(b.origin.city);
 		}
 		else if (sortBy === 'genre') {
 			if (order === -1)

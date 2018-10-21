@@ -45,7 +45,7 @@ router.get('/page', token.checkToken(true), async (req, res) => {
 		if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
 		let sortBy = 'name';
-		if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy;
+		if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.city') sortBy = req.query.sortBy;
 
 		let order = 1;
 		if (parseInt(req.query.order) === -1) order = -1;
@@ -59,12 +59,18 @@ router.get('/page', token.checkToken(true), async (req, res) => {
 			else query.name = new RegExp('^' + req.query.startWith, 'i');
 		}
 		if (req.query.city) {
-			const cityString = 'origin.name';
-			query[cityString] = RegExp(req.query.city, 'i');
+			query.$or = [
+				{ 'origin.default.city': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.county': new RegExp(req.query.city, 'i') },
+				{ 'origin.international.city': new RegExp(req.query.city, 'i') }
+			];
 		}
 		else if (req.query.country) {
-			const countryString = 'origin.country';
-			query[countryString] = RegExp(req.query.country, 'i');
+			query.$or = [
+				{ 'origin.default.country': RegExp(req.query.country, 'i') },
+				{ 'origin.international.country': new RegExp(req.query.country, 'i') }
+			];
 		}
 		if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
@@ -153,8 +159,8 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 			});
 			if (band.recordLabel && !filters.labels.includes(band.recordLabel))
 				filters.labels.push(band.recordLabel);
-			if (band.origin.name && !filters.cities.includes(band.origin.name))
-				filters.cities.push(band.origin.name);
+			if (band.origin.city && !filters.cities.includes(band.origin.city))
+				filters.cities.push(band.origin.city);
 			if (band.origin.country && !filters.countries.includes(band.origin.country))
 				filters.countries.push(band.origin.country);
 		});
@@ -182,7 +188,7 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('unvalidated'), async (req, res) => {
+router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('unvalidated'), async (req, res) => {
 	try {
 		await new UnvalidatedBand(res.locals.validated).save();
 		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
@@ -194,7 +200,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 });
 
 // validate unvalidated band
-router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('validate'), async (req, res) => {
+router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('validate'), async (req, res) => {
 	try {
 		await new Band(res.locals.validated).save();
 		await UnvalidatedBand.remove({ _id: req.params._id });
@@ -207,7 +213,7 @@ router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['n
 });
 
 // post band to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('unvalidated'), async (req, res) => {
+router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('unvalidated'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {

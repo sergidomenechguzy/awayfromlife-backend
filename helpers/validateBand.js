@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const algoliasearch = require('algoliasearch');
+const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 // load band model
 require('../models/Band');
@@ -53,7 +55,8 @@ module.exports.validateList = (type) => {
 }
 
 // check all attributes and build the finished object
-const validateBand = (data, type, options) => {
+//###
+const validateBand = module.exports.validateBand = (data, type, options) => {
 	return new Promise(async (resolve, reject) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
@@ -99,8 +102,8 @@ const validateBand = (data, type, options) => {
 				})
 			) resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 
-			if (!(typeof data.origin.name == 'string' && data.origin.name.length > 0))
-				resolve('Attribute \'origin.name\' has to be a string with 1 or more characters.');
+			if (!(typeof data.origin.city == 'string' && data.origin.city.length > 0))
+				resolve('Attribute \'origin.city\' has to be a string with 1 or more characters.');
 
 			if (!(data.origin.administrative == undefined || typeof data.origin.administrative == 'string'))
 				resolve('Attribute \'origin.administrative\' can be left out or has to be a string.');
@@ -119,6 +122,9 @@ const validateBand = (data, type, options) => {
 
 			if (!(data.origin.value == undefined || typeof data.origin.value == 'string'))
 				resolve('Attribute \'origin.value\' can be left out or has to be a string.');
+
+			if (!(typeof data.origin.countryCode == 'string' && data.origin.countryCode.length > 0))
+				resolve('Attribute \'origin.countryCode\' has to be a string with 1 or more characters.');
 
 			if (!(data.history == undefined || typeof data.history == 'string'))
 				resolve('Attribute \'history\' can be left out or has to be a string.');
@@ -152,6 +158,45 @@ const validateBand = (data, type, options) => {
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
+			let res = await places.search({ query: data.origin.value ? data.origin.value : `${data.origin.city}, ${data.origin.country}`, language: data.countryCode, type: 'city' });
+			resolve(res.hits[0]);
+
+			let origin = {
+				city: [],
+				country: []
+			};
+			if (res.hits[0] != undefined) {
+				if (res.hits[0].locale_names) {
+					for (attribute in res.hits[0].locale_names) {
+						res.hits[0].locale_names[attribute].forEach(value => {
+							if (!origin.city.includes(value))
+								origin.city.push(value);
+						});
+					}
+				}
+				if (res.hits[0].county) {
+					for (attribute in res.hits[0].county) {
+						res.hits[0].county[attribute].forEach(value => {
+							if (!origin.city.includes(value))
+								origin.city.push(value);
+						});
+					}
+				}
+				if (res.hits[0].administrative) {
+					res.hits[0].administrative.forEach(value => {
+						if (!origin.city.includes(value))
+							origin.city.push(value);
+					});
+				}
+
+				if (res.hits[0].country) {
+					for (attribute in res.hits[0].country) {
+						if (!origin.country.includes(res.hits[0].country[attribute]))
+							origin.country.push(res.hits[0].country[attribute]);
+					}
+				}
+			}
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -167,13 +212,17 @@ const validateBand = (data, type, options) => {
 					url: '',
 					genre: finalGenres,
 					origin: {
-						name: data.origin.name,
-						administrative: data.origin.administrative != undefined ? data.origin.administrative : object.origin.administrative,
-						country: data.origin.country,
-						postcode: data.origin.postcode != undefined ? data.origin.postcode : object.origin.postcode,
-						lat: data.origin.lat,
-						lng: data.origin.lng,
-						value: data.origin.value != undefined ? data.origin.value : object.origin.value
+						default: {
+							city: data.origin.city,
+							administrative: data.origin.administrative != undefined ? data.origin.administrative : object.origin.administrative,
+							country: data.origin.country,
+							postcode: data.origin.postcode != undefined ? data.origin.postcode : object.origin.postcode,
+							lat: data.origin.lat,
+							lng: data.origin.lng,
+							value: data.origin.value != undefined ? data.origin.value : object.origin.value,
+							countryCode: data.origin.countryCode
+						},
+						international: origin
 					},
 					history: data.history != undefined ? data.history : object.history,
 					recordLabel: data.recordLabel != undefined ? data.recordLabel : object.recordLabel,
@@ -194,13 +243,17 @@ const validateBand = (data, type, options) => {
 					url: '',
 					genre: finalGenres,
 					origin: {
-						name: data.origin.name,
-						administrative: data.origin.administrative != undefined ? data.origin.administrative : '',
-						country: data.origin.country,
-						postcode: data.origin.postcode != undefined ? data.origin.postcode : '',
-						lat: data.origin.lat,
-						lng: data.origin.lng,
-						value: data.origin.value != undefined ? data.origin.value : ''
+						default: {
+							city: data.origin.city,
+							administrative: data.origin.administrative != undefined ? data.origin.administrative : '',
+							country: data.origin.country,
+							postcode: data.origin.postcode != undefined ? data.origin.postcode : '',
+							lat: data.origin.lat,
+							lng: data.origin.lng,
+							value: data.origin.value != undefined ? data.origin.value : '',
+							countryCode: data.origin.countryCode
+						},
+						international: origin
 					},
 					history: data.history != undefined ? data.history : '',
 					recordLabel: data.recordLabel != undefined ? data.recordLabel : '',

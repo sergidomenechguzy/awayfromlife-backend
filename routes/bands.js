@@ -75,7 +75,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
 		let sortBy = 'name';
-		if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy;
+		if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.city') sortBy = req.query.sortBy;
 
 		let order = 1;
 		if (parseInt(req.query.order) === -1) order = -1;
@@ -89,12 +89,18 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			else query.name = new RegExp('^' + req.query.startWith, 'i');
 		}
 		if (req.query.city) {
-			const cityString = 'origin.name';
-			query[cityString] = RegExp(req.query.city, 'i');
+			query.$or = [
+				{ 'origin.default.city': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.county': new RegExp(req.query.city, 'i') },
+				{ 'origin.international.city': new RegExp(req.query.city, 'i') }
+			];
 		}
 		else if (req.query.country) {
-			const countryString = 'origin.country';
-			query[countryString] = RegExp(req.query.country, 'i');
+			query.$or = [
+				{ 'origin.default.country': RegExp(req.query.country, 'i') },
+				{ 'origin.international.country': new RegExp(req.query.country, 'i') }
+			];
 		}
 		if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
@@ -276,10 +282,13 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 	try {
 		if (!req.query.name || !req.query.country)
 			return res.status(400).json({ message: 'Parameter(s) missing: name and country are required.' });
-		let query = {};
-		query.name = new RegExp('^' + req.query.name + '$', 'i');
-		const countryString = 'origin.country';
-		query[countryString] = new RegExp('^' + req.query.country + '$', 'i');
+		let query = {
+			name: new RegExp('^' + req.query.name + '$', 'i'),
+			$or: [
+				{ 'address.default.country': new RegExp('^' + req.query.country + '$', 'i') },
+				{ 'address.international.country': new RegExp('^' + req.query.country + '$', 'i') }
+			]
+		};
 
 		const bands = await Band.find(query);
 		if (bands.length === 0)
@@ -330,8 +339,8 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 			});
 			if (band.recordLabel && !filters.labels.includes(band.recordLabel))
 				filters.labels.push(band.recordLabel);
-			if (band.origin.name && !filters.cities.includes(band.origin.name))
-				filters.cities.push(band.origin.name);
+			if (band.origin.city && !filters.cities.includes(band.origin.city))
+				filters.cities.push(band.origin.city);
 			if (band.origin.country && !filters.countries.includes(band.origin.country))
 				filters.countries.push(band.origin.country);
 		});
@@ -359,7 +368,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('post'), async (req, res) => {
 	try {
 		await new Band(res.locals.validated).save();
 		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
@@ -371,7 +380,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre'
 });
 
 // post multiple bands to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateList('post'), async (req, res) => {
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('post'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
@@ -388,7 +397,7 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), validateBand.validateObject('put'), async (req, res) => {
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.bandObject(updated);
@@ -418,6 +427,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 
 
 
+
+//###
 // load event model
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const ArchivedEvent = mongoose.model('archived_events');
@@ -432,277 +443,703 @@ require('../models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
-// router.get('/update/website', async (req, res) => {
-// 	try {
-// 		const events = await Event.find();
-// 		if (events.length === 0)
-// 			console.log('No events found');
+router.get('/updateAddress', async (req, res) => {
+	try {
+		const bands = await Band.find();
+		const promises = bands.map(async (band) => {
+			let res = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
+			let newBand = JSON.parse(JSON.stringify(band));
+			newBand.origin.city = res.hits[0].locale_names[0];
 
-// 		events.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+			switch (band.origin.country) {
+				case 'Australien':
+					newBand.origin.countryCode = 'au';
+					newBand.origin.country = 'Australia';
+					break;
+			
+				case 'België - Belgique - Belgien':
+				case 'Belgien':
+					newBand.origin.countryCode = 'be';
+					newBand.origin.country = 'Belgium';
+					break;
+			
+				case 'Brasilien':
+				case 'Brazil':
+					newBand.origin.countryCode = 'br';
+					newBand.origin.country = 'Brazil';
+					break;
+			
+				case 'Česko':
+				case 'Tschechien':
+					newBand.origin.countryCode = 'cz';
+					newBand.origin.country = 'Czech Republic';
+					break;
+			
+				case 'Danmark':
+				case 'Denmark':
+					newBand.origin.countryCode = 'dk';
+					newBand.origin.country = 'Denmark';
+					break;
+			
+				case 'Deutschland':
+				case 'Germany':
+					newBand.origin.countryCode = 'de';
+					newBand.origin.country = 'Germany';
+					break;
+			
+				case 'Finnland':
+					newBand.origin.countryCode = 'fi';
+					newBand.origin.country = 'Finland';
+					break;
+			
+				case 'France':
+				case 'Frankreich':
+					newBand.origin.countryCode = 'fr';
+					newBand.origin.country = 'France';
+					break;
+			
+				case 'Israel':
+					newBand.origin.countryCode = 'il';
+					newBand.origin.country = 'Israel';
+					break;
+			
+				case 'Italien':
+				case 'Italy':
+					newBand.origin.countryCode = 'it';
+					newBand.origin.country = 'Italy';
+					break;
+			
+				case 'Japan':
+					newBand.origin.countryCode = 'jp';
+					newBand.origin.country = 'Japan';
+					break;
+			
+				case 'Kanada':
+					newBand.origin.countryCode = 'ca';
+					newBand.origin.country = 'Canada';
+					break;
+			
+				case 'Kroatien':
+					newBand.origin.countryCode = 'hr';
+					newBand.origin.country = 'Croatia';
+					break;
+			
+				case 'Mexiko':
+					newBand.origin.countryCode = 'mx';
+					newBand.origin.country = 'Mexico';
+					break;
+			
+				case 'Neuseeland':
+					newBand.origin.countryCode = 'nz';
+					newBand.origin.country = 'New Zealand';
+					break;
+			
+				case 'Nigeria':
+					newBand.origin.countryCode = 'ng';
+					newBand.origin.country = 'Nigeria';
+					break;
+			
+				case 'Magyarország':
+				case 'Ungarn':
+					newBand.origin.countryCode = 'hu';
+					newBand.origin.country = 'Hungary';
+					break;
+			
+				case 'Niederlande':
+				case 'The Netherlands':
+					newBand.origin.countryCode = 'nl';
+					newBand.origin.country = 'The Netherlands';
+					break;
+			
+				case 'Norwegen':
+					newBand.origin.countryCode = 'no';
+					newBand.origin.country = 'Norway';
+					break;
+			
+				case 'Russland':
+				case 'Russia':
+					newBand.origin.countryCode = 'ru';
+					newBand.origin.country = 'Russia';
+					break;
+			
+				case 'Österreich':
+				case 'Austria':
+					newBand.origin.countryCode = 'at';
+					newBand.origin.country = 'Austria';
+					break;
+			
+				case 'Polen':
+					newBand.origin.countryCode = 'pl';
+					newBand.origin.country = 'Poland';
+					break;
+			
+				case 'Peru':
+					newBand.origin.countryCode = 'pe';
+					newBand.origin.country = 'Peru';
+					break;
+			
+				case 'Schweiz':
+					newBand.origin.countryCode = 'ch';
+					newBand.origin.country = 'Switzerland';
+					break;
+			
+				case 'Spanien':
+					newBand.origin.countryCode = 'es';
+					newBand.origin.country = 'Spain';
+					break;
+			
+				case 'Südafrika':
+					newBand.origin.countryCode = 'za';
+					newBand.origin.country = 'South Africa';
+					break;
+			
+				case 'Sverige':
+				case 'Schweden':
+				case 'Sweden':
+					newBand.origin.countryCode = 'se';
+					newBand.origin.country = 'Sweden';
+					break;
+			
+				case 'United Kingdom':
+				case 'Vereinigtes Königreich':
+					newBand.origin.countryCode = 'gb';
+					newBand.origin.country = 'United Kingdom';
+					break;
+			
+				case 'Vereinigte Staaten von Amerika':
+				case 'United States of America':
+					newBand.origin.countryCode = 'us';
+					newBand.origin.country = 'United States of America';
+					break;
+				default:
+					newBand.origin.countryCode = 'en';
+			}
 
-// 		const unvalidatedEvents = await UnvalidatedEvent.find();
-// 		if (unvalidatedEvents.length === 0)
-// 			console.log('No unvalidatedEvents found');
+			const update = await validateBand.validateBand(newBand, 'put', { id: band._id });
+			const updated = await Band.findOneAndUpdate({ _id: band._id }, update, { new: true });
+			return updated;
+		});
+		const bandList = await Promise.all(promises);
 
-// 		unvalidatedEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+		const locations = await Location.find();
+		const promises = locations.map(async (location) => {
+			let newLocation = JSON.parse(JSON.stringify(location));
 
-// 		const archivedEvents = await ArchivedEvent.find();
-// 		if (archivedEvents.length === 0)
-// 			console.log('No archivedEvents found');
+			switch (location.address.country) {
+				case 'Australien':
+					newLocation.address.countryCode = 'au';
+					newLocation.address.country = 'Australia';
+					break;
+				
+				case 'België - Belgique - Belgien':
+				case 'Belgien':
+					newLocation.address.countryCode = 'be';
+					newLocation.address.country = 'Belgium';
+					break;
+				
+				case 'Brasilien':
+				case 'Brazil':
+					newLocation.address.countryCode = 'br';
+					newLocation.address.country = 'Brazil';
+					break;
+			
+				case 'Česko':
+				case 'Tschechien':
+					newLocation.address.countryCode = 'cz';
+					newLocation.address.country = 'Czech Republic';
+					break;
+			
+				case 'Danmark':
+				case 'Denmark':
+					newLocation.address.countryCode = 'dk';
+					newLocation.address.country = 'Denmark';
+					break;
+			
+				case 'Deutschland':
+				case 'Germany':
+					newLocation.address.countryCode = 'de';
+					newLocation.address.country = 'Germany';
+					break;
+				
+				case 'Finnland':
+					newLocation.address.countryCode = 'fi';
+					newLocation.address.country = 'Finland';
+					break;
+			
+				case 'France':
+				case 'Frankreich':
+					newLocation.address.countryCode = 'fr';
+					newLocation.address.country = 'France';
+					break;
+				
+				case 'Israel':
+					newLocation.address.countryCode = 'il';
+					newLocation.address.country = 'Israel';
+					break;
+			
+				case 'Italien':
+				case 'Italy':
+					newLocation.address.countryCode = 'it';
+					newLocation.address.country = 'Italy';
+					break;
+			
+				case 'Japan':
+					newLocation.address.countryCode = 'jp';
+					newLocation.address.country = 'Japan';
+					break;
+			
+				case 'Kanada':
+					newLocation.address.countryCode = 'ca';
+					newLocation.address.country = 'Canada';
+					break;
+			
+				case 'Kroatien':
+					newLocation.address.countryCode = 'hr';
+					newLocation.address.country = 'Croatia';
+					break;
+			
+				case 'Mexiko':
+					newLocation.address.countryCode = 'mx';
+					newLocation.address.country = 'Mexico';
+					break;
+			
+				case 'Neuseeland':
+					newLocation.address.countryCode = 'nz';
+					newLocation.address.country = 'New Zealand';
+					break;
+			
+				case 'Nigeria':
+					newLocation.address.countryCode = 'ng';
+					newLocation.address.country = 'Nigeria';
+					break;
+			
+				case 'Magyarország':
+				case 'Ungarn':
+					newLocation.address.countryCode = 'hu';
+					newLocation.address.country = 'Hungary';
+					break;
+			
+				case 'Niederlande':
+				case 'The Netherlands':
+					newLocation.address.countryCode = 'nl';
+					newLocation.address.country = 'The Netherlands';
+					break;
+			
+				case 'Norwegen':
+					newLocation.address.countryCode = 'no';
+					newLocation.address.country = 'Norway';
+					break;
+			
+				case 'Russland':
+				case 'Russia':
+					newLocation.address.countryCode = 'ru';
+					newLocation.address.country = 'Russia';
+					break;
+			
+				case 'Österreich':
+				case 'Austria':
+					newLocation.address.countryCode = 'at';
+					newLocation.address.country = 'Austria';
+					break;
+			
+				case 'Polen':
+					newLocation.address.countryCode = 'pl';
+					newLocation.address.country = 'Poland';
+					break;
+			
+				case 'Peru':
+					newLocation.address.countryCode = 'pe';
+					newLocation.address.country = 'Peru';
+					break;
+			
+				case 'Schweiz':
+					newLocation.address.countryCode = 'ch';
+					newLocation.address.country = 'Switzerland';
+					break;
+			
+				case 'Spanien':
+					newLocation.address.countryCode = 'es';
+					newLocation.address.country = 'Spain';
+					break;
+			
+				case 'Südafrika':
+					newLocation.address.countryCode = 'za';
+					newLocation.address.country = 'South Africa';
+					break;
+			
+				case 'Sverige':
+				case 'Schweden':
+				case 'Sweden':
+					newLocation.address.countryCode = 'se';
+					newLocation.address.country = 'Sweden';
+					break;
+					
+				case 'United Kingdom':
+				case 'Vereinigtes Königreich':
+					newLocation.address.countryCode = 'gb';
+					newLocation.address.country = 'United Kingdom';
+					break;
+				
+				case 'Vereinigte Staaten von Amerika':
+				case 'United States of America':
+					newLocation.address.countryCode = 'us';
+					newLocation.address.country = 'United States of America';
+					break;
+				default:
+					newLocation.address.countryCode = 'en';
+			}
 
-// 		archivedEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+			const update = await validateLocation.validateLocation(newLocation, 'put', { id: location._id });
+			const updated = await Location.findOneAndUpdate({ _id: location._id }, update, { new: true });
+			return updated;
+		});
+		const locationList = await Promise.all(promises);
 
-// 		const festivals = await Festival.find();
-// 		if (festivals.length === 0)
-// 			console.log('No festivals found');
+		const festivals = await Festival.find();
+		const promises = festivals.map(async (festival) => {
+			let newFestival = JSON.parse(JSON.stringify(festival));
 
-// 		festivals.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+			switch (festival.address.country) {
+				case 'Australien':
+					newFestival.address.countryCode = 'au';
+					newFestival.address.country = 'Australia';
+					break;
+				
+				case 'België - Belgique - Belgien':
+				case 'Belgien':
+					newFestival.address.countryCode = 'be';
+					newFestival.address.country = 'Belgium';
+					break;
+				
+				case 'Brasilien':
+				case 'Brazil':
+					newFestival.address.countryCode = 'br';
+					newFestival.address.country = 'Brazil';
+					break;
+			
+				case 'Česko':
+				case 'Tschechien':
+					newFestival.address.countryCode = 'cz';
+					newFestival.address.country = 'Czech Republic';
+					break;
+			
+				case 'Danmark':
+				case 'Denmark':
+					newFestival.address.countryCode = 'dk';
+					newFestival.address.country = 'Denmark';
+					break;
+			
+				case 'Deutschland':
+				case 'Germany':
+					newFestival.address.countryCode = 'de';
+					newFestival.address.country = 'Germany';
+					break;
+				
+				case 'Finnland':
+					newFestival.address.countryCode = 'fi';
+					newFestival.address.country = 'Finland';
+					break;
+			
+				case 'France':
+				case 'Frankreich':
+					newFestival.address.countryCode = 'fr';
+					newFestival.address.country = 'France';
+					break;
+				
+				case 'Israel':
+					newFestival.address.countryCode = 'il';
+					newFestival.address.country = 'Israel';
+					break;
+			
+				case 'Italien':
+				case 'Italy':
+					newFestival.address.countryCode = 'it';
+					newFestival.address.country = 'Italy';
+					break;
+			
+				case 'Japan':
+					newFestival.address.countryCode = 'jp';
+					newFestival.address.country = 'Japan';
+					break;
+			
+				case 'Kanada':
+					newFestival.address.countryCode = 'ca';
+					newFestival.address.country = 'Canada';
+					break;
+			
+				case 'Kroatien':
+					newFestival.address.countryCode = 'hr';
+					newFestival.address.country = 'Croatia';
+					break;
+			
+				case 'Mexiko':
+					newFestival.address.countryCode = 'mx';
+					newFestival.address.country = 'Mexico';
+					break;
+			
+				case 'Neuseeland':
+					newFestival.address.countryCode = 'nz';
+					newFestival.address.country = 'New Zealand';
+					break;
+			
+				case 'Nigeria':
+					newFestival.address.countryCode = 'ng';
+					newFestival.address.country = 'Nigeria';
+					break;
+			
+				case 'Magyarország':
+				case 'Ungarn':
+					newFestival.address.countryCode = 'hu';
+					newFestival.address.country = 'Hungary';
+					break;
+			
+				case 'Niederlande':
+				case 'The Netherlands':
+					newFestival.address.countryCode = 'nl';
+					newFestival.address.country = 'The Netherlands';
+					break;
+			
+				case 'Norwegen':
+					newFestival.address.countryCode = 'no';
+					newFestival.address.country = 'Norway';
+					break;
+			
+				case 'Russland':
+				case 'Russia':
+					newFestival.address.countryCode = 'ru';
+					newFestival.address.country = 'Russia';
+					break;
+			
+				case 'Österreich':
+				case 'Austria':
+					newFestival.address.countryCode = 'at';
+					newFestival.address.country = 'Austria';
+					break;
+			
+				case 'Polen':
+					newFestival.address.countryCode = 'pl';
+					newFestival.address.country = 'Poland';
+					break;
+			
+				case 'Peru':
+					newFestival.address.countryCode = 'pe';
+					newFestival.address.country = 'Peru';
+					break;
+			
+				case 'Schweiz':
+					newFestival.address.countryCode = 'ch';
+					newFestival.address.country = 'Switzerland';
+					break;
+			
+				case 'Spanien':
+					newFestival.address.countryCode = 'es';
+					newFestival.address.country = 'Spain';
+					break;
+			
+				case 'Südafrika':
+					newFestival.address.countryCode = 'za';
+					newFestival.address.country = 'South Africa';
+					break;
+			
+				case 'Sverige':
+				case 'Schweden':
+				case 'Sweden':
+					newFestival.address.countryCode = 'se';
+					newFestival.address.country = 'Sweden';
+					break;
+					
+				case 'United Kingdom':
+				case 'Vereinigtes Königreich':
+					newFestival.address.countryCode = 'gb';
+					newFestival.address.country = 'United Kingdom';
+					break;
+				
+				case 'Vereinigte Staaten von Amerika':
+				case 'United States of America':
+					newFestival.address.countryCode = 'us';
+					newFestival.address.country = 'United States of America';
+					break;
+				default:
+					newFestival.address.countryCode = 'en';
+			}
 
-// 		const unvalidatedFestivals = await UnvalidatedFestival.find();
-// 		if (unvalidatedFestivals.length === 0)
-// 			console.log('No unvalidatedFestivals found');
+			const update = await validateFestival.validateFestival(newFestival, 'put', { id: festival._id });
+			const updated = await Festival.findOneAndUpdate({ _id: festival._id }, update, { new: true });
+			return updated;
+		});
+		const festivalList = await Promise.all(promises);
 
-// 		unvalidatedFestivals.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+		return res.status(200).json({ message: 'Locations updated', data: { bands: bandList, locations: locationList, festivals: festivalList }, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-// 		const festivalEvents = await FestivalEvent.find();
-// 		if (festivalEvents.length === 0)
-// 			console.log('No festivalEvents found');
+router.get('/updateAll', async (req, res) => {
+	try {
+		const bands = await Band.find();
+		if (bands.length === 0)
+			console.log('No bands found');
 
-// 		festivalEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
+		bands.forEach(band => {
+			let updatedBand = JSON.parse(JSON.stringify(band));
+			updatedBand.website = band.websiteUrl;
+			if (updatedBand.website == null) updatedBand.website = '';
+			updatedBand.origin.city = band.origin.name;
+			if (updatedBand.origin.city == null) updatedBand.origin.city = '';
+			Band.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
+				if (err) console.log(err);
+				Band.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1, 'origin.name': 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
-// 		if (unvalidatedFestivalEvents.length === 0)
-// 			console.log('No unvalidatedFestivalEvents found');
+		const unvalidatedbands = await UnvalidatedBand.find();
+		if (unvalidatedbands.length === 0)
+			console.log('No unvalidatedBands found');
 
-// 		unvalidatedFestivalEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.title = object.name;
-// 			if (updatedObject.title == null || updatedObject.title == undefined) updatedObject.title = '';
-// 			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				console.log(update.name);
-// 			});
-// 		});
-// 		return res.status(200).json({ message: 'fertig' });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		unvalidatedbands.forEach(band => {
+			let updatedBand = JSON.parse(JSON.stringify(band));
+			updatedBand.website = band.websiteUrl;
+			if (updatedBand.website == null) updatedBand.website = '';
+			UnvalidatedBand.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
+				if (err) console.log(err);
+				UnvalidatedBand.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
+		const events = await Event.find();
+		if (events.length === 0)
+			console.log('No events found');
 
+		events.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				Event.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
+		const unvalidatedEvents = await UnvalidatedEvent.find();
+		if (unvalidatedEvents.length === 0)
+			console.log('No unvalidatedEvents found');
 
+		unvalidatedEvents.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// router.get('/update/website', async (req, res) => {
-// 	try {
-// 		const bands = await Band.find();
-// 		if (bands.length === 0)
-// 			console.log('No bands found');
+		const archivedEvents = await ArchivedEvent.find();
+		if (archivedEvents.length === 0)
+			console.log('No archivedEvents found');
 
-// 		bands.forEach(band => {
-// 			let updatedBand = JSON.parse(JSON.stringify(band));
-// 			updatedBand.website = band.websiteUrl;
-// 			if (updatedBand.website == null) updatedBand.website = '';
-// 			Band.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
-// 				if (err) console.log(err);
-// 				Band.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
+		archivedEvents.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				ArchivedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// 		const unvalidatedbands = await UnvalidatedBand.find();
-// 		if (unvalidatedbands.length === 0)
-// 			console.log('No unvalidatedBands found');
+		const festivals = await Festival.find();
+		if (festivals.length === 0)
+			console.log('No festivals found');
 
-// 		unvalidatedbands.forEach(band => {
-// 			let updatedBand = JSON.parse(JSON.stringify(band));
-// 			updatedBand.website = band.websiteUrl;
-// 			if (updatedBand.website == null) updatedBand.website = '';
-// 			UnvalidatedBand.findOneAndUpdate({ _id: band._id }, updatedBand, (err, update) => {
-// 				if (err) console.log(err);
-// 				UnvalidatedBand.findOneAndUpdate({ _id: band._id }, { $unset: { websiteUrl: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
+		festivals.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				Festival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// 		const events = await Event.find();
-// 		if (events.length === 0)
-// 			console.log('No events found');
+		const unvalidatedFestivals = await UnvalidatedFestival.find();
+		if (unvalidatedFestivals.length === 0)
+			console.log('No unvalidatedFestivals found');
 
-// 		events.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			Event.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				Event.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
+		unvalidatedFestivals.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// 		const unvalidatedEvents = await UnvalidatedEvent.find();
-// 		if (unvalidatedEvents.length === 0)
-// 			console.log('No unvalidatedEvents found');
+		const festivalEvents = await FestivalEvent.find();
+		if (festivalEvents.length === 0)
+			console.log('No festivalEvents found');
 
-// 		unvalidatedEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				UnvalidatedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
+		festivalEvents.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				FestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
 
-// 		const archivedEvents = await ArchivedEvent.find();
-// 		if (archivedEvents.length === 0)
-// 			console.log('No archivedEvents found');
+		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
+		if (unvalidatedFestivalEvents.length === 0)
+			console.log('No unvalidatedFestivalEvents found');
 
-// 		archivedEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			ArchivedEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				ArchivedEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
-
-// 		const festivals = await Festival.find();
-// 		if (festivals.length === 0)
-// 			console.log('No festivals found');
-
-// 		festivals.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			Festival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				Festival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
-
-// 		const unvalidatedFestivals = await UnvalidatedFestival.find();
-// 		if (unvalidatedFestivals.length === 0)
-// 			console.log('No unvalidatedFestivals found');
-
-// 		unvalidatedFestivals.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				UnvalidatedFestival.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
-
-// 		const festivalEvents = await FestivalEvent.find();
-// 		if (festivalEvents.length === 0)
-// 			console.log('No festivalEvents found');
-
-// 		festivalEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			FestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				FestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
-
-// 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
-// 		if (unvalidatedFestivalEvents.length === 0)
-// 			console.log('No unvalidatedFestivalEvents found');
-
-// 		unvalidatedFestivalEvents.forEach(object => {
-// 			let updatedObject = JSON.parse(JSON.stringify(object));
-// 			updatedObject.name = object.title;
-// 			if (updatedObject.name == null) updatedObject.name = '';
-// 			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
-// 				if (err) console.log(err);
-// 				UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
-// 					if (err) console.log(err);
-// 					console.log(update.name);
-// 				});
-// 			});
-// 		});
-// 		return res.status(200).json({ message: 'fertig' });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		unvalidatedFestivalEvents.forEach(object => {
+			let updatedObject = JSON.parse(JSON.stringify(object));
+			updatedObject.name = object.title;
+			if (updatedObject.name == null) updatedObject.name = '';
+			UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, updatedObject, (err, update) => {
+				if (err) console.log(err);
+				UnvalidatedFestivalEvent.findOneAndUpdate({ _id: object._id }, { $unset: { title: 1 } }, (err, update) => {
+					if (err) console.log(err);
+					console.log(update.name);
+				});
+			});
+		});
+		return res.status(200).json({ message: 'fertig' });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+//###
 
 module.exports = router;

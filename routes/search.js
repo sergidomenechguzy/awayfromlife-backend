@@ -120,6 +120,7 @@ const eventFind = (queries, regex) => {
 				['location.address.street', 'location address'],
 				['location.address.city', 'location city'],
 				['location.address.county', 'location county'],
+				['location.address.administrative', 'location administrative'],
 				['bands', 'bands']
 			];
 			eventResults = [];
@@ -201,6 +202,7 @@ const festivalFind = (queries, regex) => {
 				['address.default.street', 'address'],
 				['address.default.city', 'city'],
 				['address.default.county', 'county'],
+				['address.default.administrative', 'administrative'],
 				['address.default.country', 'country'],
 				['address.international.street', 'address'],
 				['address.international.city', 'city'],
@@ -300,6 +302,7 @@ const locationFind = (queries, regex) => {
 				['address.default.street', 'address'],
 				['address.default.city', 'city'],
 				['address.default.county', 'county'],
+				['address.default.administrative', 'administrative'],
 				['address.default.country', 'country'],
 				['address.international.street', 'address'],
 				['address.international.city', 'city'],
@@ -354,65 +357,89 @@ const bandFind = (queries, regex) => {
 		try {
 			const bandSearchAttributes = [
 				['name', 'name'],
-				['genre', 'genre'],
-				['origin.name', 'origin city'],
-				['origin.country', 'origin country'],
-				['recordLabel', 'label'],
-				['releases', 'releases']
+				['origin.default.city', 'city'],
+				['origin.default.administrative', 'administrative'],
+				['origin.default.country', 'country'],
+				['origin.international.city', 'city'],
+				['origin.international.country', 'country'],
+				['recordLabel', 'label']
 			];
-			bandResults = [];
+
+			const genreAttribute = ['genre', 'genre'];
+			const releasesAttribute = ['releases', 'releases'];
 
 			const bands = await Band.find(queries.query);
-			const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
 
-			dereferenced.forEach(band => {
+			const promises = bands.map(async (band) => {
+				const dereferenced = await dereference.bandObject(band);
 				if (
 					queries.genres.length == 0
 					||
 					queries.genres.some(currentGenre => {
-						return band.genre.some(genre => {
+						return dereferenced.genre.some(genre => {
 							return currentGenre.test(genre);
 						});
 					})
 				) {
-					bandSearchAttributes.some(attribute => {
-						let value = attribute[0].split('.').reduce((prev, curr) => {
-							return prev[curr];
-						}, band);
+					let matchedAttribute;
+					let matchedValue;
 
-						if (attribute[0] === 'releases') {
-							let releaseString = '';
-							const match = value.some(currentRelease => {
-								if (regex.test(currentRelease.releaseName)) {
-									value.forEach((release, index, array) => {
-										releaseString += release.releaseName;
-										if (index < array.length - 1) releaseString += ', ';
-									});
-									value = releaseString;
-									bandResults.push(buildObject(band, 'Band', attribute, value));
-									return true;
-								}
-							});
-							return match;
-						}
-						else if (attribute[0] === 'genre') {
-							const match = value.some(currentGenre => {
-								if (regex.test(currentGenre)) {
-									value = value.join(', ');
-									bandResults.push(buildObject(band, 'Band', attribute, value));
-									return true;
-								}
-							});
-							return match;
-						}
-						else if (regex.test(value)) {
-							bandResults.push(buildObject(band, 'Band', attribute, value));
-							return true;
-						}
-						return false;
-					});
+					if (
+						bandSearchAttributes.some(attribute => {
+							const value = attribute[0].split('.').reduce((prev, curr) => {
+								return prev[curr];
+							}, band);
+
+							if (Array.isArray(value)) {
+								return value.some(valueString => {
+									if (regex.test(valueString)) {
+										matchedAttribute = attribute;
+										matchedValue = valueString;
+										return true;
+									}
+								});
+							}
+							else if (regex.test(value)) {
+								matchedAttribute = attribute;
+								matchedValue = value;
+								return true;
+							}
+							return false;
+						})
+						||
+						dereferenced.releases.some(release => {
+							if (regex.test(release.releaseName)) {
+								matchedValue = [release.releaseName];
+								dereferenced.releases.some(currentRelease => {
+									if (matchedValue.length == 3) {
+										matchedValue.push('...');
+										return true;
+									}
+									if (currentRelease.releaseName != release.releaseName) {
+										matchedValue.push(currentRelease.releaseName);
+									}
+									return false;
+								});
+								matchedValue = matchedValue.join(', ');
+								matchedAttribute = releasesAttribute;
+								return true;
+							}
+						})
+						||
+						dereferenced.genre.some(genre => {
+							if (regex.test(genre)) {
+								matchedValue = dereferenced.genre.join(', ');
+								matchedAttribute = genreAttribute;
+								return true;
+							}
+						})
+					) {
+						return buildObject(dereferenced, 'Band', matchedAttribute, matchedValue);
+					}
 				}
 			});
+			let bandResults = await Promise.all(promises);
+			bandResults = bandResults.filter(bandObject => bandObject != null);
 
 			resolve(bandResults);
 		}
@@ -456,7 +483,14 @@ const createQueries = (queries) => {
 		festivalQuery.query = cityQuery;
 		locationQuery = cityQuery;
 
-		bandQuery.query = { 'origin.name': RegExp(queries.city, 'i') };
+		bandQuery.query = {
+			$or: [
+				{ 'origin.default.city': new RegExp(queries.city, 'i') },
+				{ 'origin.default.administrative': new RegExp(queries.city, 'i') },
+				{ 'origin.default.county': new RegExp(queries.city, 'i') },
+				{ 'origin.international.city': new RegExp(queries.city, 'i') }
+			]
+		};
 	}
 	else if (queries.country != undefined) {
 		eventQuery.attributes.push('location.address.country');
@@ -472,7 +506,12 @@ const createQueries = (queries) => {
 		festivalQuery.query = countryQuery;
 		locationQuery = countryQuery;
 
-		bandQuery.query = { 'origin.country': RegExp(queries.country, 'i') };
+		bandQuery.query = {
+			$or: [
+				{ 'origin.default.country': RegExp(queries.country, 'i') },
+				{ 'origin.international.country': new RegExp(queries.country, 'i') }
+			]
+		};
 	}
 
 	if (queries.genre != undefined) {

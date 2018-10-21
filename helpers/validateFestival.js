@@ -120,9 +120,9 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
 				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
-			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode });
+			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode, type: 'address' });
 			if (res.hits[0] == undefined)
-				res = await places.search({ query: `${data.address.street}, ${data.address.county}`, language: data.countryCode });
+				res = await places.search({ query: `${data.address.street}, ${data.address.county}`, language: data.countryCode, type: 'address' });
 
 			let address = {
 				street: '',
@@ -134,18 +134,26 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 
 				if (res.hits[0].city) {
 					for (attribute in res.hits[0].city) {
-						if (!address.city.includes(res.hits[0].city[attribute][0]))
-							address.city.push(res.hits[0].city[attribute][0]);
+						res.hits[0].city[attribute].forEach(value => {
+							if (!address.city.includes(value))
+								address.city.push(value);
+						});
 					}
 				}
 				if (res.hits[0].county) {
 					for (attribute in res.hits[0].county) {
-						if (!address.city.includes(res.hits[0].county[attribute][0]))
-							address.city.push(res.hits[0].county[attribute][0]);
+						res.hits[0].county[attribute].forEach(value => {
+							if (!address.city.includes(value))
+								address.city.push(value);
+						});
 					}
 				}
-				if (res.hits[0].administrative && !address.city.includes(res.hits[0].administrative[0]))
-					address.city.push(res.hits[0].administrative[0]);
+				if (res.hits[0].administrative) {
+					res.hits[0].administrative.forEach(value => {
+						if (!address.city.includes(value))
+							address.city.push(value);
+					});
+				}
 
 				if (res.hits[0].country) {
 					for (attribute in res.hits[0].country) {
