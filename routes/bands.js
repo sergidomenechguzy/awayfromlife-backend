@@ -456,9 +456,9 @@ router.get('/updateAddress', async (req, res) => {
 	try {
 		const bands = await Band.find();
 		const promises1 = bands.map(async (band) => {
-			let res = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
+			let resAlg = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.city}, ${band.origin.country}`, language: 'en', type: 'city' });
 			let newBand = JSON.parse(JSON.stringify(band));
-			newBand.origin.city = res.hits[0].locale_names[0];
+			newBand.origin.city = resAlg.hits[0].locale_names[0];
 
 			switch (band.origin.country) {
 				case 'Australien':
@@ -630,355 +630,355 @@ router.get('/updateAddress', async (req, res) => {
 		});
 		const bandList = await Promise.all(promises1);
 
-		const locations = await Location.find();
-		const promises2 = locations.map(async (location) => {
-			let newLocation = JSON.parse(JSON.stringify(location));
+		// const locations = await Location.find();
+		// const promises2 = locations.map(async (location) => {
+		// 	let newLocation = JSON.parse(JSON.stringify(location));
 
-			switch (location.address.country) {
-				case 'Australien':
-					newLocation.address.countryCode = 'au';
-					newLocation.address.country = 'Australia';
-					break;
+		// 	switch (location.address.country) {
+		// 		case 'Australien':
+		// 			newLocation.address.countryCode = 'au';
+		// 			newLocation.address.country = 'Australia';
+		// 			break;
 				
-				case 'België - Belgique - Belgien':
-				case 'Belgien':
-					newLocation.address.countryCode = 'be';
-					newLocation.address.country = 'Belgium';
-					break;
+		// 		case 'België - Belgique - Belgien':
+		// 		case 'Belgien':
+		// 			newLocation.address.countryCode = 'be';
+		// 			newLocation.address.country = 'Belgium';
+		// 			break;
 				
-				case 'Brasilien':
-				case 'Brazil':
-					newLocation.address.countryCode = 'br';
-					newLocation.address.country = 'Brazil';
-					break;
+		// 		case 'Brasilien':
+		// 		case 'Brazil':
+		// 			newLocation.address.countryCode = 'br';
+		// 			newLocation.address.country = 'Brazil';
+		// 			break;
 			
-				case 'Česko':
-				case 'Tschechien':
-					newLocation.address.countryCode = 'cz';
-					newLocation.address.country = 'Czech Republic';
-					break;
+		// 		case 'Česko':
+		// 		case 'Tschechien':
+		// 			newLocation.address.countryCode = 'cz';
+		// 			newLocation.address.country = 'Czech Republic';
+		// 			break;
 			
-				case 'Danmark':
-				case 'Denmark':
-					newLocation.address.countryCode = 'dk';
-					newLocation.address.country = 'Denmark';
-					break;
+		// 		case 'Danmark':
+		// 		case 'Denmark':
+		// 			newLocation.address.countryCode = 'dk';
+		// 			newLocation.address.country = 'Denmark';
+		// 			break;
 			
-				case 'Deutschland':
-				case 'Germany':
-					newLocation.address.countryCode = 'de';
-					newLocation.address.country = 'Germany';
-					break;
+		// 		case 'Deutschland':
+		// 		case 'Germany':
+		// 			newLocation.address.countryCode = 'de';
+		// 			newLocation.address.country = 'Germany';
+		// 			break;
 				
-				case 'Finnland':
-					newLocation.address.countryCode = 'fi';
-					newLocation.address.country = 'Finland';
-					break;
+		// 		case 'Finnland':
+		// 			newLocation.address.countryCode = 'fi';
+		// 			newLocation.address.country = 'Finland';
+		// 			break;
 			
-				case 'France':
-				case 'Frankreich':
-					newLocation.address.countryCode = 'fr';
-					newLocation.address.country = 'France';
-					break;
+		// 		case 'France':
+		// 		case 'Frankreich':
+		// 			newLocation.address.countryCode = 'fr';
+		// 			newLocation.address.country = 'France';
+		// 			break;
 				
-				case 'Israel':
-					newLocation.address.countryCode = 'il';
-					newLocation.address.country = 'Israel';
-					break;
+		// 		case 'Israel':
+		// 			newLocation.address.countryCode = 'il';
+		// 			newLocation.address.country = 'Israel';
+		// 			break;
 			
-				case 'Italien':
-				case 'Italy':
-					newLocation.address.countryCode = 'it';
-					newLocation.address.country = 'Italy';
-					break;
+		// 		case 'Italien':
+		// 		case 'Italy':
+		// 			newLocation.address.countryCode = 'it';
+		// 			newLocation.address.country = 'Italy';
+		// 			break;
 			
-				case 'Japan':
-					newLocation.address.countryCode = 'jp';
-					newLocation.address.country = 'Japan';
-					break;
+		// 		case 'Japan':
+		// 			newLocation.address.countryCode = 'jp';
+		// 			newLocation.address.country = 'Japan';
+		// 			break;
 			
-				case 'Kanada':
-					newLocation.address.countryCode = 'ca';
-					newLocation.address.country = 'Canada';
-					break;
+		// 		case 'Kanada':
+		// 			newLocation.address.countryCode = 'ca';
+		// 			newLocation.address.country = 'Canada';
+		// 			break;
 			
-				case 'Kroatien':
-					newLocation.address.countryCode = 'hr';
-					newLocation.address.country = 'Croatia';
-					break;
+		// 		case 'Kroatien':
+		// 			newLocation.address.countryCode = 'hr';
+		// 			newLocation.address.country = 'Croatia';
+		// 			break;
 			
-				case 'Mexiko':
-					newLocation.address.countryCode = 'mx';
-					newLocation.address.country = 'Mexico';
-					break;
+		// 		case 'Mexiko':
+		// 			newLocation.address.countryCode = 'mx';
+		// 			newLocation.address.country = 'Mexico';
+		// 			break;
 			
-				case 'Neuseeland':
-					newLocation.address.countryCode = 'nz';
-					newLocation.address.country = 'New Zealand';
-					break;
+		// 		case 'Neuseeland':
+		// 			newLocation.address.countryCode = 'nz';
+		// 			newLocation.address.country = 'New Zealand';
+		// 			break;
 			
-				case 'Nigeria':
-					newLocation.address.countryCode = 'ng';
-					newLocation.address.country = 'Nigeria';
-					break;
+		// 		case 'Nigeria':
+		// 			newLocation.address.countryCode = 'ng';
+		// 			newLocation.address.country = 'Nigeria';
+		// 			break;
 			
-				case 'Magyarország':
-				case 'Ungarn':
-					newLocation.address.countryCode = 'hu';
-					newLocation.address.country = 'Hungary';
-					break;
+		// 		case 'Magyarország':
+		// 		case 'Ungarn':
+		// 			newLocation.address.countryCode = 'hu';
+		// 			newLocation.address.country = 'Hungary';
+		// 			break;
 			
-				case 'Niederlande':
-				case 'The Netherlands':
-					newLocation.address.countryCode = 'nl';
-					newLocation.address.country = 'The Netherlands';
-					break;
+		// 		case 'Niederlande':
+		// 		case 'The Netherlands':
+		// 			newLocation.address.countryCode = 'nl';
+		// 			newLocation.address.country = 'The Netherlands';
+		// 			break;
 			
-				case 'Norwegen':
-					newLocation.address.countryCode = 'no';
-					newLocation.address.country = 'Norway';
-					break;
+		// 		case 'Norwegen':
+		// 			newLocation.address.countryCode = 'no';
+		// 			newLocation.address.country = 'Norway';
+		// 			break;
 			
-				case 'Russland':
-				case 'Russia':
-					newLocation.address.countryCode = 'ru';
-					newLocation.address.country = 'Russia';
-					break;
+		// 		case 'Russland':
+		// 		case 'Russia':
+		// 			newLocation.address.countryCode = 'ru';
+		// 			newLocation.address.country = 'Russia';
+		// 			break;
 			
-				case 'Österreich':
-				case 'Austria':
-					newLocation.address.countryCode = 'at';
-					newLocation.address.country = 'Austria';
-					break;
+		// 		case 'Österreich':
+		// 		case 'Austria':
+		// 			newLocation.address.countryCode = 'at';
+		// 			newLocation.address.country = 'Austria';
+		// 			break;
 			
-				case 'Polen':
-					newLocation.address.countryCode = 'pl';
-					newLocation.address.country = 'Poland';
-					break;
+		// 		case 'Polen':
+		// 			newLocation.address.countryCode = 'pl';
+		// 			newLocation.address.country = 'Poland';
+		// 			break;
 			
-				case 'Peru':
-					newLocation.address.countryCode = 'pe';
-					newLocation.address.country = 'Peru';
-					break;
+		// 		case 'Peru':
+		// 			newLocation.address.countryCode = 'pe';
+		// 			newLocation.address.country = 'Peru';
+		// 			break;
 			
-				case 'Schweiz':
-					newLocation.address.countryCode = 'ch';
-					newLocation.address.country = 'Switzerland';
-					break;
+		// 		case 'Schweiz':
+		// 			newLocation.address.countryCode = 'ch';
+		// 			newLocation.address.country = 'Switzerland';
+		// 			break;
 			
-				case 'Spanien':
-					newLocation.address.countryCode = 'es';
-					newLocation.address.country = 'Spain';
-					break;
+		// 		case 'Spanien':
+		// 			newLocation.address.countryCode = 'es';
+		// 			newLocation.address.country = 'Spain';
+		// 			break;
 			
-				case 'Südafrika':
-					newLocation.address.countryCode = 'za';
-					newLocation.address.country = 'South Africa';
-					break;
+		// 		case 'Südafrika':
+		// 			newLocation.address.countryCode = 'za';
+		// 			newLocation.address.country = 'South Africa';
+		// 			break;
 			
-				case 'Sverige':
-				case 'Schweden':
-				case 'Sweden':
-					newLocation.address.countryCode = 'se';
-					newLocation.address.country = 'Sweden';
-					break;
+		// 		case 'Sverige':
+		// 		case 'Schweden':
+		// 		case 'Sweden':
+		// 			newLocation.address.countryCode = 'se';
+		// 			newLocation.address.country = 'Sweden';
+		// 			break;
 					
-				case 'United Kingdom':
-				case 'Vereinigtes Königreich':
-					newLocation.address.countryCode = 'gb';
-					newLocation.address.country = 'United Kingdom';
-					break;
+		// 		case 'United Kingdom':
+		// 		case 'Vereinigtes Königreich':
+		// 			newLocation.address.countryCode = 'gb';
+		// 			newLocation.address.country = 'United Kingdom';
+		// 			break;
 				
-				case 'Vereinigte Staaten von Amerika':
-				case 'United States of America':
-					newLocation.address.countryCode = 'us';
-					newLocation.address.country = 'United States of America';
-					break;
-				default:
-					newLocation.address.countryCode = 'en';
-			}
+		// 		case 'Vereinigte Staaten von Amerika':
+		// 		case 'United States of America':
+		// 			newLocation.address.countryCode = 'us';
+		// 			newLocation.address.country = 'United States of America';
+		// 			break;
+		// 		default:
+		// 			newLocation.address.countryCode = 'en';
+		// 	}
 
-			const update = await validateLocation.validateLocation(newLocation, 'put', { id: location._id });
-			const updated = await Location.findOneAndUpdate({ _id: location._id }, update, { new: true });
-			return updated;
-		});
-		const locationList = await Promise.all(promises2);
+		// 	const update = await validateLocation.validateLocation(newLocation, 'put', { id: location._id });
+		// 	const updated = await Location.findOneAndUpdate({ _id: location._id }, update, { new: true });
+		// 	return updated;
+		// });
+		// const locationList = await Promise.all(promises2);
 
-		const festivals = await Festival.find();
-		const promises3 = festivals.map(async (festival) => {
-			let newFestival = JSON.parse(JSON.stringify(festival));
+		// const festivals = await Festival.find();
+		// const promises3 = festivals.map(async (festival) => {
+		// 	let newFestival = JSON.parse(JSON.stringify(festival));
 
-			switch (festival.address.country) {
-				case 'Australien':
-					newFestival.address.countryCode = 'au';
-					newFestival.address.country = 'Australia';
-					break;
+		// 	switch (festival.address.country) {
+		// 		case 'Australien':
+		// 			newFestival.address.countryCode = 'au';
+		// 			newFestival.address.country = 'Australia';
+		// 			break;
 				
-				case 'België - Belgique - Belgien':
-				case 'Belgien':
-					newFestival.address.countryCode = 'be';
-					newFestival.address.country = 'Belgium';
-					break;
+		// 		case 'België - Belgique - Belgien':
+		// 		case 'Belgien':
+		// 			newFestival.address.countryCode = 'be';
+		// 			newFestival.address.country = 'Belgium';
+		// 			break;
 				
-				case 'Brasilien':
-				case 'Brazil':
-					newFestival.address.countryCode = 'br';
-					newFestival.address.country = 'Brazil';
-					break;
+		// 		case 'Brasilien':
+		// 		case 'Brazil':
+		// 			newFestival.address.countryCode = 'br';
+		// 			newFestival.address.country = 'Brazil';
+		// 			break;
 			
-				case 'Česko':
-				case 'Tschechien':
-					newFestival.address.countryCode = 'cz';
-					newFestival.address.country = 'Czech Republic';
-					break;
+		// 		case 'Česko':
+		// 		case 'Tschechien':
+		// 			newFestival.address.countryCode = 'cz';
+		// 			newFestival.address.country = 'Czech Republic';
+		// 			break;
 			
-				case 'Danmark':
-				case 'Denmark':
-					newFestival.address.countryCode = 'dk';
-					newFestival.address.country = 'Denmark';
-					break;
+		// 		case 'Danmark':
+		// 		case 'Denmark':
+		// 			newFestival.address.countryCode = 'dk';
+		// 			newFestival.address.country = 'Denmark';
+		// 			break;
 			
-				case 'Deutschland':
-				case 'Germany':
-					newFestival.address.countryCode = 'de';
-					newFestival.address.country = 'Germany';
-					break;
+		// 		case 'Deutschland':
+		// 		case 'Germany':
+		// 			newFestival.address.countryCode = 'de';
+		// 			newFestival.address.country = 'Germany';
+		// 			break;
 				
-				case 'Finnland':
-					newFestival.address.countryCode = 'fi';
-					newFestival.address.country = 'Finland';
-					break;
+		// 		case 'Finnland':
+		// 			newFestival.address.countryCode = 'fi';
+		// 			newFestival.address.country = 'Finland';
+		// 			break;
 			
-				case 'France':
-				case 'Frankreich':
-					newFestival.address.countryCode = 'fr';
-					newFestival.address.country = 'France';
-					break;
+		// 		case 'France':
+		// 		case 'Frankreich':
+		// 			newFestival.address.countryCode = 'fr';
+		// 			newFestival.address.country = 'France';
+		// 			break;
 				
-				case 'Israel':
-					newFestival.address.countryCode = 'il';
-					newFestival.address.country = 'Israel';
-					break;
+		// 		case 'Israel':
+		// 			newFestival.address.countryCode = 'il';
+		// 			newFestival.address.country = 'Israel';
+		// 			break;
 			
-				case 'Italien':
-				case 'Italy':
-					newFestival.address.countryCode = 'it';
-					newFestival.address.country = 'Italy';
-					break;
+		// 		case 'Italien':
+		// 		case 'Italy':
+		// 			newFestival.address.countryCode = 'it';
+		// 			newFestival.address.country = 'Italy';
+		// 			break;
 			
-				case 'Japan':
-					newFestival.address.countryCode = 'jp';
-					newFestival.address.country = 'Japan';
-					break;
+		// 		case 'Japan':
+		// 			newFestival.address.countryCode = 'jp';
+		// 			newFestival.address.country = 'Japan';
+		// 			break;
 			
-				case 'Kanada':
-					newFestival.address.countryCode = 'ca';
-					newFestival.address.country = 'Canada';
-					break;
+		// 		case 'Kanada':
+		// 			newFestival.address.countryCode = 'ca';
+		// 			newFestival.address.country = 'Canada';
+		// 			break;
 			
-				case 'Kroatien':
-					newFestival.address.countryCode = 'hr';
-					newFestival.address.country = 'Croatia';
-					break;
+		// 		case 'Kroatien':
+		// 			newFestival.address.countryCode = 'hr';
+		// 			newFestival.address.country = 'Croatia';
+		// 			break;
 			
-				case 'Mexiko':
-					newFestival.address.countryCode = 'mx';
-					newFestival.address.country = 'Mexico';
-					break;
+		// 		case 'Mexiko':
+		// 			newFestival.address.countryCode = 'mx';
+		// 			newFestival.address.country = 'Mexico';
+		// 			break;
 			
-				case 'Neuseeland':
-					newFestival.address.countryCode = 'nz';
-					newFestival.address.country = 'New Zealand';
-					break;
+		// 		case 'Neuseeland':
+		// 			newFestival.address.countryCode = 'nz';
+		// 			newFestival.address.country = 'New Zealand';
+		// 			break;
 			
-				case 'Nigeria':
-					newFestival.address.countryCode = 'ng';
-					newFestival.address.country = 'Nigeria';
-					break;
+		// 		case 'Nigeria':
+		// 			newFestival.address.countryCode = 'ng';
+		// 			newFestival.address.country = 'Nigeria';
+		// 			break;
 			
-				case 'Magyarország':
-				case 'Ungarn':
-					newFestival.address.countryCode = 'hu';
-					newFestival.address.country = 'Hungary';
-					break;
+		// 		case 'Magyarország':
+		// 		case 'Ungarn':
+		// 			newFestival.address.countryCode = 'hu';
+		// 			newFestival.address.country = 'Hungary';
+		// 			break;
 			
-				case 'Niederlande':
-				case 'The Netherlands':
-					newFestival.address.countryCode = 'nl';
-					newFestival.address.country = 'The Netherlands';
-					break;
+		// 		case 'Niederlande':
+		// 		case 'The Netherlands':
+		// 			newFestival.address.countryCode = 'nl';
+		// 			newFestival.address.country = 'The Netherlands';
+		// 			break;
 			
-				case 'Norwegen':
-					newFestival.address.countryCode = 'no';
-					newFestival.address.country = 'Norway';
-					break;
+		// 		case 'Norwegen':
+		// 			newFestival.address.countryCode = 'no';
+		// 			newFestival.address.country = 'Norway';
+		// 			break;
 			
-				case 'Russland':
-				case 'Russia':
-					newFestival.address.countryCode = 'ru';
-					newFestival.address.country = 'Russia';
-					break;
+		// 		case 'Russland':
+		// 		case 'Russia':
+		// 			newFestival.address.countryCode = 'ru';
+		// 			newFestival.address.country = 'Russia';
+		// 			break;
 			
-				case 'Österreich':
-				case 'Austria':
-					newFestival.address.countryCode = 'at';
-					newFestival.address.country = 'Austria';
-					break;
+		// 		case 'Österreich':
+		// 		case 'Austria':
+		// 			newFestival.address.countryCode = 'at';
+		// 			newFestival.address.country = 'Austria';
+		// 			break;
 			
-				case 'Polen':
-					newFestival.address.countryCode = 'pl';
-					newFestival.address.country = 'Poland';
-					break;
+		// 		case 'Polen':
+		// 			newFestival.address.countryCode = 'pl';
+		// 			newFestival.address.country = 'Poland';
+		// 			break;
 			
-				case 'Peru':
-					newFestival.address.countryCode = 'pe';
-					newFestival.address.country = 'Peru';
-					break;
+		// 		case 'Peru':
+		// 			newFestival.address.countryCode = 'pe';
+		// 			newFestival.address.country = 'Peru';
+		// 			break;
 			
-				case 'Schweiz':
-					newFestival.address.countryCode = 'ch';
-					newFestival.address.country = 'Switzerland';
-					break;
+		// 		case 'Schweiz':
+		// 			newFestival.address.countryCode = 'ch';
+		// 			newFestival.address.country = 'Switzerland';
+		// 			break;
 			
-				case 'Spanien':
-					newFestival.address.countryCode = 'es';
-					newFestival.address.country = 'Spain';
-					break;
+		// 		case 'Spanien':
+		// 			newFestival.address.countryCode = 'es';
+		// 			newFestival.address.country = 'Spain';
+		// 			break;
 			
-				case 'Südafrika':
-					newFestival.address.countryCode = 'za';
-					newFestival.address.country = 'South Africa';
-					break;
+		// 		case 'Südafrika':
+		// 			newFestival.address.countryCode = 'za';
+		// 			newFestival.address.country = 'South Africa';
+		// 			break;
 			
-				case 'Sverige':
-				case 'Schweden':
-				case 'Sweden':
-					newFestival.address.countryCode = 'se';
-					newFestival.address.country = 'Sweden';
-					break;
+		// 		case 'Sverige':
+		// 		case 'Schweden':
+		// 		case 'Sweden':
+		// 			newFestival.address.countryCode = 'se';
+		// 			newFestival.address.country = 'Sweden';
+		// 			break;
 					
-				case 'United Kingdom':
-				case 'Vereinigtes Königreich':
-					newFestival.address.countryCode = 'gb';
-					newFestival.address.country = 'United Kingdom';
-					break;
+		// 		case 'United Kingdom':
+		// 		case 'Vereinigtes Königreich':
+		// 			newFestival.address.countryCode = 'gb';
+		// 			newFestival.address.country = 'United Kingdom';
+		// 			break;
 				
-				case 'Vereinigte Staaten von Amerika':
-				case 'United States of America':
-					newFestival.address.countryCode = 'us';
-					newFestival.address.country = 'United States of America';
-					break;
-				default:
-					newFestival.address.countryCode = 'en';
-			}
+		// 		case 'Vereinigte Staaten von Amerika':
+		// 		case 'United States of America':
+		// 			newFestival.address.countryCode = 'us';
+		// 			newFestival.address.country = 'United States of America';
+		// 			break;
+		// 		default:
+		// 			newFestival.address.countryCode = 'en';
+		// 	}
 
-			const update = await validateFestival.validateFestival(newFestival, 'put', { id: festival._id });
-			const updated = await Festival.findOneAndUpdate({ _id: festival._id }, update, { new: true });
-			return updated;
-		});
-		const festivalList = await Promise.all(promises3);
+		// 	const update = await validateFestival.validateFestival(newFestival, 'put', { id: festival._id });
+		// 	const updated = await Festival.findOneAndUpdate({ _id: festival._id }, update, { new: true });
+		// 	return updated;
+		// });
+		// const festivalList = await Promise.all(promises3);
 
-		return res.status(200).json({ message: 'Locations updated', data: { bands: bandList, locations: locationList, festivals: festivalList }, token: res.locals.token });
+		return res.status(200).json({ message: 'Locations updated', data: /*{ bands: */bandList/*, locations: locationList, festivals: festivalList }*/, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
