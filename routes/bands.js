@@ -11,6 +11,14 @@ const UnvalidatedBand = mongoose.model('unvalidated_bands');
 require('../models/Event');
 const Event = mongoose.model('events');
 
+// load event model
+require('../models/Festival_Event');
+const FestivalEvent = mongoose.model('festival_events');
+
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
+
 // load genre model
 require('../models/Genre');
 const Genre = mongoose.model('genres');
@@ -173,10 +181,36 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 router.get('/events/:_id', token.checkToken(false), async (req, res) => {
 	try {
 		const events = await Event.find({ bands: req.params._id });
-		if (events.length === 0)
+		if (events.length == 0 && req.query.includeFestivals != 'true')
 			return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
+		let festivalEventList = [];
+		if (req.query.includeFestivals == 'true') {
+			const festivalEvents = await FestivalEvent.find({ bands: req.params._id });
+
+			if (events.length == 0 && festivalEvents.length == 0)
+				return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
+			
+			const promises = festivalEvents.map(async (festivalEvent) => {
+				let finalFestivalEvent = await dereference.festivalEventObject(festivalEvent);
+				const festival = await Festival.findOne({ events: festivalEvent._id });
+
+				finalFestivalEvent.url = festival.url;
+				finalFestivalEvent.date = festivalEvent.startDate;
+				finalFestivalEvent.isFestival = true;
+				return finalFestivalEvent;
+			});
+			festivalEventList = await Promise.all(promises);
+		}
+
+		let dereferenced = await dereference.objectArray(events, 'event', false, 1);
+		dereferenced = dereferenced.map(event => {
+			event.isFestival = false;
+			return event;
+		});
+		dereferenced = dereferenced.concat(festivalEventList);
+
+		dereferenced = dereference.eventSort(dereferenced, 'date', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
