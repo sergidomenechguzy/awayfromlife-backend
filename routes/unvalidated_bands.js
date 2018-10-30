@@ -255,11 +255,8 @@ router.get('/updateAddress', async (req, res) => {
 		const bands = await UnvalidatedBand.find();
 		const promises1 = bands.map(async (band) => {
 			let resAlg = await places.search({ query: band.origin.value, language: 'en', type: 'city' });
-			return resAlg.hits[0];
 			let newBand = JSON.parse(JSON.stringify(band));
-			if (resAlg.hits[0]) {
-				newBand.origin.city = resAlg.hits[0].locale_names[0];
-			}
+			newBand.origin.city = resAlg.hits[0].locale_names[0];
 
 			switch (band.origin.country) {
 				case 'Australien':
