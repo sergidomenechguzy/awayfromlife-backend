@@ -247,6 +247,8 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 
 
 
+const algoliasearch = require('algoliasearch');
+const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 router.get('/updateAddress', async (req, res) => {
 	try {

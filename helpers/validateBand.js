@@ -55,7 +55,7 @@ module.exports.validateList = (type) => {
 }
 
 // check all attributes and build the finished object
-const validateBand = (data, type, options) => {
+const validateBand = module.exports.validateBand = (data, type, options) => {
 	return new Promise(async (resolve, reject) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
