@@ -52,7 +52,7 @@ router.post('/login', (req, res) => {
 		if (err) return res.status(400).json({ message: 'Invalid token' });
 
 		try {
-			const user = await User.findOne({ email: decodedToken.email });
+			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
 			if (!user) return res.status(400).json({ message: 'Wrong email or password' });
 
 			const isMatch = await bcrypt.compare(decodedToken.password, user.password);
@@ -84,7 +84,7 @@ router.post('/register', token.checkToken(true), (req, res) => {
 
 		try {
 			if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
-			const user = await User.findOne({ email: decodedToken.email });
+			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
 			if (user) return res.status(400).json({ message: 'Email address already registered.' });
 
 			const hash = await bcrypt.hash(decodedToken.password, 10);

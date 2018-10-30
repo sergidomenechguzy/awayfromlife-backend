@@ -241,4 +241,202 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+
+
+
+
+
+router.get('/updateAddress', async (req, res) => {
+	try {
+		const bands = await UnvalidatedBand.find();
+		const promises1 = bands.map(async (band) => {
+			let resAlg = await places.search({ query: band.origin.value ? band.origin.value : `${band.origin.name}, ${band.origin.country}`, language: 'en', type: 'city' });
+			let newBand = JSON.parse(JSON.stringify(band));
+			newBand.origin.city = resAlg.hits[0].locale_names[0];
+
+			switch (band.origin.country) {
+				case 'Australien':
+					newBand.origin.countryCode = 'au';
+					newBand.origin.country = 'Australia';
+					break;
+			
+				case 'België - Belgique - Belgien':
+				case 'Belgien':
+					newBand.origin.countryCode = 'be';
+					newBand.origin.country = 'Belgium';
+					break;
+			
+				case 'Brasilien':
+				case 'Brazil':
+					newBand.origin.countryCode = 'br';
+					newBand.origin.country = 'Brazil';
+					break;
+			
+				case 'Česko':
+				case 'Tschechien':
+					newBand.origin.countryCode = 'cz';
+					newBand.origin.country = 'Czech Republic';
+					break;
+			
+				case 'Danmark':
+				case 'Denmark':
+					newBand.origin.countryCode = 'dk';
+					newBand.origin.country = 'Denmark';
+					break;
+			
+				case 'Deutschland':
+				case 'Germany':
+					newBand.origin.countryCode = 'de';
+					newBand.origin.country = 'Germany';
+					break;
+			
+				case 'Finnland':
+					newBand.origin.countryCode = 'fi';
+					newBand.origin.country = 'Finland';
+					break;
+			
+				case 'France':
+				case 'Frankreich':
+					newBand.origin.countryCode = 'fr';
+					newBand.origin.country = 'France';
+					break;
+			
+				case 'Israel':
+					newBand.origin.countryCode = 'il';
+					newBand.origin.country = 'Israel';
+					break;
+			
+				case 'Italien':
+				case 'Italy':
+					newBand.origin.countryCode = 'it';
+					newBand.origin.country = 'Italy';
+					break;
+			
+				case 'Japan':
+					newBand.origin.countryCode = 'jp';
+					newBand.origin.country = 'Japan';
+					break;
+			
+				case 'Kanada':
+					newBand.origin.countryCode = 'ca';
+					newBand.origin.country = 'Canada';
+					break;
+			
+				case 'Kroatien':
+					newBand.origin.countryCode = 'hr';
+					newBand.origin.country = 'Croatia';
+					break;
+			
+				case 'Mexiko':
+					newBand.origin.countryCode = 'mx';
+					newBand.origin.country = 'Mexico';
+					break;
+			
+				case 'Neuseeland':
+					newBand.origin.countryCode = 'nz';
+					newBand.origin.country = 'New Zealand';
+					break;
+			
+				case 'Nigeria':
+					newBand.origin.countryCode = 'ng';
+					newBand.origin.country = 'Nigeria';
+					break;
+			
+				case 'Magyarország':
+				case 'Ungarn':
+					newBand.origin.countryCode = 'hu';
+					newBand.origin.country = 'Hungary';
+					break;
+			
+				case 'Niederlande':
+				case 'The Netherlands':
+					newBand.origin.countryCode = 'nl';
+					newBand.origin.country = 'The Netherlands';
+					break;
+			
+				case 'Norwegen':
+					newBand.origin.countryCode = 'no';
+					newBand.origin.country = 'Norway';
+					break;
+			
+				case 'Russland':
+				case 'Russia':
+					newBand.origin.countryCode = 'ru';
+					newBand.origin.country = 'Russia';
+					break;
+			
+				case 'Österreich':
+				case 'Austria':
+					newBand.origin.countryCode = 'at';
+					newBand.origin.country = 'Austria';
+					break;
+			
+				case 'Polen':
+					newBand.origin.countryCode = 'pl';
+					newBand.origin.country = 'Poland';
+					break;
+			
+				case 'Peru':
+					newBand.origin.countryCode = 'pe';
+					newBand.origin.country = 'Peru';
+					break;
+			
+				case 'Schweiz':
+					newBand.origin.countryCode = 'ch';
+					newBand.origin.country = 'Switzerland';
+					break;
+			
+				case 'Spanien':
+					newBand.origin.countryCode = 'es';
+					newBand.origin.country = 'Spain';
+					break;
+			
+				case 'Südafrika':
+					newBand.origin.countryCode = 'za';
+					newBand.origin.country = 'South Africa';
+					break;
+			
+				case 'Sverige':
+				case 'Schweden':
+				case 'Sweden':
+					newBand.origin.countryCode = 'se';
+					newBand.origin.country = 'Sweden';
+					break;
+			
+				case 'United Kingdom':
+				case 'Vereinigtes Königreich':
+					newBand.origin.countryCode = 'gb';
+					newBand.origin.country = 'United Kingdom';
+					break;
+			
+				case 'Vereinigte Staaten von Amerika':
+				case 'United States of America':
+					newBand.origin.countryCode = 'us';
+					newBand.origin.country = 'United States of America';
+					break;
+				default:
+					newBand.origin.countryCode = 'en';
+			}
+
+			const update = await validateBand.validateBand(newBand, 'validate', { id: band._id });
+			const updated = await UnvalidatedBand.findOneAndUpdate({ _id: band._id }, update, { new: true });
+			return updated;
+		});
+		const bandList = await Promise.all(promises1);
+
+		return res.status(200).json({ message: 'Objects updated', data: bandList, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+
+
+
+
+
 module.exports = router;
