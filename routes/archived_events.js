@@ -352,7 +352,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 
 		if (req.query.includeFestivals == 'true') {
 			const festivals = await Festival.find();
-			if (events.length == 0 && festivals.length == 0)
+			if (archivedEvents.length == 0 && festivals.length == 0)
 				return res.status(200).json({ data: filters, token: res.locals.token });
 
 			const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
