@@ -1,10 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const moment = require('moment');
 
 // load event model
 require('../models/Event');
 const Event = mongoose.model('events');
+const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load location model
@@ -155,7 +157,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 					{ 'address.international.country': new RegExp(req.query.country, 'i') }
 				];
 			}
-			const festivals = await Festival.find(festivalQuery);
+			let festivals = await Festival.find(festivalQuery);
 			if (events.length == 0 && festivals.length == 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
@@ -170,6 +172,9 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				}
 
 				festival.events.forEach(event => {
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0)
+						return;
+
 					if (req.query.startWith && !query.name.test(event.name))
 						return;
 
@@ -212,11 +217,18 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 // get event by id
 router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Event.findById(req.params._id);
+		let object = await Event.findById(req.params._id);
+		let isArchived = false;
+
+		if (!object && req.query.includeArchived == 'true') {
+			object = await ArchivedEvent.findById(req.params._id);
+			isArchived = true;
+		}
 		if (!object)
 			return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
-		const dereferenced = await dereference.eventObject(object);
+		let dereferenced = await dereference.eventObject(object);
+		dereferenced.isArchived = isArchived;
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -228,11 +240,18 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get event by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		let object = await Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		let isArchived = false;
+
+		if (!object && req.query.includeArchived == 'true') {
+			object = await ArchivedEvent.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+			isArchived = true;
+		}
 		if (!object)
 			return res.status(400).json({ message: 'No event found with this URL', token: res.locals.token });
 
-		const dereferenced = await dereference.eventObject(object);
+		let dereferenced = await dereference.eventObject(object);
+		dereferenced.isArchived = isArchived;
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
