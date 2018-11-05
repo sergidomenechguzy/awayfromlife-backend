@@ -16,40 +16,26 @@ const token = require('../config/token');
 // users routes
 // logout and clear current valid token
 router.get('/logout', (req, res) => {
-	if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT')
+	if (req.headers.authorization == undefined || req.headers.authorization.split(' ')[0] != 'JWT')
 		return res.status(401).json({ message: 'Unauthorized' });
 
-	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
+	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, async (err, decodedAuthToken) => {
 		if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-		User.findOne({ _id: decodedAuthToken.userID })
-			.then(user => {
-				if (!user) return res.status(401).json({ message: 'Unauthorized' });
+		try {
+			const user = await User.findById(decodedAuthToken.userID);
+			if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
-				let sessionIndex;
-				if (
-					!user.currentSessions.some((session, index, array) => {
-						if (session.sessionID === decodedAuthToken.sessionID && session.expireTime > Math.floor(Date.now() / 1000)) {
-							sessionIndex = index;
-							return true
-						};
-						return false;
-					})
-				) return res.status(401).json({ message: 'Unauthorized' });
-				user.currentSessions.splice(sessionIndex, 1);
+			let updatedUser = JSON.parse(JSON.stringify(user));
+			updatedUser.currentSessions = user.currentSessions.filter(session => (!(session.sessionID == decodedAuthToken.sessionID) && (session.expireTime > Math.floor(Date.now() / 1000))));
 
-				User.findOneAndUpdate({ _id: user.id }, user, (err, doc) => {
-					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					}
-					res.status(200).json({ message: 'Successfully logged out.' });
-				});
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
+			await User.findOneAndUpdate({ _id: user.id }, updatedUser);
+			return res.status(200).json({ message: 'Successfully logged out.' });
+		}
+		catch (err) {
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+		}
 	});
 });
 
@@ -60,144 +46,103 @@ router.get('/auth', token.checkToken(true), (req, res) => {
 
 // login by login-token in body
 router.post('/login', (req, res) => {
-	if (!req.body.token) return res.status(400).json({ message: 'Token missing' });
+	if (req.body.token == undefined) return res.status(400).json({ message: 'Token missing' });
 
-	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
+	jwt.verify(req.body.token, secrets.frontEndSecret, async (err, decodedToken) => {
 		if (err) return res.status(400).json({ message: 'Invalid token' });
 
-		User.findOne({ email: decodedToken.email })
-			.then(user => {
-				if (!user) return res.status(400).json({ message: 'Wrong email or password' });
-				
-				bcrypt.compare(decodedToken.password, user.password, (err, isMatch) => {
-					if (err) {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					}
-					if (!isMatch) return res.status(400).json({ message: 'Wrong email or password' });
+		try {
+			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
+			if (!user) return res.status(400).json({ message: 'Wrong email or password' });
 
-					const session = token.createSession();
-					const newToken = token.signJWT(user.id, session.sessionID);
-					let expiredSessions = [];
-					user.currentSessions.forEach((session, index, array) => {
-						if (session.expireTime < Math.floor(Date.now() / 1000)) expiredSessions.push(index);
-					});
-					expiredSessions.forEach(index => {
-						user.currentSessions.splice(index, 1);
-					});
-					user.currentSessions.push(session);
+			const isMatch = await bcrypt.compare(decodedToken.password, user.password);
+			if (!isMatch) return res.status(400).json({ message: 'Wrong email or password' });
 
-					User.findOneAndUpdate({ _id: user.id }, user, (err, doc) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						res.status(200).json({ message: 'You are logged in.', token: newToken });
-					});
-				})
-			})
-			.catch(err => {
-				console.log(err.name + ': ' + err.message);
-				return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-			});
+			const session = token.createSession();
+			const newToken = token.signJWT(user.id, session.sessionID);
+			
+			let updatedUser = JSON.parse(JSON.stringify(user));
+			updatedUser.currentSessions = user.currentSessions.filter(session => session.expireTime > Math.floor(Date.now() / 1000));
+			updatedUser.currentSessions.push(session);
+
+			await User.findOneAndUpdate({ _id: user.id }, updatedUser);
+			return res.status(200).json({ message: 'You are logged in.', token: newToken });
+		}
+		catch (err) {
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+		}
 	});
 });
 
 // register by register-token in body
-router.post('/register', (req, res) => {
-	if (!req.body.token) return res.status(400).json({ message: 'Token missing' });
-	
-	jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedToken) => {
-		if (err) return res.status(400).json({ message: 'Unvalid token' });
+router.post('/register', token.checkToken(true), (req, res) => {
+	if (req.body.token == undefined) return res.status(400).json({ message: 'Token missing' });
 
-		if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+	jwt.verify(req.body.token, secrets.frontEndSecret, async (err, decodedToken) => {
+		if (err) return res.status(400).json({ message: 'Invalid token' });
 
-		const newUser = new User({
-			name: decodedToken.name,
-			email: decodedToken.email,
-			password: decodedToken.password
-		});
+		try {
+			if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
+			if (user) return res.status(400).json({ message: 'Email address already registered.' });
 
-		bcrypt.genSalt(10, (err, salt) => {
-			bcrypt.hash(newUser.password, salt, (err, hash) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				newUser.password = hash;
-				newUser.save()
-					.then(res.status(200).json({ message: 'User registered' }))
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
-		});
+			const hash = await bcrypt.hash(decodedToken.password, 10);
+			const newUser = {
+				name: decodedToken.name,
+				email: decodedToken.email,
+				password: hash
+			};
+			await new User(newUser).save();
+			return res.status(200).json({ message: 'User registered', token: res.locals.token });
+		}
+		catch (err) {
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+		}
 	});
 });
 
 // reset password by password-token in body
-router.post('/reset-password', token.checkToken(true), (req, res) => {
-	jwt.verify(req.headers.authorization.split(' ')[1], secrets.authSecret, (err, decodedAuthToken) => {
-		if (err) return res.status(400).json({ message: 'Unvalid token' });
-
+router.post('/reset-password', token.checkToken(true), async (req, res) => {
+	try {
+		const decodedAuthToken = jwt.verify(res.locals.token, secrets.authSecret);
 		if (!req.body.token) return res.status(400).json({ message: 'Password-token missing' });
 
-		jwt.verify(req.body.token, secrets.frontEndSecret, (err, decodedPasswordToken) => {
-			if (err) return res.status(400).json({ message: 'Unvalid token' });
+		jwt.verify(req.body.token, secrets.frontEndSecret, async (err, decodedPasswordToken) => {
+			if (err) return res.status(400).json({ message: 'Invalid token' });
 
-			if (decodedPasswordToken.newPassword.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+			try {
+				if (decodedPasswordToken.newPassword.length < 8)
+					return res.status(400).json({ message: 'Password must be at least 8 characters' });
 
-			User.findOne({ _id: decodedAuthToken.userID })
-				.then(user => {
-					if (!user) return res.status(400).json({ message: 'An error occurred. Please try again.' });
+				const user = await User.findById(decodedAuthToken.userID);
+				if (!user) return res.status(400).json({ message: 'An error occurred. Please try again.' });
 
-					bcrypt.compare(decodedPasswordToken.oldPassword, user.password, (err, isMatch) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						if (!isMatch) return res.status(400).json({ message: 'Wrong password' });
+				const isMatch = await bcrypt.compare(decodedPasswordToken.oldPassword, user.password);
+				if (!isMatch) return res.status(400).json({ message: 'Wrong password' });
+				const hash = await bcrypt.hash(decodedPasswordToken.newPassword, 10);
 
-						bcrypt.genSalt(10, (err, salt) => {
-							bcrypt.hash(decodedPasswordToken.newPassword, salt, (err, hash) => {
-								if (err) {
-									console.log(err.name + ': ' + err.message);
-									return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-								}
-								const session = token.createSession();
-								const newToken = token.signJWT(user.id, session.sessionID);
+				const session = token.createSession();
+				const newToken = token.signJWT(user.id, session.sessionID);
 
-								let sessionIndex;
-								user.currentSessions.some((session, index, array) => {
-									if (session.sessionID === decodedAuthToken.sessionID) {
-										sessionIndex = index;
-										return true
-									};
-									return false;
-								});
-								user.currentSessions.splice(sessionIndex, 1);
+				let updatedUser = JSON.parse(JSON.stringify(user));
+				updatedUser.password = hash;
+				updatedUser.currentSessions = [session];
 
-								user.password = hash;
-								user.currentSessions.push(session);
-
-								User.findOneAndUpdate({ _id: decodedAuthToken.userID }, user, (err, doc) => {
-									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									}
-									return res.status(200).json({ message: 'Password changed', token: newToken });
-								});
-							});
-						});
-					})
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
+				await User.findOneAndUpdate({ _id: decodedAuthToken.userID }, updatedUser);
+				return res.status(200).json({ message: 'Password changed and logged out from all current sessions.', token: newToken });
+			}
+			catch (err) {
+				console.log(err);
+				return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+			}
 		});
-	});
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 module.exports = router;

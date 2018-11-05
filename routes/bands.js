@@ -5,558 +5,454 @@ const router = express.Router();
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load event model
 require('../models/Event');
 const Event = mongoose.model('events');
 
+// load event model
+require('../models/Festival_Event');
+const FestivalEvent = mongoose.model('festival_events');
+
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
+
 // load genre model
 require('../models/Genre');
 const Genre = mongoose.model('genres');
+
+// load delete route
+const deleteRoute = require('./controller/delete');
 
 // load params.js
 const params = require('../config/params');
 // load token.js
 const token = require('../config/token');
 // load dereference.js
-const dereference = require('../config/dereference');
-// load url.js
-const url = require('../config/url');
+const dereference = require('../helpers/dereference');
+// load validateBand.js
+const validateBand = require('../helpers/validateBand');
 
 // bands routes
 // get all bands
-router.get('/', token.checkToken(false), (req, res) => {
-	Band.find()
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
-			
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBands, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/', token.checkToken(false), async (req, res) => {
+	try {
+		const bands = await Band.find();
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get all bands including unvalidated bands
+router.get('/all', token.checkToken(false), async (req, res) => {
+	try {
+		const objects = await Band.find();
+		const unvalidatedObjects = await UnvalidatedBand.find();
+		if (objects.length === 0 && unvalidatedObjects.length === 0)
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(objects, 'band', 'name', 1);
+		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'band', 'name', 1);
+		const allObjects = {
+			validated: dereferenced,
+			unvalidated: dereferencedUnvalidated
+		};
+		return res.status(200).json({ data: allObjects, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get paginated bands
-router.get('/page', token.checkToken(false), (req, res) => {
-	let page = 1;
+router.get('/page', token.checkToken(false), async (req, res) => {
+	try {
+		let page = 1;
 
-	let perPage = 20;
-	if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
+		let perPage = 20;
+		if (parseInt(req.query.perPage) === 5 || parseInt(req.query.perPage) === 10 || parseInt(req.query.perPage) === 50) perPage = parseInt(req.query.perPage);
 
-	let sortBy = 'name';
-	if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.name') sortBy = req.query.sortBy;
+		let sortBy = 'name';
+		if (req.query.sortBy === 'genre' || req.query.sortBy === 'origin.city') sortBy = req.query.sortBy;
 
-	let order = 1;
-	if (parseInt(req.query.order) === -1) order = -1;
+		let order = 1;
+		if (parseInt(req.query.order) === -1) order = -1;
 
-	let query = {};
-	if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-		if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-		else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-		else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-		else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-		else query.name = new RegExp('^' + req.query.startWith, 'i');
-	}
-	if (req.query.city) {
-		const cityString = 'origin.name';
-		query[cityString] = RegExp(req.query.city, 'i');
-	}
-	else if (req.query.country) {
-		const countryString = 'origin.country';
-		query[countryString] = RegExp(req.query.country, 'i');
-	}
-	if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
+		let query = {};
+		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
+			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		}
+		if (req.query.city) {
+			query.$or = [
+				{ 'origin.default.city': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.administrative': new RegExp(req.query.city, 'i') },
+				{ 'origin.default.county': new RegExp(req.query.city, 'i') },
+				{ 'origin.international.city': new RegExp(req.query.city, 'i') }
+			];
+		}
+		else if (req.query.country) {
+			query.$or = [
+				{ 'origin.default.country': RegExp(req.query.country, 'i') },
+				{ 'origin.international.country': new RegExp(req.query.country, 'i') }
+			];
+		}
+		if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
 
-	Band.find(query)
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+		const bands = await Band.find(query);
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 
-			dereference.bandObjectArray(bands, sortBy, order, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				let finalBands = [];
-				if (req.query.genre) {
-					const genreRegex = RegExp(req.query.genre, 'i');
-					responseBands.forEach(responseBand => {
-						responseBand.genre.some(genre => {
-							if (genreRegex.test(genre)) {
-								finalBands.push(responseBand);
-								return true;
-							}
-							return false;
-						});
-					});
-				}
-				else finalBands = responseBands;
+		const dereferenced = await dereference.objectArray(bands, 'band', sortBy, order);
 
-				const count = finalBands.length;
-				if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
-				finalBands = finalBands.slice((perPage * page) - perPage, (perPage * page));
-
-				return res.status(200).json({ data: finalBands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+		let finalBands = [];
+		if (req.query.genre) {
+			const genreRegex = RegExp('^' + req.query.genre + '$', 'i');
+			dereferenced.forEach(band => {
+				band.genre.some(genre => {
+					if (genreRegex.test(genre)) {
+						finalBands.push(band);
+						return true;
+					}
+					return false;
+				});
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		}
+		else finalBands = dereferenced;
+
+		const count = finalBands.length;
+		if (parseInt(req.query.page) > 0 && parseInt(req.query.page) <= Math.ceil(count / perPage)) page = parseInt(req.query.page);
+		finalBands = finalBands.slice((perPage * page) - perPage, (perPage * page));
+
+		return res.status(200).json({ data: finalBands, current: page, pages: Math.ceil(count / perPage), token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get band by id
-router.get('/byid/:_id', token.checkToken(false), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			dereference.bandObject(band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBand, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Band.findById(req.params._id);
+		if (!object)
+			return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
+
+		const dereferenced = await dereference.bandObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get band by name-url
-router.get('/byurl/:url', token.checkToken(false), (req, res) => {
-	Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			dereference.bandObject(band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBand, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
+	try {
+		const object = await Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		if (!object)
+			return res.status(400).json({ message: 'No band found with this URL', token: res.locals.token });
+
+		const dereferenced = await dereference.bandObject(object);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get all bands events
-router.get('/events/:_id', token.checkToken(false), (req, res) => {
-	let eventList = [];
+router.get('/events/:_id', token.checkToken(false), async (req, res) => {
+	try {
+		const events = await Event.find({ bands: req.params._id });
+		if (events.length == 0 && req.query.includeFestivals != 'true')
+			return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
 
-	Event.find()
-		.then(events => {
-			events.forEach(event => {
-				if (event.bands.indexOf(req.params._id) > -1) eventList.push(event);
+		let festivalEventList = [];
+		if (req.query.includeFestivals == 'true') {
+			const festivalEvents = await FestivalEvent.find({ bands: req.params._id });
+
+			if (events.length == 0 && festivalEvents.length == 0)
+				return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
+			
+			const promises = festivalEvents.map(async (festivalEvent) => {
+				let finalFestivalEvent = await dereference.festivalEventObject(festivalEvent);
+				const festival = await Festival.findOne({ events: festivalEvent._id });
+
+				finalFestivalEvent.url = festival.url;
+				finalFestivalEvent.date = festivalEvent.startDate;
+				finalFestivalEvent.isFestival = true;
+				return finalFestivalEvent;
 			});
+			festivalEventList = await Promise.all(promises);
+		}
 
-			if (eventList.length === 0) return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
-
-			dereference.eventObjectArray(eventList, 'startDate', 1, (err, responseEvents) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseEvents, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		let dereferenced = await dereference.objectArray(events, 'event', false, 1);
+		dereferenced = dereferenced.map(event => {
+			event.isFestival = false;
+			return event;
 		});
+		dereferenced = dereferenced.concat(festivalEventList);
+
+		dereferenced = dereference.eventSort(dereferenced, 'date', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get bands by name
-router.get('/name/:name', token.checkToken(false), (req, res) => {
-	let regex = '.*' + req.params.name + '.*';
-	Band.find({ name: new RegExp(regex, 'gi') })
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No band found with this name', token: res.locals.token });
-			
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBands, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.get('/name/:name', token.checkToken(false), async (req, res) => {
+	try {
+		const bands = await Band.find({ name: new RegExp(req.params.name, 'i') });
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No band found with this name.', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get bands by genre
-router.get('/genre/:genre', token.checkToken(false), (req, res) => {
-	let regex = new RegExp('^' + req.params.genre + '$', 'i');
-	Band.find()
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+router.get('/genre/:genre', token.checkToken(false), async (req, res) => {
+	try {
+		let regex = new RegExp('^' + req.params.genre + '$', 'i');
+		const bands = await Band.find();
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No band found.', token: res.locals.token });
 
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		let genreBands = [];
+		dereferenced.forEach(band => {
+			band.genre.some(genre => {
+				if (regex.test(genre)) {
+					genreBands.push(band);
+					return true;
 				}
-				let genreBands = [];
-				responseBands.forEach(band => {
-					band.genre.some(genre => {
-						if (regex.test(genre)) {
-							genreBands.push(band);
-							return true;
-						}
-						return false;
-					});
-				});
-				return res.status(200).json({ data: genreBands, token: res.locals.token });
+				return false;
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
 		});
+		return res.status(200).json({ data: genreBands, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get all genres
-router.get('/genres', token.checkToken(false), (req, res) => {
-	let genreList = [];
-	Band.find()
-		.then(bands => {
-			Genre.find()
-				.then(genres => {
-					genres.forEach(genre => {
-						bands.some(band => {
-							if (band.genre.includes('' + genre._id)) {
-								genreList.push(genre.name);
-								return true;
-							}
-							return false;
-						});
-					});
-					genreList.sort((a, b) => {
-						return a.localeCompare(b);
-					});
-					return res.status(200).json({ data: genreList, token: res.locals.token });
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+router.get('/genres', token.checkToken(false), async (req, res) => {
+	try {
+		let genreList = [];
+		const bands = await Band.find();
+		const genres = await Genre.find();
+
+		genres.forEach(genre => {
+			bands.some(band => {
+				if (band.genre.includes(genre._id.toString())) {
+					genreList.push(genre.name);
+					return true;
+				}
+				return false;
+			});
 		});
+		genreList.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		return res.status(200).json({ data: genreList, token: res.locals.token });
+
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get all labels
-router.get('/labels', token.checkToken(false), (req, res) => {
-	let labelList = [];
-	Band.find()
-		.then(bands => {
-			bands.forEach(band => {
-				if (band.recordLabel && !labelList.includes(band.recordLabel)) labelList.push(band.recordLabel);
-			});
-			labelList.sort((a, b) => {
-				return a.localeCompare(b);
-			});
-			return res.status(200).json({ data: labelList, token: res.locals.token });
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+router.get('/labels', token.checkToken(false), async (req, res) => {
+	try {
+		const bands = await Band.find();
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
+
+		let labelList = bands.map(band => band.recordLabel);
+		const uniqueLabels = new Set(labelList);
+		labelList = Array.from(uniqueLabels);
+		labelList.sort((a, b) => {
+			return a.localeCompare(b);
 		});
+		return res.status(200).json({ data: labelList, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get similar bands
-router.get('/similar', token.checkToken(false), (req, res) => {
-	if(!req.query.name || !req.query.country)
-		return res.status(400).json({ message: 'Parameter(s) missing: name and country are required.' });
-	let query = {};
-	query.name = new RegExp('^' + req.query.name + '$', 'i');
-	const countryString = 'origin.country';
-	query[countryString] = new RegExp('^' + req.query.country + '$', 'i');
+router.get('/similar', token.checkToken(false), async (req, res) => {
+	try {
+		if (!req.query.name || !req.query.country)
+			return res.status(400).json({ message: 'Parameter(s) missing: name and country are required.' });
+		let query = {
+			name: new RegExp('^' + req.query.name + '$', 'i'),
+			$or: [
+				{ 'address.default.country': new RegExp('^' + req.query.country + '$', 'i') },
+				{ 'address.international.country': new RegExp('^' + req.query.country + '$', 'i') }
+			]
+		};
 
-	Band.find(query)
-		.then(bands => {
-			if (bands.length === 0) 
-				return res.status(200).json({ message: 'No bands found with this name from this country.', token: res.locals.token });
-			
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				return res.status(200).json({ data: responseBands, token: res.locals.token });
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+		const bands = await Band.find(query);
+		if (bands.length === 0)
+			return res.status(200).json({ message: 'No similar bands found.', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // get all filter data
-router.get('/filters', token.checkToken(false), (req, res) => {
-	let filters = {
-		startWith: [],
-		genres: [],
-		labels: [],
-		cities: [],
-		countries: []
-	};
-	Band.find()
-		.then(bands => {
-			dereference.bandObjectArray(bands, 'name', 1, (err, responseBands) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+router.get('/filters', token.checkToken(false), async (req, res) => {
+	try {
+		let filters = {
+			startWith: [],
+			genres: [],
+			labels: [],
+			cities: [],
+			countries: []
+		};
+		const bands = await Band.find();
+		if (bands.length === 0)
+			return res.status(200).json({ data: filters, token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(bands, 'band', 'name', 1);
+		dereferenced.forEach(band => {
+			if (band.name && !filters.startWith.includes(band.name.charAt(0).toUpperCase())) {
+				if (band.name.charAt(0).toUpperCase() === 'Ä') {
+					if (!filters.startWith.includes('A')) filters.startWith.push('A');
 				}
-				responseBands.forEach(band => {
-					if (band.name && !filters.startWith.includes(band.name.charAt(0).toUpperCase())) {
-						if (band.name.charAt(0).toUpperCase() === 'Ä') {
-							if (!filters.startWith.includes('A')) filters.startWith.push('A');
-						}
-						else if (band.name.charAt(0).toUpperCase() === 'Ö') {
-							if (!filters.startWith.includes('O')) filters.startWith.push('O');
-						}
-						else if (band.name.charAt(0).toUpperCase() === 'Ü') {
-							if (!filters.startWith.includes('U')) filters.startWith.push('U');
-						}
-						else if (/[A-Z]/.test(band.name.charAt(0).toUpperCase())) 
-							filters.startWith.push(band.name.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#')) 
-							filters.startWith.push('#');
-					}
-					band.genre.forEach(genre => {
-						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
-					});
-					if (band.recordLabel && !filters.labels.includes(band.recordLabel)) 
-						filters.labels.push(band.recordLabel);
-					if (band.origin.name && !filters.cities.includes(band.origin.name)) 
-						filters.cities.push(band.origin.name);
-					if (band.origin.country && !filters.countries.includes(band.origin.country)) 
-						filters.countries.push(band.origin.country);
-				});
-				filters.startWith.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.genres.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.labels.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.cities.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				filters.countries.sort((a, b) => {
-					return a.localeCompare(b);
-				});
-				return res.status(200).json({ data: filters, token: res.locals.token });
+				else if (band.name.charAt(0).toUpperCase() === 'Ö') {
+					if (!filters.startWith.includes('O')) filters.startWith.push('O');
+				}
+				else if (band.name.charAt(0).toUpperCase() === 'Ü') {
+					if (!filters.startWith.includes('U')) filters.startWith.push('U');
+				}
+				else if (/[A-Z]/.test(band.name.charAt(0).toUpperCase()))
+					filters.startWith.push(band.name.charAt(0).toUpperCase());
+				else if (!filters.startWith.includes('#'))
+					filters.startWith.push('#');
+			}
+			band.genre.forEach(genre => {
+				if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
 			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+			if (band.recordLabel && !filters.labels.includes(band.recordLabel))
+				filters.labels.push(band.recordLabel);
+			if (band.origin.city && !filters.cities.includes(band.origin.city))
+				filters.cities.push(band.origin.city);
+			if (band.origin.country && !filters.countries.includes(band.origin.country))
+				filters.countries.push(band.origin.country);
 		});
+		filters.startWith.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.genres.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.labels.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.cities.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		filters.countries.sort((a, b) => {
+			return a.localeCompare(b);
+		});
+		return res.status(200).json({ data: filters, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
-	let genreList = [];
+router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('post'), async (req, res) => {
+	try {
+		await new Band(res.locals.validated).save();
+		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-	Genre.find()
-		.then(genres => {
-			req.body.genre.forEach((reqGenre, index, array) => {
-				genres.forEach(savedGenre => {
-					if (reqGenre === savedGenre.name) genreList.push(savedGenre._id);
-				});
-				if (index + 1 != genreList.length) 
-					return res.status(400).json({ message: 'Genre(s) not found.', token: res.locals.token });
-			});
-
-			const newBand = {
-				name: req.body.name,
-				url: '',
-				genre: genreList,
-				origin: {
-					name: req.body.origin.name,
-					administrative: req.body.origin.administrative,
-					country: req.body.origin.country,
-					postcode: req.body.origin.postcode,
-					lat: req.body.origin.lat,
-					lng: req.body.origin.lng,
-					value: req.body.origin.value
-				},
-				history: req.body.history,
-				recordLabel: req.body.recordLabel,
-				releases: req.body.releases,
-				foundingDate: req.body.foundingDate,
-				websiteUrl: req.body.websiteUrl,
-				bandcampUrl: req.body.bandcampUrl,
-				soundcloudUrl: req.body.soundcloudUrl,
-				facebookUrl: req.body.facebookUrl
-			};
-		
-			url.generateUrl(newBand, Band, (err, responseBand) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-				new Band(responseBand)
-					.save()
-					.then(() => {
-						return res.status(200).json({ message: 'Band saved', token: res.locals.token })
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
+// post multiple bands to database
+router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('post'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new Band(object).save();
+			return result;
 		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.name', 'origin.country', 'origin.lat', 'origin.lng']), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-
-			Genre.find()
-				.then(genres => {
-					let update = {};
-					update._id = req.params._id;
-					update.name = req.body.name;
-					update.url = '';
-					if(!req.body.genre) update.genre = band.genre;
-					else {
-						let genreList = [];
-						req.body.genre.forEach((reqGenre, index, array) => {
-							genres.forEach(savedGenre => {
-								if (reqGenre === savedGenre.name) genreList.push(savedGenre._id);
-							});
-							if (index + 1 != genreList.length) 
-								return res.status(400).json({ message: 'Genre(s) not found.', token: res.locals.token });
-						});
-						update.genre = genreList;
-					}
-					update.origin = {};
-					update.origin.name = req.body.origin.name;
-					if (req.body.origin.administrative) update.origin.administrative = req.body.origin.administrative;
-					else if (band.origin.administrative) update.origin.administrative = band.origin.administrative;
-					update.origin.country = req.body.origin.country;
-					if (req.body.origin.postcode) update.origin.postcode = req.body.origin.postcode;
-					else if (band.origin.postcode) update.origin.postcode = band.origin.postcode;
-					update.origin.lat = req.body.origin.lat;
-					update.origin.lng = req.body.origin.lng;
-					if (req.body.origin.value) update.origin.value = req.body.origin.value;
-					else if (band.origin.value) update.origin.value = band.origin.value;
-					if (req.body.history) update.history = req.body.history;
-					else if (band.history) update.history = band.history;
-					if (req.body.recordLabel) update.recordLabel = req.body.recordLabel;
-					else if (band.recordLabel) update.recordLabel = band.recordLabel;
-					if (req.body.releases) update.releases = req.body.releases;
-					else if (band.releases) update.releases = band.releases;
-					if (req.body.foundingDate) update.foundingDate = req.body.foundingDate;
-					else if (band.foundingDate) update.foundingDate = band.foundingDate;
-					if (req.body.websiteUrl) update.websiteUrl = req.body.websiteUrl;
-					else if (band.websiteUrl) update.websiteUrl = band.websiteUrl;
-					if (req.body.bandcampUrl) update.bandcampUrl = req.body.bandcampUrl;
-					else if (band.bandcampUrl) update.bandcampUrl = band.bandcampUrl;
-					if (req.body.soundcloudUrl) update.soundcloudUrl = req.body.soundcloudUrl;
-					else if (band.soundcloudUrl) update.soundcloudUrl = band.soundcloudUrl;
-					if (req.body.facebookUrl) update.facebookUrl = req.body.facebookUrl;
-					else if (band.facebookUrl) update.facebookUrl = band.facebookUrl;
-
-					url.generateUrl(update, Band, (err, responseBand) => {
-						if (err) {
-							console.log(err.name + ': ' + err.message);
-							return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-						}
-						Band.findOneAndUpdate({ _id: req.params._id }, responseBand, (err, band) => {
-							if (err) {
-								console.log(err.name + ': ' + err.message);
-								return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-							}
-							return res.status(200).json({ message: 'Band updated', token: res.locals.token });
-						});
-					});
-				})
-				.catch(err => {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('put'), async (req, res) => {
+	try {
+		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.bandObject(updated);
+		return res.status(200).json({ message: 'Band updated', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 // delete band by id
-router.delete('/:_id', token.checkToken(true), (req, res) => {
-	Band.findOne({ _id: req.params._id })
-		.then(band => {
-			if (!band) 
-				return res.status(400).json({ message: 'No band found with this ID', token: res.locals.token });
-			
-			Band.remove({ _id: req.params._id }, (err, band) => {
-				if (err) {
-					console.log(err.name + ': ' + err.message);
-					return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-				}
-
-				Event.find()
-					.then(events => {
-						events.forEach(event => {
-							const index = event.bands.indexOf(req.params._id);
-							if (index > -1) {
-								event.bands.splice(index, 1);
-								Event.findOneAndUpdate({ _id: event._id }, event, (err, updatedEvent) => {
-									if (err) {
-										console.log(err.name + ': ' + err.message);
-										return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-									}
-								});
-							}
-						});
-						return res.status(200).json({ message: 'Band deleted', token: res.locals.token });
-					})
-					.catch(err => {
-						console.log(err.name + ': ' + err.message);
-						return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-					});
-			});
-		})
-		.catch(err => {
-			console.log(err.name + ': ' + err.message);
-			return res.status(500).json({ message: 'Error, something went wrong. Please try again.' });
-		});
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
+	try {
+		const response = await deleteRoute.delete(req.params._id, 'validBand');
+		return res.status(response.status).json({ message: response.message, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 module.exports = router;

@@ -10,11 +10,12 @@
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
   "dependencies": {
+    "algoliasearch": "^3.30.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "jsonwebtoken": "^8.1.0",
-    "moment": "^2.22.0",
+    "moment": "^2.22.2",
     "mongoose": "^4.12.1",
     "morgan": "^1.9.0",
     "uuid": "^3.2.1"

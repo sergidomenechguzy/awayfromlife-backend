@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // create festival-event schema
 const FestivalEventSchema = new Schema({
-	title: {
+	name: {
 		type: String,
 		required: true
 	},
@@ -16,7 +16,8 @@ const FestivalEventSchema = new Schema({
 		required: true
 	},
 	bands: {
-		type: [String]
+		type: [String],
+		required: true
 	},
 	canceled: {
 		type: Number,

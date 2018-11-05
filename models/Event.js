@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // create event schema
 const EventSchema = new Schema({
-	title: {
+	name: {
 		type: String,
 		required: true
 	},
@@ -17,12 +17,16 @@ const EventSchema = new Schema({
 		type: String,
 		required: true
 	},
-	startDate: {
+	date: {
 		type: String,
 		required: true
 	},
+	time: {
+		type: String
+	},
 	bands: {
-		type: [String]
+		type: [String],
+		required: true
 	},
 	canceled: {
 		type: Number,

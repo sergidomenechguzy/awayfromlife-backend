@@ -13,6 +13,7 @@ const unvalidated_events = require('./routes/unvalidated_events');
 const archived_events = require('./routes/archived_events');
 
 const festivals = require('./routes/festivals');
+const unvalidated_festivals = require('./routes/unvalidated_festivals');
 const festival_events = require('./routes/festival_events');
 const unvalidated_festival_events = require('./routes/unvalidated_festival_events');
 
@@ -74,6 +75,7 @@ app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/archived-events', archived_events);
 
 app.use('/api/festivals', festivals);
+app.use('/api/unvalidated-festivals', unvalidated_festivals);
 app.use('/api/festival-events', festival_events);
 app.use('/api/unvalidated-festival-events', unvalidated_festival_events);
 
@@ -100,7 +102,12 @@ app.listen(port, () => {
 });
 
 if (process.env.NODE_ENV === 'production') {
-	setInterval(() => archive.events((err, response) => {
-		if (err) console.log(err.name + ': ' + err.message);
-	}), 86400000);
+	setInterval(async () => {
+		try {
+			await archive.events();
+		}
+		catch (err) {
+			console.log(err);
+		}
+	}, 86400000);
 }

@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // create festival schema
 const FestivalSchema = new Schema({
-	title: {
+	name: {
 		type: String,
 		required: true
 	},
@@ -13,41 +13,62 @@ const FestivalSchema = new Schema({
 	description: {
 		type: String
 	},
+	genre: {
+		type: [String],
+		required: true
+	},
 	events: {
 		type: [String]
 	},
 	address: {
-		street: {
-			type: String,
-			required: true
+		default: {
+			street: {
+				type: String,
+				required: true
+			},
+			administrative: {
+				type: String
+			},
+			city: {
+				type: String,
+				required: true
+			},
+			county: {
+				type: String
+			},
+			country: {
+				type: String,
+				required: true
+			},
+			postcode: {
+				type: String
+			},
+			lat: {
+				type: Number,
+				required: true
+			},
+			lng: {
+				type: Number,
+				required: true
+			},
+			value: {
+				type: String
+			},
+			countryCode: {
+				type: String,
+				required: true
+			}
 		},
-		administrative: {
-			type: String
-		},
-		city: {
-			type: String,
-			required: true
-		},
-		county: {
-			type: String
-		},
-		country: {
-			type: String,
-			required: true
-		},
-		postcode: {
-			type: String
-		},
-		lat: {
-			type: Number,
-			required: true
-		},
-		lng: {
-			type: Number,
-			required: true
-		},
-		value: {
-			type: String,
+		international: {
+			street: {
+				type: String
+			},
+			city: {
+				type: [String]
+			},
+			country: {
+				type: [String]
+			}
 		}
 	},
 	ticketLink: {
@@ -62,3 +83,4 @@ const FestivalSchema = new Schema({
 });
 
 mongoose.model('festivals', FestivalSchema);
+mongoose.model('unvalidated_festivals', FestivalSchema);
