@@ -55,7 +55,7 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(objects, 'event', 'name', 1);
-		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', 'name', 1);
+		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'unvalidatedEvent', 'name', 1);
 		const allObjects = {
 			validated: dereferenced,
 			unvalidated: dereferencedUnvalidated

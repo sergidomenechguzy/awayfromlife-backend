@@ -27,7 +27,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		if (unvalidatedEvents.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'event', 'name', 1);
+		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'unvalidatedEvent', 'name', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -90,7 +90,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 					return null;
 			}
 
-			let dereferenced = await dereference.eventObject(event);
+			let dereferenced = await dereference.unvalidatedEventObject(event);
 			if (req.query.genre) {
 				const genreRegex = RegExp(req.query.genre, 'i');
 
@@ -129,7 +129,7 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
-		const dereferenced = await dereference.eventObject(object);
+		const dereferenced = await dereference.unvalidatedEventObject(object);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -153,7 +153,7 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 		if (unvalidatedEvents.length === 0)
 			return res.status(200).json({ data: filters, token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'event', 'date', 1);
+		const dereferenced = await dereference.objectArray(unvalidatedEvents, 'unvalidatedEvent', 'date', 1);
 
 		filters.firstDate = dereferenced[0].date;
 		filters.lastDate = dereferenced[dereferenced.length - 1].date;
@@ -220,6 +220,8 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'locat
 // validate unvalidated event
 router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
 	try {
+		if (!res.locals.validated.verifiable)
+			return res.status(400).json({ message: 'Event cannot be validated. The location and bands have to validated before.', token: res.locals.token });
 		await new Event(res.locals.validated).save();
 		await UnvalidatedEvent.remove({ _id: req.params._id });
 		return res.status(200).json({ message: 'Event validated', token: res.locals.token });

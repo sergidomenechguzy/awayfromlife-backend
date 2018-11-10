@@ -74,12 +74,13 @@ module.exports.delete = (id, collection) => {
 					break;
 
 				case 'validBand':
+				case 'unvalidBand':
 					await Promise.all([
-						deleteBandFromEvents(Event, id),
-						deleteBandFromEvents(ArchivedEvent, id),
-						deleteBandFromEvents(UnvalidatedEvent, id),
-						deleteBandFromEvents(FestivalEvent, id),
-						deleteBandFromEvents(UnvalidatedFestivalEvent, id),
+						deleteBandFromEventCollection(Event, id),
+						deleteBandFromEventCollection(ArchivedEvent, id),
+						deleteBandFromEventCollection(UnvalidatedEvent, id),
+						deleteBandFromEventCollection(FestivalEvent, id),
+						deleteBandFromEventCollection(UnvalidatedFestivalEvent, id),
 						Report.remove({ category: 'band', item: id })
 					]);
 					resolve({ status: 200, message: 'Band deleted' });
@@ -137,19 +138,33 @@ module.exports.delete = (id, collection) => {
 	});
 }
 
-const deleteBandFromEvents = (collection, id, next) => {
+const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollection = (collection, id, newId) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const events = await collection.find({ bands: id });
 			if (events.length == 0) resolve();
 
 			const promises = events.map(async (event) => {
-				event.bands.splice(event.bands.indexOf(id), 1);
+				if (newId != undefined) event.bands[event.bands.indexOf(id)] = newId;
+				else event.bands.splice(event.bands.indexOf(id), 1);
+				event.verifiable = await checkVerifiable(event.bands);
 				const result = await collection.findOneAndUpdate({ _id: event._id }, event);
 				return result;
 			});
 			await Promise.all(promises);
 			resolve();
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+const checkVerifiable = (bands) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const foundBand = await UnvalidatedBand.find({ _id: { $in: bands } });
+			resolve(foundBand != undefined);
 		}
 		catch (err) {
 			reject(err);
