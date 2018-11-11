@@ -221,7 +221,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'locat
 router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'location', 'date', 'bands']), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
 	try {
 		if (!res.locals.validated.verifiable)
-			return res.status(400).json({ message: 'Event cannot be validated. The location and bands have to validated before.', token: res.locals.token });
+			return res.status(400).json({ message: 'Event cannot be validated. The location and all bands have to validated before.', token: res.locals.token });
 		await new Event(res.locals.validated).save();
 		await UnvalidatedEvent.remove({ _id: req.params._id });
 		return res.status(200).json({ message: 'Event validated', token: res.locals.token });

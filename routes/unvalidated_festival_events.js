@@ -28,7 +28,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		if (festivalEvents.length === 0)
 			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(festivalEvents, 'festivalEvent', 'name', 1);
+		const dereferenced = await dereference.objectArray(festivalEvents, 'unvalidatedFestivalEvent', 'name', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -44,7 +44,7 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 
-		const dereferenced = await dereference.festivalEventObject(object);
+		const dereferenced = await dereference.unvalidatedFestivalEventObject(object);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -74,6 +74,8 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['name', 's
 // validate unvalidated festival event
 router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('validate'), async (req, res) => {
 	try {
+		if (!res.locals.validated.verifiable)
+			return res.status(400).json({ message: 'Festival event cannot be validated. All bands have to validated before.', token: res.locals.token });
 		const festival = await Festival.findById(req.params.festivalId);
 		if (!festival)
 			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });

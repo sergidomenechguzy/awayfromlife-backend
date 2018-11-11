@@ -48,7 +48,7 @@ router.get('/unvalidated', token.checkToken(true), async (req, res) => {
 		if (unvalidatedFestivalEvents.length === 0)
 			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-		const dereferencedFestivalEvents = await dereference.objectArray(unvalidatedFestivalEvents, 'festivalEvent', 'name', 1);
+		const dereferencedFestivalEvents = await dereference.objectArray(unvalidatedFestivalEvents, 'unvalidatedFestivalEvent', 'name', 1);
 
 		const promises = dereferencedFestivalEvents.map((event) => {
 			return new Promise(async (resolve, reject) => {
@@ -117,6 +117,8 @@ router.post('/', token.checkToken(false), params.checkParameters(['festival.name
 // validate unvalidated festival and festival event
 router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('validate'), async (req, res) => {
 	try {
+		if (!res.locals.validated.event.verifiable)
+			return res.status(400).json({ message: 'Festival event cannot be validated. All bands have to validated before.', token: res.locals.token });
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
 		let newFestival = res.locals.validated.festival;
 		newFestival.events = [newFestivalEvent._id];

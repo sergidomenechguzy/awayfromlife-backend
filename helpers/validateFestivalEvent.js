@@ -4,6 +4,7 @@ const moment = require('moment');
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load festival event model
 require('../models/Festival_Event');
@@ -55,6 +56,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 		const id = optionsChecked.id || '';
 
 		try {
+			let verifiable = true;
+
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
@@ -88,9 +91,17 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			}
 			const bands = await Band.find();
 			const bandIds = bands.map(band => band._id.toString());
+			const unvalidatedBands = await UnvalidatedBand.find();
+			const unvalidatedBandIds = unvalidatedBands.map(band => band._id.toString());
 			if (
 				bandList.some(band => {
-					if (!bandIds.includes(band)) return true;
+					if (!bandIds.includes(band)) {
+						if (unvalidatedBandIds.includes(band)) {
+							verifiable = false;
+							return false;
+						}
+						return true;
+					}
 					return false;
 				})
 			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
@@ -114,7 +125,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					startDate: data.startDate,
 					endDate: data.endDate,
 					bands: bandList,
-					canceled: data.canceled != undefined ? data.canceled : object.canceled
+					canceled: data.canceled != undefined ? data.canceled : object.canceled,
+					verifiable: verifiable
 				};
 				if (type == 'put') newFestivalEvent._id = id;
 				resolve(newFestivalEvent);
@@ -125,7 +137,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					startDate: data.startDate,
 					endDate: data.endDate,
 					bands: bandList,
-					canceled: data.canceled != undefined ? data.canceled : 0
+					canceled: data.canceled != undefined ? data.canceled : 0,
+					verifiable: verifiable
 				};
 				resolve(newFestivalEvent);
 			}
