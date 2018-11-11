@@ -163,8 +163,9 @@ const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollecti
 const checkVerifiable = (bands) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const foundBand = await UnvalidatedBand.find({ _id: { $in: bands } });
-			resolve(foundBand != undefined);
+			const foundBand = await UnvalidatedBand.findOne({ _id: { $in: bands } });
+			if (foundBand == undefined) resolve(true);
+			else resolve(false);
 		}
 		catch (err) {
 			reject(err);
