@@ -467,7 +467,7 @@ const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (un
 	});
 }
 
-const bandSort = (objectList, sortBy, order) => {
+const bandSort = module.exports.bandSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -528,7 +528,7 @@ const festivalEventSort = (objectList, sortBy, order) => {
 	});
 }
 
-const locationSort = (objectList, sortBy, order) => {
+const locationSort = module.exports.locationSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (sortBy == 'street' || sortBy == 'city') {
 			if (order === -1) return b.address[sortBy].localeCompare(a.address[sortBy]);
