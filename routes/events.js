@@ -553,4 +553,70 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+
+
+
+require('../models/Festival_Event');
+const FestivalEvent = mongoose.model('festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
+
+router.put('/update/verifiable', async (req, res) => {
+	try {
+		const events = await Event.find();
+		const promises = events.map(async (event) => {
+			let update = JSON.parse(JSON.stringify(event));
+			update.verifiable = true;
+			await Event.findOneAndUpdate({ _id: event._id }, update);
+			return update;
+		});
+		await Promise.all(promises);
+
+		const events2 = await ArchivedEvent.find();
+		const promises2 = events2.map(async (event) => {
+			let update = JSON.parse(JSON.stringify(event));
+			update.verifiable = true;
+			await ArchivedEvent.findOneAndUpdate({ _id: event._id }, update);
+			return update;
+		});
+		await Promise.all(promises2);
+
+		const events3 = await UnvalidatedEvent.find();
+		const promises3 = events3.map(async (event) => {
+			let update = JSON.parse(JSON.stringify(event));
+			update.verifiable = true;
+			await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, update);
+			return update;
+		});
+		await Promise.all(promises3);
+
+		
+
+		const events4 = await FestivalEvent.find();
+		const promises4 = events4.map(async (event) => {
+			let update = JSON.parse(JSON.stringify(event));
+			update.verifiable = true;
+			await FestivalEvent.findOneAndUpdate({ _id: event._id }, update);
+			return update;
+		});
+		await Promise.all(promises4);
+
+		const events5 = await UnvalidatedFestivalEvent.find();
+		const promises5 = events5.map(async (event) => {
+			let update = JSON.parse(JSON.stringify(event));
+			update.verifiable = true;
+			await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, update);
+			return update;
+		});
+		await Promise.all(promises5);
+		
+		return res.status(200).json({ message: 'done' });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 module.exports = router;
