@@ -2,10 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 
+// load event model
+require('../models/Event');
+const Event = mongoose.model('events');
+const ArchivedEvent = mongoose.model('archived_events');
+const UnvalidatedEvent = mongoose.model('unvalidated_events');
+
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
+
+// load festival event model
+require('../models/Festival_Event');
+const FestivalEvent = mongoose.model('festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -202,7 +213,14 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 // validate unvalidated band
 router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('validate'), async (req, res) => {
 	try {
-		await new Band(res.locals.validated).save();
+		const newBand = await new Band(res.locals.validated).save();
+		await Promise.all([
+			deleteRoute.deleteBandFromEventCollection(Event, req.params._id, newBand._id),
+			deleteRoute.deleteBandFromEventCollection(ArchivedEvent, req.params._id, newBand._id),
+			deleteRoute.deleteBandFromEventCollection(UnvalidatedEvent, req.params._id, newBand._id),
+			deleteRoute.deleteBandFromEventCollection(FestivalEvent, req.params._id, newBand._id),
+			deleteRoute.deleteBandFromEventCollection(UnvalidatedFestivalEvent, req.params._id, newBand._id)
+		]);
 		await UnvalidatedBand.remove({ _id: req.params._id });
 		return res.status(200).json({ message: 'Band validated', token: res.locals.token });
 	}

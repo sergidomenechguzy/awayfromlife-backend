@@ -10,6 +10,7 @@ const UnvalidatedEvent = mongoose.model('unvalidated_events');
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load location model
 require('../models/Location');
@@ -66,6 +67,8 @@ const validateEvent = (data, type, collection, options) => {
 		const urlList = optionsChecked.urlList || [];
 
 		try {
+			let verifiable = true;
+
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
@@ -114,9 +117,17 @@ const validateEvent = (data, type, collection, options) => {
 			}
 			const bands = await Band.find();
 			const bandIds = bands.map(band => band._id.toString());
+			const unvalidatedBands = await UnvalidatedBand.find();
+			const unvalidatedBandIds = unvalidatedBands.map(band => band._id.toString());
 			if (
 				bandList.some(band => {
-					if (!bandIds.includes(band)) return true;
+					if (!bandIds.includes(band)) {
+						if (unvalidatedBandIds.includes(band)) {
+							verifiable = false;
+							return false;
+						}
+						return true;
+					}
 					return false;
 				})
 			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
@@ -148,6 +159,7 @@ const validateEvent = (data, type, collection, options) => {
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
+					verifiable: verifiable,
 					lastModified: Date.now()
 				};
 				if (type == 'put') newEvent._id = id;
@@ -164,7 +176,8 @@ const validateEvent = (data, type, collection, options) => {
 					time: data.time != undefined ? data.time : '',
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
-					ticketLink: data.ticketLink != undefined ? data.ticketLink : ''
+					ticketLink: data.ticketLink != undefined ? data.ticketLink : '',
+					verifiable: verifiable
 				};
 				if (type == 'unvalidated') resolve(newEvent);
 				else {

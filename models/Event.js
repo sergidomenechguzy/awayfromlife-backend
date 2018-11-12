@@ -35,6 +35,10 @@ const EventSchema = new Schema({
 	ticketLink: {
 		type: String
 	},
+	verifiable: {
+		type: Boolean,
+		default: false
+	},
 	lastModified: {
 		type: Number,
 		default: Date.now()

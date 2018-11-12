@@ -22,6 +22,10 @@ const FestivalEventSchema = new Schema({
 	canceled: {
 		type: Number,
 		default: 0
+	},
+	verifiable: {
+		type: Boolean,
+		default: false
 	}
 });
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const moment = require('moment');
 
 // load event model
 require('../models/Event');
@@ -9,6 +10,10 @@ const ArchivedEvent = mongoose.model('archived_events');
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
+
+// load festival model
+require('../models/Festival');
+const Festival = mongoose.model('festivals');
 
 // load delete route
 const deleteRoute = require('./controller/delete');
@@ -65,7 +70,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		}
 
 		const events = await ArchivedEvent.find(query);
-		if (events.length === 0)
+		if (events.length == 0 && req.query.includeFestivals != 'true')
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
 		const eventPromises = events.map(async (event) => {
@@ -113,6 +118,66 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		});
 		let finalEvents = await Promise.all(eventPromises);
 		finalEvents = finalEvents.filter(eventObject => eventObject != null);
+
+		if (req.query.includeFestivals == 'true') {
+			let festivalQuery = {};
+			if (req.query.city) {
+				festivalQuery.$or = [
+					{ 'address.default.city': new RegExp(req.query.city, 'i') },
+					{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
+					{ 'address.default.county': new RegExp(req.query.city, 'i') },
+					{ 'address.international.city': new RegExp(req.query.city, 'i') }
+				];
+			}
+			else if (req.query.country) {
+				festivalQuery.$or = [
+					{ 'address.default.country': RegExp(req.query.country, 'i') },
+					{ 'address.international.country': new RegExp(req.query.country, 'i') }
+				];
+			}
+			let festivals = await Festival.find(festivalQuery);
+			if (events.length == 0 && festivals.length == 0)
+				return res.status(200).json({ message: 'No events found', token: res.locals.token });
+
+			const dereferenced = await dereference.objectArray(festivals, 'festival', false, 1);
+
+			let finalFestivalEvents = [];
+			dereferenced.forEach((festival) => {
+				if (req.query.genre) {
+					const genreRegex = RegExp(req.query.genre, 'i');
+					if (!festival.genre.some(genre => genreRegex.test(genre)))
+						return null;
+				}
+
+				festival.events.forEach(event => {
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0)
+						return;
+
+					if (req.query.startWith && !query.name.test(event.name))
+						return;
+
+					if (req.query.startDate || req.query.endDate) {
+						const matchedStartDate = req.query.startDate ? (event.startDate.localeCompare(req.query.startDate) >= 0) : true;
+						const matchedEndDate = req.query.startDate ? (event.startDate.localeCompare(req.query.endDate) <= 0) : true;
+						if (!(matchedStartDate && matchedEndDate))
+							return;
+					}
+					let finalFestivalEvent = JSON.parse(JSON.stringify(event));
+					finalFestivalEvent.url = festival.url;
+					finalFestivalEvent.date = event.startDate;
+					finalFestivalEvent.location = {
+						name: festival.name,
+						address: {
+							city: festival.address.city
+						}
+					};
+					finalFestivalEvent.isFestival = true;
+					finalFestivalEvents.push(finalFestivalEvent);
+				});
+			});
+			finalEvents = finalEvents.concat(finalFestivalEvents);
+		}
+
 		finalEvents = dereference.eventSort(finalEvents, sortBy, order);
 
 		const count = finalEvents.length;
@@ -249,7 +314,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 			lastDate: ''
 		};
 		const archivedEvents = await ArchivedEvent.find();
-		if (archivedEvents.length === 0)
+		if (archivedEvents.length == 0 && req.query.includeFestivals != 'true')
 			return res.status(200).json({ data: filters, token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(archivedEvents, 'event', 'date', 1);
@@ -284,6 +349,53 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 				});
 			});
 		});
+
+		if (req.query.includeFestivals == 'true') {
+			const festivals = await Festival.find();
+			if (archivedEvents.length == 0 && festivals.length == 0)
+				return res.status(200).json({ data: filters, token: res.locals.token });
+
+			const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
+
+			dereferenced.forEach(festival => {
+				let valid = false;
+				festival.events.forEach(event => {
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0) {
+						valid = true;
+						if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
+							if (event.name.charAt(0).toUpperCase() === 'Ä') {
+								if (!filters.startWith.includes('A')) filters.startWith.push('A');
+							}
+							else if (event.name.charAt(0).toUpperCase() === 'Ö') {
+								if (!filters.startWith.includes('O')) filters.startWith.push('O');
+							}
+							else if (event.name.charAt(0).toUpperCase() === 'Ü') {
+								if (!filters.startWith.includes('U')) filters.startWith.push('U');
+							}
+							else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
+								filters.startWith.push(event.name.charAt(0).toUpperCase());
+							else if (!filters.startWith.includes('#'))
+								filters.startWith.push('#');
+						}
+						if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+							filters.firstDate = event.startDate;
+						if (!filters.lastDate || event.startDate.localeCompare(filters.lastDate) == 1)
+							filters.lastDate = event.startDate;
+					}
+				});
+				if (valid == true) {
+					if (festival.address.city && !filters.cities.includes(festival.address.city))
+						filters.cities.push(festival.address.city);
+					if (festival.address.country && !filters.countries.includes(festival.address.country))
+						filters.countries.push(festival.address.country);
+
+					festival.genre.forEach(genre => {
+						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+					});
+				}
+			});
+		}
+
 		filters.startWith.sort((a, b) => {
 			return a.localeCompare(b);
 		});

@@ -11,6 +11,7 @@ const Location = mongoose.model('locations');
 // load band model
 require('../models/Band');
 const Band = mongoose.model('bands');
+const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load genre model
 require('../models/Genre');
@@ -36,6 +37,8 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 			festival: festivalObject,
 			location: locationObject,
 			report: reportObject,
+			unvalidatedEvent: unvalidatedEventObject,
+			unvalidatedFestivalEvent: unvalidatedFestivalEventObject,
 			unvalidatedFestival: unvalidatedFestivalObject
 		};
 		const sort = {
@@ -45,6 +48,8 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 			festival: festivalSort,
 			location: locationSort,
 			report: reportSort,
+			unvalidatedEvent: eventSort,
+			unvalidatedFestivalEvent: festivalEventSort,
 			unvalidatedFestival: festivalSort
 		};
 
@@ -115,7 +120,13 @@ const eventObject = module.exports.eventObject = (event) => {
 
 			const promises = event.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);
-				if (!result) result = 'Band not found';
+				if (!result) {
+					result = 'Band not found';
+					if (!event.verifiable) {
+						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
+						if (unvalidatedResult) result = 'unvalidated';
+					}
+				}
 				const dereferenced = await bandObject(result);
 				return { band: dereferenced, index: index };
 			});
@@ -124,6 +135,7 @@ const eventObject = module.exports.eventObject = (event) => {
 			bandList.forEach(bandObject => {
 				bandListSorted[bandObject.index] = bandObject.band;
 			});
+			bandListSorted = bandListSorted.filter(object => object != 'unvalidated');
 
 			const responseEvent = {
 				_id: event._id,
@@ -135,7 +147,8 @@ const eventObject = module.exports.eventObject = (event) => {
 				time: event.time,
 				bands: bandListSorted,
 				canceled: event.canceled,
-				ticketLink: event.ticketLink
+				ticketLink: event.ticketLink,
+				verifiable: event.verifiable
 			};
 			resolve(responseEvent);
 		}
@@ -152,7 +165,13 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 		try {
 			const promises = festivalEvent.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);
-				if (!result) result = 'Band not found';
+				if (!result) {
+					result = 'Band not found';
+					if (!festivalEvent.verifiable) {
+						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
+						if (unvalidatedResult) result = 'unvalidated';
+					}
+				}
 				const dereferenced = await bandObject(result);
 				return { band: dereferenced, index: index };
 			});
@@ -161,6 +180,7 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 			bandList.forEach(bandObject => {
 				bandListSorted[bandObject.index] = bandObject.band;
 			});
+			bandListSorted = bandListSorted.filter(object => object != 'unvalidated');
 
 			const responseFestivalEvent = {
 				_id: festivalEvent._id,
@@ -168,7 +188,8 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 				startDate: festivalEvent.startDate,
 				endDate: festivalEvent.endDate,
 				bands: bandListSorted,
-				canceled: festivalEvent.canceled
+				canceled: festivalEvent.canceled,
+				verifiable: festivalEvent.verifiable
 			};
 			resolve(responseFestivalEvent);
 		}
@@ -322,6 +343,94 @@ const reportObject = module.exports.reportObject = (report) => {
 // 	});
 // }
 
+const unvalidatedEventObject = module.exports.unvalidatedEventObject = (event) => {
+	return new Promise(async (resolve, reject) => {
+		if (typeof event == 'string') resolve(event);
+
+		try {
+			let location = await Location.findById(event.location);
+			if (!location) location = 'Location not found';
+			location = await locationObject(location);
+
+			const promises = event.bands.map(async (bandID, index) => {
+				let result = await Band.findById(bandID);
+				if (!result) {
+					result = 'Band not found';
+					if (!event.verifiable) {
+						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
+						if (unvalidatedResult) result = unvalidatedResult;
+					}
+				}
+				const dereferenced = await bandObject(result);
+				return { band: dereferenced, index: index };
+			});
+			const bandList = await Promise.all(promises);
+			let bandListSorted = [];
+			bandList.forEach(bandObject => {
+				bandListSorted[bandObject.index] = bandObject.band;
+			});
+
+			const responseEvent = {
+				_id: event._id,
+				name: event.name,
+				url: event.url,
+				description: event.description,
+				location: location,
+				date: event.date,
+				time: event.time,
+				bands: bandListSorted,
+				canceled: event.canceled,
+				ticketLink: event.ticketLink,
+				verifiable: event.verifiable
+			};
+			resolve(responseEvent);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+const unvalidatedFestivalEventObject = module.exports.unvalidatedFestivalEventObject = (festivalEvent) => {
+	return new Promise(async (resolve, reject) => {
+		if (typeof festivalEvent == 'string') resolve(festivalEvent);
+
+		try {
+			const promises = festivalEvent.bands.map(async (bandID, index) => {
+				let result = await Band.findById(bandID);
+				if (!result) {
+					result = 'Band not found';
+					if (!festivalEvent.verifiable) {
+						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
+						if (unvalidatedResult) result = unvalidatedResult;
+					}
+				}
+				const dereferenced = await bandObject(result);
+				return { band: dereferenced, index: index };
+			});
+			const bandList = await Promise.all(promises);
+			let bandListSorted = [];
+			bandList.forEach(bandObject => {
+				bandListSorted[bandObject.index] = bandObject.band;
+			});
+
+			const responseFestivalEvent = {
+				_id: festivalEvent._id,
+				name: festivalEvent.name,
+				startDate: festivalEvent.startDate,
+				endDate: festivalEvent.endDate,
+				bands: bandListSorted,
+				canceled: festivalEvent.canceled,
+				verifiable: festivalEvent.verifiable
+			};
+			resolve(responseFestivalEvent);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
 const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (unvalidatedFestival) => {
 	return new Promise(async (resolve, reject) => {
 		if (typeof unvalidatedFestival == 'string') resolve(unvalidatedFestival);
@@ -358,7 +467,7 @@ const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (un
 	});
 }
 
-const bandSort = (objectList, sortBy, order) => {
+const bandSort = module.exports.bandSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -419,7 +528,7 @@ const festivalEventSort = (objectList, sortBy, order) => {
 	});
 }
 
-const locationSort = (objectList, sortBy, order) => {
+const locationSort = module.exports.locationSort = (objectList, sortBy, order) => {
 	return objectList.sort((a, b) => {
 		if (sortBy == 'street' || sortBy == 'city') {
 			if (order === -1) return b.address[sortBy].localeCompare(a.address[sortBy]);

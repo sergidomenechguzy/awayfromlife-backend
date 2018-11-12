@@ -1,10 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const moment = require('moment');
 
 // load event model
 require('../models/Event');
 const Event = mongoose.model('events');
+const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load location model
@@ -52,13 +54,24 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		if (objects.length === 0 && unvalidatedObjects.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(objects, 'event', 'name', 1);
-		const dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', 'name', 1);
-		const allObjects = {
-			validated: dereferenced,
-			unvalidated: dereferencedUnvalidated
-		};
-		return res.status(200).json({ data: allObjects, token: res.locals.token });
+		let dereferenced = await dereference.objectArray(objects, 'event', false, 1);
+		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'unvalidatedEvent', false, 1);
+
+		dereferenced = dereferenced.map(object => {
+			let update = JSON.parse(JSON.stringify(object));
+			update.isValidated = true;
+			return update;
+		});
+		dereferencedUnvalidated = dereferencedUnvalidated.map(object => {
+			let update = JSON.parse(JSON.stringify(object));
+			update.isValidated = false;
+			return update;
+		});
+
+		let finalList = dereferenced.concat(dereferencedUnvalidated);
+		finalList = dereference.eventSort(finalList, 'name', 1);
+		
+		return res.status(200).json({ data: finalList, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -155,7 +168,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 					{ 'address.international.country': new RegExp(req.query.country, 'i') }
 				];
 			}
-			const festivals = await Festival.find(festivalQuery);
+			let festivals = await Festival.find(festivalQuery);
 			if (events.length == 0 && festivals.length == 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
@@ -170,6 +183,9 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				}
 
 				festival.events.forEach(event => {
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0)
+						return;
+
 					if (req.query.startWith && !query.name.test(event.name))
 						return;
 
@@ -212,11 +228,18 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 // get event by id
 router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Event.findById(req.params._id);
+		let object = await Event.findById(req.params._id);
+		let isArchived = false;
+
+		if (!object && req.query.includeArchived == 'true') {
+			object = await ArchivedEvent.findById(req.params._id);
+			isArchived = true;
+		}
 		if (!object)
 			return res.status(400).json({ message: 'No event found with this ID', token: res.locals.token });
 
-		const dereferenced = await dereference.eventObject(object);
+		let dereferenced = await dereference.eventObject(object);
+		dereferenced.isArchived = isArchived;
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -228,11 +251,18 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get event by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		let object = await Event.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		let isArchived = false;
+
+		if (!object && req.query.includeArchived == 'true') {
+			object = await ArchivedEvent.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+			isArchived = true;
+		}
 		if (!object)
 			return res.status(400).json({ message: 'No event found with this URL', token: res.locals.token });
 
-		const dereferenced = await dereference.eventObject(object);
+		let dereferenced = await dereference.eventObject(object);
+		dereferenced.isArchived = isArchived;
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -391,36 +421,41 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 			const dereferenced = await dereference.objectArray(festivals, 'festival', 'name', 1);
 
 			dereferenced.forEach(festival => {
-				if (festival.address.city && !filters.cities.includes(festival.address.city))
-					filters.cities.push(festival.address.city);
-				if (festival.address.country && !filters.countries.includes(festival.address.country))
-					filters.countries.push(festival.address.country);
-
-				festival.genre.forEach(genre => {
-					if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
-				});
-
+				let valid = false;
 				festival.events.forEach(event => {
-					if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
-						if (event.name.charAt(0).toUpperCase() === 'Ä') {
-							if (!filters.startWith.includes('A')) filters.startWith.push('A');
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0) {
+						valid = true;
+						if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
+							if (event.name.charAt(0).toUpperCase() === 'Ä') {
+								if (!filters.startWith.includes('A')) filters.startWith.push('A');
+							}
+							else if (event.name.charAt(0).toUpperCase() === 'Ö') {
+								if (!filters.startWith.includes('O')) filters.startWith.push('O');
+							}
+							else if (event.name.charAt(0).toUpperCase() === 'Ü') {
+								if (!filters.startWith.includes('U')) filters.startWith.push('U');
+							}
+							else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
+								filters.startWith.push(event.name.charAt(0).toUpperCase());
+							else if (!filters.startWith.includes('#'))
+								filters.startWith.push('#');
 						}
-						else if (event.name.charAt(0).toUpperCase() === 'Ö') {
-							if (!filters.startWith.includes('O')) filters.startWith.push('O');
-						}
-						else if (event.name.charAt(0).toUpperCase() === 'Ü') {
-							if (!filters.startWith.includes('U')) filters.startWith.push('U');
-						}
-						else if (/[A-Z]/.test(event.name.charAt(0).toUpperCase()))
-							filters.startWith.push(event.name.charAt(0).toUpperCase());
-						else if (!filters.startWith.includes('#'))
-							filters.startWith.push('#');
+						if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
+							filters.firstDate = event.startDate;
+						if (!filters.lastDate || event.startDate.localeCompare(filters.lastDate) == 1)
+							filters.lastDate = event.startDate;
 					}
-					if (!filters.firstDate || event.startDate.localeCompare(filters.firstDate) == -1)
-						filters.firstDate = event.startDate;
-					if (!filters.lastDate || event.startDate.localeCompare(filters.lastDate) == 1)
-						filters.lastDate = event.startDate;
 				});
+				if (valid == true) {
+					if (festival.address.city && !filters.cities.includes(festival.address.city))
+						filters.cities.push(festival.address.city);
+					if (festival.address.country && !filters.countries.includes(festival.address.country))
+						filters.countries.push(festival.address.country);
+
+					festival.genre.forEach(genre => {
+						if (genre && !filters.genres.includes(genre)) filters.genres.push(genre);
+					});
+				}
 			});
 		}
 
