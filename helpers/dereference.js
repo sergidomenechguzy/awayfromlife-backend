@@ -37,8 +37,6 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 			festival: festivalObject,
 			location: locationObject,
 			report: reportObject,
-			unvalidatedEvent: unvalidatedEventObject,
-			unvalidatedFestivalEvent: unvalidatedFestivalEventObject,
 			unvalidatedFestival: unvalidatedFestivalObject
 		};
 		const sort = {
@@ -48,8 +46,6 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 			festival: festivalSort,
 			location: locationSort,
 			report: reportSort,
-			unvalidatedEvent: eventSort,
-			unvalidatedFestivalEvent: festivalEventSort,
 			unvalidatedFestival: festivalSort
 		};
 
@@ -120,14 +116,19 @@ const eventObject = module.exports.eventObject = (event) => {
 
 			const promises = event.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);
+				let isValidated = true;
 				if (!result) {
 					result = 'Band not found';
 					if (!event.verifiable) {
 						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
-						if (unvalidatedResult) result = 'unvalidated';
+						if (unvalidatedResult) {
+							result = unvalidatedResult;
+							isValidated = false;
+						}
 					}
 				}
-				const dereferenced = await bandObject(result);
+				let dereferenced = await bandObject(result);
+				dereferenced.isValidated = isValidated;
 				return { band: dereferenced, index: index };
 			});
 			const bandList = await Promise.all(promises);
@@ -135,7 +136,6 @@ const eventObject = module.exports.eventObject = (event) => {
 			bandList.forEach(bandObject => {
 				bandListSorted[bandObject.index] = bandObject.band;
 			});
-			bandListSorted = bandListSorted.filter(object => object != 'unvalidated');
 
 			const responseEvent = {
 				_id: event._id,
@@ -165,14 +165,19 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 		try {
 			const promises = festivalEvent.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);
+				let isValidated = true;
 				if (!result) {
 					result = 'Band not found';
 					if (!festivalEvent.verifiable) {
 						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
-						if (unvalidatedResult) result = 'unvalidated';
+						if (unvalidatedResult) {
+							result = unvalidatedResult;
+							isValidated = false;
+						}
 					}
 				}
-				const dereferenced = await bandObject(result);
+				let dereferenced = await bandObject(result);
+				dereferenced.isValidated = isValidated;
 				return { band: dereferenced, index: index };
 			});
 			const bandList = await Promise.all(promises);
@@ -180,7 +185,6 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 			bandList.forEach(bandObject => {
 				bandListSorted[bandObject.index] = bandObject.band;
 			});
-			bandListSorted = bandListSorted.filter(object => object != 'unvalidated');
 
 			const responseFestivalEvent = {
 				_id: festivalEvent._id,
@@ -342,94 +346,6 @@ const reportObject = module.exports.reportObject = (report) => {
 // 		});
 // 	});
 // }
-
-const unvalidatedEventObject = module.exports.unvalidatedEventObject = (event) => {
-	return new Promise(async (resolve, reject) => {
-		if (typeof event == 'string') resolve(event);
-
-		try {
-			let location = await Location.findById(event.location);
-			if (!location) location = 'Location not found';
-			location = await locationObject(location);
-
-			const promises = event.bands.map(async (bandID, index) => {
-				let result = await Band.findById(bandID);
-				if (!result) {
-					result = 'Band not found';
-					if (!event.verifiable) {
-						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
-						if (unvalidatedResult) result = unvalidatedResult;
-					}
-				}
-				const dereferenced = await bandObject(result);
-				return { band: dereferenced, index: index };
-			});
-			const bandList = await Promise.all(promises);
-			let bandListSorted = [];
-			bandList.forEach(bandObject => {
-				bandListSorted[bandObject.index] = bandObject.band;
-			});
-
-			const responseEvent = {
-				_id: event._id,
-				name: event.name,
-				url: event.url,
-				description: event.description,
-				location: location,
-				date: event.date,
-				time: event.time,
-				bands: bandListSorted,
-				canceled: event.canceled,
-				ticketLink: event.ticketLink,
-				verifiable: event.verifiable
-			};
-			resolve(responseEvent);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
-
-const unvalidatedFestivalEventObject = module.exports.unvalidatedFestivalEventObject = (festivalEvent) => {
-	return new Promise(async (resolve, reject) => {
-		if (typeof festivalEvent == 'string') resolve(festivalEvent);
-
-		try {
-			const promises = festivalEvent.bands.map(async (bandID, index) => {
-				let result = await Band.findById(bandID);
-				if (!result) {
-					result = 'Band not found';
-					if (!festivalEvent.verifiable) {
-						const unvalidatedResult = await UnvalidatedBand.findById(bandID);
-						if (unvalidatedResult) result = unvalidatedResult;
-					}
-				}
-				const dereferenced = await bandObject(result);
-				return { band: dereferenced, index: index };
-			});
-			const bandList = await Promise.all(promises);
-			let bandListSorted = [];
-			bandList.forEach(bandObject => {
-				bandListSorted[bandObject.index] = bandObject.band;
-			});
-
-			const responseFestivalEvent = {
-				_id: festivalEvent._id,
-				name: festivalEvent.name,
-				startDate: festivalEvent.startDate,
-				endDate: festivalEvent.endDate,
-				bands: bandListSorted,
-				canceled: festivalEvent.canceled,
-				verifiable: festivalEvent.verifiable
-			};
-			resolve(responseFestivalEvent);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
 
 const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (unvalidatedFestival) => {
 	return new Promise(async (resolve, reject) => {

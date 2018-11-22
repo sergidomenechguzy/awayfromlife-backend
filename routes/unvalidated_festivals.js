@@ -48,7 +48,7 @@ router.get('/unvalidated', token.checkToken(true), async (req, res) => {
 		if (unvalidatedFestivalEvents.length === 0)
 			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-		const dereferencedFestivalEvents = await dereference.objectArray(unvalidatedFestivalEvents, 'unvalidatedFestivalEvent', 'name', 1);
+		const dereferencedFestivalEvents = await dereference.objectArray(unvalidatedFestivalEvents, 'festivalEvent', 'name', 1);
 
 		const promises = dereferencedFestivalEvents.map((event) => {
 			return new Promise(async (resolve, reject) => {

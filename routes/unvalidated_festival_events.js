@@ -28,7 +28,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 		if (festivalEvents.length === 0)
 			return res.status(200).json({ message: 'No festival events found', token: res.locals.token });
 
-		const dereferenced = await dereference.objectArray(festivalEvents, 'unvalidatedFestivalEvent', 'name', 1);
+		const dereferenced = await dereference.objectArray(festivalEvents, 'festivalEvent', 'name', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
@@ -44,7 +44,7 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 		if (!object)
 			return res.status(400).json({ message: 'No festival event found with this ID', token: res.locals.token });
 
-		const dereferenced = await dereference.unvalidatedFestivalEventObject(object);
+		const dereferenced = await dereference.festivalEventObject(object);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {

@@ -149,17 +149,16 @@ const generateUrlFromObject = (object, type) => {
 	
 	switch (type) {
 		case 'location':
-			url = object.name + '--' + object.address.default.city;
+			url = deUmlaut(object.name) + '--' + deUmlaut(object.address.default.city);
 			break;
 		case 'event':
 		case 'archive':
 		case 'unvalidated':
-			url = object.name + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + object.location.name;
+			url = deUmlaut(object.name) + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + deUmlaut(object.location.name);
 			break;
 		default:
-			url = object.name;
+			url = deUmlaut(object.name);
 	}
-	url = deUmlaut(url);
 	return url.toLocaleLowerCase();
 }
 
@@ -171,12 +170,14 @@ const deUmlaut = (value) => {
 	value = value.replace(/Ö/g, 'Oe');
 	value = value.replace(/Ü/g, 'Ue');
 	value = value.replace(/ß/g, 'ss');
-	value = value.replace(/ - /g, '-');
 	value = value.replace(/ /g, '-');
 	value = value.replace(/\./g, '');
 	value = value.replace(/,/g, '');
 	value = value.replace(/\(/g, '');
 	value = value.replace(/\)/g, '');
 	value = value.replace(/\//g, '-');
+	value = value.replace(/-+/g, '-');
+	value = value.replace(/-$/g, '');
+	value = value.replace(/^-/g, '');
 	return value;
 }
