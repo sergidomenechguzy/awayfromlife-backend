@@ -15,6 +15,7 @@ const UnvalidatedBand = mongoose.model('unvalidated_bands');
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
+const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load url.js
 const url = require('./url');
@@ -84,8 +85,20 @@ const validateEvent = (data, type, collection, options) => {
 			else locationId = data.location;
 			const locations = await Location.find();
 			const locationIds = locations.map(location => location._id.toString());
-			if (!locationIds.includes(locationId))
-				resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+			if (!locationIds.includes(locationId)) {
+				if (type == 'unvalidated' || type == 'validate') {
+					const unvalidatedLocations = await UnvalidatedLocation.find();
+					const unvalidatedLocationIds = unvalidatedLocations.map(location => location._id.toString());
+					if (!unvalidatedLocationIds.includes(locationId))
+						resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+					else if (type == 'validate')
+						resolve({ verifiable: false });
+					verifiable = false;
+				}
+				else {
+					resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+				}
+			}
 
 			if (!(typeof data.date == 'string' && data.date.length > 0 && moment(data.date, 'YYYY-MM-DD', true).isValid()))
 				resolve('Attribute \'date\' has to be a string in the \'YYYY-MM-DD\' date format.');

@@ -7,6 +7,7 @@ const Event = mongoose.model('events');
 // load location model
 require('../models/Location');
 const Location = mongoose.model('locations');
+const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load band model
 require('../models/Band');
@@ -110,9 +111,24 @@ const eventObject = module.exports.eventObject = (event) => {
 		if (typeof event == 'string') resolve(event);
 
 		try {
-			let location = await Location.findById(event.location);
-			if (!location) location = 'Location not found';
-			location = await locationObject(location);
+			let location;
+			if (event.location == 'Location was deleted') location = event.location;
+			else {
+				location = await Location.findById(event.location);
+				let isValidated = true;
+				if (!location) {
+					location = 'Location not found';
+					if (!event.verifiable) {
+						const unvalidatedLocation = await UnvalidatedLocation.findById(event.location);
+						if (unvalidatedLocation) {
+							location = unvalidatedLocation;
+							isValidated = false;
+						}
+					}
+				}
+				location = await locationObject(location);
+				location.isValidated = isValidated;
+			}
 
 			const promises = event.bands.map(async (bandID, index) => {
 				let result = await Band.findById(bandID);

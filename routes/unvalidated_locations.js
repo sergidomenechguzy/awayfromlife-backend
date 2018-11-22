@@ -7,6 +7,12 @@ require('../models/Location');
 const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
+// load event model
+require('../models/Event');
+const Event = mongoose.model('events');
+const ArchivedEvent = mongoose.model('archived_events');
+const UnvalidatedEvent = mongoose.model('unvalidated_events');
+
 // load delete route
 const deleteRoute = require('./controller/delete');
 
@@ -172,7 +178,12 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 // validate unvalidated location
 router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('validate'), async (req, res) => {
 	try {
-		await new Location(res.locals.validated).save();
+		const newLocation = await new Location(res.locals.validated).save();
+		await Promise.all([
+			deleteRoute.deleteLocationFromEventCollection(Event, req.params._id, newLocation._id),
+			deleteRoute.deleteLocationFromEventCollection(ArchivedEvent, req.params._id, newLocation._id),
+			deleteRoute.deleteLocationFromEventCollection(UnvalidatedEvent, req.params._id, newLocation._id)
+		]);
 		await UnvalidatedLocation.remove({ _id: req.params._id });
 		return res.status(200).json({ message: 'Location validated', token: res.locals.token });
 	}

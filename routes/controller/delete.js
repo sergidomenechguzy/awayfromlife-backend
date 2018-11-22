@@ -95,6 +95,11 @@ module.exports.delete = (id, collection) => {
 					]);
 					resolve({ status: 200, message: 'Location deleted' });
 					break;
+				
+				case 'unvalidLocation':
+					await deleteLocationFromEventCollection(UnvalidatedEvent, id);
+					resolve({ status: 200, message: 'Location deleted' });
+					break;
 
 				case 'validFestival':
 					await Promise.all([
@@ -147,7 +152,7 @@ const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollecti
 			const promises = events.map(async (event) => {
 				if (newId != undefined) event.bands[event.bands.indexOf(id)] = newId;
 				else event.bands.splice(event.bands.indexOf(id), 1);
-				event.verifiable = await checkVerifiable(event.bands);
+				event.verifiable = await checkVerifiable(event.location, event.bands);
 				const result = await collection.findOneAndUpdate({ _id: event._id }, event);
 				return result;
 			});
@@ -160,11 +165,34 @@ const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollecti
 	});
 }
 
-const checkVerifiable = (bands) => {
+const deleteLocationFromEventCollection = module.exports.deleteLocationFromEventCollection = (collection, id, newId) => {
 	return new Promise(async (resolve, reject) => {
 		try {
+			const events = await collection.find({ location: id });
+			if (events.length == 0) resolve();
+
+			const promises = events.map(async (event) => {
+				if (newId != undefined) event.location = newId;
+				else event.location = 'Location was deleted';
+				event.verifiable = await checkVerifiable(event.location, event.bands);
+				const result = await collection.findOneAndUpdate({ _id: event._id }, event);
+				return result;
+			});
+			await Promise.all(promises);
+			resolve();
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+const checkVerifiable = (location, bands) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const foundLocation = await UnvalidatedLocation.findById(location);
 			const foundBand = await UnvalidatedBand.findOne({ _id: { $in: bands } });
-			if (foundBand == undefined) resolve(true);
+			if (foundLocation == undefined && foundBand == undefined) resolve(true);
 			else resolve(false);
 		}
 		catch (err) {
