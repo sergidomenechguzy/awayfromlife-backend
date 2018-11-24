@@ -190,6 +190,7 @@ const deleteLocationFromEventCollection = module.exports.deleteLocationFromEvent
 const checkVerifiable = (location, bands) => {
 	return new Promise(async (resolve, reject) => {
 		try {
+			if (location == 'Location was deleted') resolve(false);
 			const foundLocation = await UnvalidatedLocation.findById(location);
 			const foundBand = await UnvalidatedBand.findOne({ _id: { $in: bands } });
 			if (foundLocation == undefined && foundBand == undefined) resolve(true);
