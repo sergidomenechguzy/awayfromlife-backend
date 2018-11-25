@@ -132,11 +132,13 @@ const validateEvent = (data, type, collection, options) => {
 			const bandIds = bands.map(band => band._id.toString());
 			const unvalidatedBands = await UnvalidatedBand.find();
 			const unvalidatedBandIds = unvalidatedBands.map(band => band._id.toString());
+			let unvalidCount = 0;
 			if (
 				bandList.some(band => {
 					if (!bandIds.includes(band)) {
 						if (unvalidatedBandIds.includes(band)) {
 							verifiable = false;
+							unvalidCount++;
 							return false;
 						}
 						return true;
@@ -144,6 +146,7 @@ const validateEvent = (data, type, collection, options) => {
 					return false;
 				})
 			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+			if ((type == 'put' || type == 'post') && unvalidCount == bandList.length) resolve('Attribute \'bands\' has to include at least one validated band from the database.');
 
 			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && (data.canceled == 0 || data.canceled == 1 || data.canceled == 2))))
 				resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
