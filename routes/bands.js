@@ -60,8 +60,8 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		if (objects.length === 0 && unvalidatedObjects.length === 0)
 			return res.status(200).json({ message: 'No bands found', token: res.locals.token });
 
-		let dereferenced = await dereference.objectArray(objects, 'band', false, 1);
-		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'band', false, 1);
+		let dereferenced = await dereference.objectArray(objects, 'band', false);
+		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'band', false);
 
 		dereferenced = dereferenced.map(object => {
 			let update = JSON.parse(JSON.stringify(object));
@@ -214,7 +214,7 @@ router.get('/events/:_id', token.checkToken(false), async (req, res) => {
 			festivalEventList = await Promise.all(promises);
 		}
 
-		let dereferenced = await dereference.objectArray(events, 'event', false, 1);
+		let dereferenced = await dereference.objectArray(events, 'event', false);
 		dereferenced = dereferenced.map(event => {
 			event.isFestival = false;
 			return event;

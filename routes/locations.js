@@ -48,8 +48,8 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		if (objects.length === 0 && unvalidatedObjects.length === 0)
 			return res.status(200).json({ message: 'No locations found', token: res.locals.token });
 
-		let dereferenced = await dereference.objectArray(objects, 'location', false, 1);
-		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'location', false, 1);
+		let dereferenced = await dereference.objectArray(objects, 'location', false);
+		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'location', false);
 
 		dereferenced = dereferenced.map(object => {
 			let update = JSON.parse(JSON.stringify(object));

@@ -20,6 +20,9 @@ const Festival = mongoose.model('festivals');
 // load delete route
 const deleteRoute = require('./controller/delete');
 
+// load delete route
+const latest = require('./controller/latest');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -54,8 +57,8 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 		if (objects.length === 0 && unvalidatedObjects.length === 0)
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-		let dereferenced = await dereference.objectArray(objects, 'event', false, 1);
-		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', false, 1);
+		let dereferenced = await dereference.objectArray(objects, 'event', false);
+		let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', false);
 
 		dereferenced = dereferenced.map(object => {
 			let update = JSON.parse(JSON.stringify(object));
@@ -172,7 +175,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			if (events.length == 0 && festivals.length == 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-			const dereferenced = await dereference.objectArray(festivals, 'festival', false, 1);
+			const dereferenced = await dereference.objectArray(festivals, 'festival', false);
 
 			let finalFestivalEvents = [];
 			dereferenced.forEach((festival) => {
@@ -264,6 +267,21 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 		let dereferenced = await dereference.eventObject(object);
 		dereferenced.isArchived = isArchived;
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get latest events
+router.get('/latest', token.checkToken(false), async (req, res) => {
+	try {
+		let count = 5;
+		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);
+
+		const latestObjects = await latest.get('validEvent', count);
+		return res.status(200).json({ data: latestObjects, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

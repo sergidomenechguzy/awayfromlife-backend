@@ -139,7 +139,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			if (events.length == 0 && festivals.length == 0)
 				return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
-			const dereferenced = await dereference.objectArray(festivals, 'festival', false, 1);
+			const dereferenced = await dereference.objectArray(festivals, 'festival', false);
 
 			let finalFestivalEvents = [];
 			dereferenced.forEach((festival) => {
