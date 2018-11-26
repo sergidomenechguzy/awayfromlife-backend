@@ -46,16 +46,16 @@ const Feedback = mongoose.model('feedback');
 module.exports.delete = (id, collection) => {
 	return new Promise(async (resolve, reject) => {
 		const categories = {
-			validEvent: { model: Event, string: 'Event' },
-			archiveEvent: { model: ArchivedEvent, string: 'Event' },
-			unvalidEvent: { model: UnvalidatedEvent, string: 'Event' },
-			validLocation: { model: Location, string: 'Location' },
-			unvalidLocation: { model: UnvalidatedLocation, string: 'Location' },
-			validBand: { model: Band, string: 'Band' },
-			unvalidBand: { model: UnvalidatedBand, string: 'Band' },
-			validFestival: { model: Festival, string: 'Festival' },
-			unvalidFestival: { model: UnvalidatedFestival, string: 'Festival' },
-			validFestivalEvent: { model: FestivalEvent, string: 'Festival event' },
+			event: { model: Event, string: 'Event' },
+			archivedEvent: { model: ArchivedEvent, string: 'Event' },
+			unvalidatedEvent: { model: UnvalidatedEvent, string: 'Event' },
+			location: { model: Location, string: 'Location' },
+			unvalidatedLocation: { model: UnvalidatedLocation, string: 'Location' },
+			band: { model: Band, string: 'Band' },
+			unvalidatedBand: { model: UnvalidatedBand, string: 'Band' },
+			festival: { model: Festival, string: 'Festival' },
+			unvalidatedFestival: { model: UnvalidatedFestival, string: 'Festival' },
+			festivalEvent: { model: FestivalEvent, string: 'Festival event' },
 			genre: { model: Genre, string: 'Genre' },
 			bug: { model: Bug, string: 'Bug' },
 			feedback: { model: Feedback, string: 'Feedback' },
@@ -68,13 +68,13 @@ module.exports.delete = (id, collection) => {
 				resolve({ status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
 			await categories[collection].model.remove({ _id: id });
 			switch (collection) {
-				case 'validEvent':
+				case 'event':
 					await Report.remove({ category: 'event', item: id });
 					resolve({ status: 200, message: 'Event deleted' });
 					break;
 
-				case 'validBand':
-				case 'unvalidBand':
+				case 'band':
+				case 'unvalidatedBand':
 					await Promise.all([
 						deleteBandFromEventCollection(Event, id),
 						deleteBandFromEventCollection(ArchivedEvent, id),
@@ -86,7 +86,7 @@ module.exports.delete = (id, collection) => {
 					resolve({ status: 200, message: 'Band deleted' });
 					break;
 
-				case 'validLocation':
+				case 'location':
 					await Promise.all([
 						Event.remove({ location: id }),
 						ArchivedEvent.remove({ location: id }),
@@ -96,12 +96,12 @@ module.exports.delete = (id, collection) => {
 					resolve({ status: 200, message: 'Location deleted' });
 					break;
 				
-				case 'unvalidLocation':
+				case 'unvalidatedLocation':
 					await deleteLocationFromEventCollection(UnvalidatedEvent, id);
 					resolve({ status: 200, message: 'Location deleted' });
 					break;
 
-				case 'validFestival':
+				case 'festival':
 					await Promise.all([
 						FestivalEvent.remove({ _id: { $in: item.events } }),
 						UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } }),
@@ -110,12 +110,12 @@ module.exports.delete = (id, collection) => {
 					resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
-				case 'unvalidFestival':
+				case 'unvalidatedFestival':
 					await UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } });
 					resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
-				case 'validFestivalEvent':
+				case 'festivalEvent':
 					const festival = await Festival.findOne({ events: id });
 					if (!festival)
 						resolve({ status: 200, message: 'Festival event deleted' });

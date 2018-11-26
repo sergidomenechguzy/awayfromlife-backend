@@ -45,7 +45,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get all festivals with unvalidated festival events
-router.get('/unvalidated', token.checkToken(true), async (req, res) => {
+router.get('/unvalidated', token.checkToken(false), async (req, res) => {
 	try {
 		const unvalidatedFestivalEvents = await UnvalidatedFestivalEvent.find();
 		if (unvalidatedFestivalEvents.length === 0)
@@ -56,17 +56,17 @@ router.get('/unvalidated', token.checkToken(true), async (req, res) => {
 		const promises = dereferencedFestivalEvents.map((event) => {
 			return new Promise(async (resolve, reject) => {
 				try {
-					const validFestival = await Festival.findOne({ events: event._id });
-					if (!validFestival) {
-						const unvalidFestival = await UnvalidatedFestival.findOne({ events: event._id });
-						if (!unvalidFestival) resolve(`No festival found for the festival event: (_id: ${event._id}, name: ${event.name}).`);
+					const festival = await Festival.findOne({ events: event._id });
+					if (!festival) {
+						const unvalidatedFestival = await UnvalidatedFestival.findOne({ events: event._id });
+						if (!unvalidatedFestival) resolve(`No festival found for the festival event: (_id: ${event._id}, name: ${event.name}).`);
 						else {
-							const finalFestival = await dereference.unvalidatedFestivalObject(unvalidFestival);
+							const finalFestival = await dereference.unvalidatedFestivalObject(unvalidatedFestival);
 							resolve({ validated: false, festival: finalFestival, event: event });
 						}
 					}
 					else {
-						const finalFestival = await dereference.unvalidatedFestivalObject(validFestival);
+						const finalFestival = await dereference.unvalidatedFestivalObject(festival);
 						resolve({ validated: true, festival: finalFestival, event: event });
 					}
 				}
@@ -154,7 +154,7 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.che
 // delete festival by id
 router.delete('/:_id/:eventId', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'unvalidFestival');
+		const response = await deleteRoute.delete(req.params._id, 'unvalidatedFestival');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {

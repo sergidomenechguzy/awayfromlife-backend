@@ -67,19 +67,12 @@ router.post('/', token.checkToken(false), params.checkParameters(['category', 'i
 
 // delete report and reported item by report id
 router.post('/accept/:_id', token.checkToken(true), async (req, res) => {
-	const categories = {
-		event: 'validEvent',
-		location: 'validLocation',
-		band: 'validBand',
-		festival: 'validFestival'
-	};
-
 	try {
 		const report = await Report.findById(req.params._id);
 		if (!report)
 			return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
 
-		const response = await deleteRoute.delete(report.item, categories[report.category]);
+		const response = await deleteRoute.delete(report.item, report.category);
 		if (response.status == 200)
 			return res.status(response.status).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });

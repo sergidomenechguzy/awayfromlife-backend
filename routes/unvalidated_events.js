@@ -270,7 +270,7 @@ router.post('/multiple', token.checkToken(false), params.checkListParameters(['n
 // delete event by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'unvalidEvent');
+		const response = await deleteRoute.delete(req.params._id, 'unvalidatedEvent');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {

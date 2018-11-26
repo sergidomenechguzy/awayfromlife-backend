@@ -300,7 +300,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'gen
 // delete festival by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'validFestival');
+		const response = await deleteRoute.delete(req.params._id, 'festival');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
