@@ -10,6 +10,9 @@ const UnvalidatedEvent = mongoose.model('unvalidated_events');
 // load delete route
 const deleteRoute = require('./controller/delete');
 
+// load delete route
+const latest = require('./controller/latest');
+
 // load params.js
 const params = require('../config/params');
 // load token.js
@@ -131,6 +134,21 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 
 		const dereferenced = await dereference.eventObject(object);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get latest added events
+router.get('/latest', token.checkToken(false), async (req, res) => {
+	try {
+		let count = 5;
+		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);
+
+		const latestObjects = await latest.get('unvalidatedEvent', count);
+		return res.status(200).json({ data: latestObjects, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

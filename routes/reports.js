@@ -9,6 +9,9 @@ const Report = mongoose.model('reports');
 // load delete route
 const deleteRoute = require('./controller/delete');
 
+// load delete route
+const latest = require('./controller/latest');
+
 // load params.js
 const params = require('../config/params.js');
 // load token.js
@@ -28,6 +31,21 @@ router.get('/', token.checkToken(false), async (req, res) => {
 
 		const dereferenced = await dereference.objectArray(reports, 'report', '', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get latest added reports
+router.get('/latest', token.checkToken(false), async (req, res) => {
+	try {
+		let count = 5;
+		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);
+
+		const latestObjects = await latest.get('report', count);
+		return res.status(200).json({ data: latestObjects, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

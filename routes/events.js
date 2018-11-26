@@ -274,13 +274,13 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get latest events
+// get latest added events
 router.get('/latest', token.checkToken(false), async (req, res) => {
 	try {
 		let count = 5;
 		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);
 
-		const latestObjects = await latest.get('validEvent', count);
+		const latestObjects = await latest.get('event', count);
 		return res.status(200).json({ data: latestObjects, token: res.locals.token });
 	}
 	catch (err) {
