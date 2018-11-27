@@ -45,36 +45,71 @@ const Feedback = mongoose.model('feedback');
 // load dereference.js
 const dereference = require('../../helpers/dereference');
 
-// delete object by id from specified collection and delete or update all connected objects
-module.exports.get = (category, count) => {
-	return new Promise(async (resolve, reject) => {
-		const categories = {
-			event: { model: Event, string: 'event' },
-			archivedEvent: { model: ArchivedEvent, string: 'event' },
-			unvalidatedEvent: { model: UnvalidatedEvent, string: 'event' },
-			location: { model: Location, string: 'location' },
-			unvalidatedLocation: { model: UnvalidatedLocation, string: 'location' },
-			band: { model: Band, string: 'band' },
-			unvalidatedBand: { model: UnvalidatedBand, string: 'band' },
-			festival: { model: Festival, string: 'festival' },
-			unvalidatedFestival: { model: UnvalidatedFestival, string: 'unvalidatedFestival' },
-			festivalEvent: { model: FestivalEvent, string: 'festivalEvent' },
-			unvalidatedFestivalEvent: { model: UnvalidatedFestivalEvent, string: 'festivalEvent' },
-			genre: { model: Genre },
-			bug: { model: Bug },
-			feedback: { model: Feedback },
-			report: { model: Report, string: 'report' }
-		};
+const categories = {
+	event: { model: Event, string: 'event' },
+	archivedEvent: { model: ArchivedEvent, string: 'event' },
+	unvalidatedEvent: { model: UnvalidatedEvent, string: 'event' },
+	location: { model: Location, string: 'location' },
+	unvalidatedLocation: { model: UnvalidatedLocation, string: 'location' },
+	band: { model: Band, string: 'band' },
+	unvalidatedBand: { model: UnvalidatedBand, string: 'band' },
+	festival: { model: Festival, string: 'festival' },
+	unvalidatedFestival: { model: UnvalidatedFestival, string: 'unvalidatedFestival' },
+	festivalEvent: { model: FestivalEvent, string: 'festivalEvent' },
+	unvalidatedFestivalEvent: { model: UnvalidatedFestivalEvent, string: 'festivalEvent' },
+	genre: { model: Genre },
+	bug: { model: Bug },
+	feedback: { model: Feedback },
+	report: { model: Report, string: 'report' }
+};
 
+module.exports.getMultiple = (categoryList, count) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const promises = categoryList.map(async (category) => {
+				let result = await get(category, count);
+				result = result.map(object => {
+					object.collection = category;
+					return object;
+				});
+				return result;
+			});
+			let results = await Promise.all(promises);
+			results = results.reduce((acc, val) => acc.concat(val), []);
+			results.sort((a, b) => {
+				if (a._id.getTimestamp() < b._id.getTimestamp()) return 1;
+				else return -1;
+			});
+			results = results.slice(0, count);
+			resolve(results);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+};
+
+// delete object by id from specified collection and delete or update all connected objects
+const get = module.exports.get = (category, count) => {
+	return new Promise(async (resolve, reject) => {
 		try {
 			let objects = await categories[category].model.find();
-			
+
 			objects.sort((a, b) => {
 				if (a._id.getTimestamp() < b._id.getTimestamp()) return 1;
 				else return -1;
 			});
 			objects = objects.slice(0, count);
-			if (categories[category].string != undefined) objects = await dereference.objectArray(objects, categories[category].string, false);
+
+			if (categories[category].string != undefined)
+				objects = await dereference.objectArray(objects, categories[category].string, false);
+			else {
+				objects = objects.map(object => {
+					let copy = JSON.parse(JSON.stringify(object));
+					copy._id = object._id;
+					return copy;
+				});
+			}
 			resolve(objects);
 		}
 		catch (err) {

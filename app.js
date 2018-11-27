@@ -8,6 +8,8 @@ const path = require('path');
 const app = express();
 
 // load routes
+const general = require('./routes/general');
+
 const events = require('./routes/events');
 const unvalidated_events = require('./routes/unvalidated_events');
 const archived_events = require('./routes/archived_events');
@@ -70,6 +72,8 @@ app.get('/', (req, res) => {
 });
 
 // use routes
+app.use('/api/general', general);
+
 app.use('/api/events', events);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/archived-events', archived_events);

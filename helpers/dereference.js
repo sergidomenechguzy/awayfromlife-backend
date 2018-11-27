@@ -272,8 +272,16 @@ const locationObject = module.exports.locationObject = (location) => {
 		if (typeof location == 'string') resolve(location);
 
 		try {
-			let responseLocation = JSON.parse(JSON.stringify(location));
-			responseLocation.address = location.address.default;
+			const responseLocation = {
+				_id: location._id,
+				name: location.name,
+				url: location.url,
+				address: location.address.default,
+				status: location.status,
+				information: location.information,
+				website: location.website,
+				facebookUrl: location.facebookUrl
+			};
 			resolve(responseLocation);
 		}
 		catch (err) {
