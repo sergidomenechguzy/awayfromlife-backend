@@ -28,7 +28,8 @@ module.exports.events = () => {
 					time: object.time,
 					bands: object.bands,
 					canceled: object.canceled,
-					ticketLink: object.ticketLink
+					ticketLink: object.ticketLink,
+					verifiable: object.verifiable
 				};
 				const saved = await new ArchivedEvent(newEvent).save();
 				return saved;
