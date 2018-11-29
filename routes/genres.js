@@ -97,7 +97,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name']), va
 // delete genre by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'genre');
+		const response = await deleteRoute.deleteObject(req.params._id, 'genre');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {

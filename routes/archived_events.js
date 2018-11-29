@@ -491,7 +491,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'loc
 // delete location by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'archivedEvent');
+		const response = await deleteRoute.deleteObject(req.params._id, 'archivedEvent');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {

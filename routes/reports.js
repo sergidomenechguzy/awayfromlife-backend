@@ -72,7 +72,7 @@ router.post('/accept/:_id', token.checkToken(true), async (req, res) => {
 		if (!report)
 			return res.status(400).json({ message: 'No report found with this ID', token: res.locals.token });
 
-		const response = await deleteRoute.delete(report.item, report.category);
+		const response = await deleteRoute.deleteObject(report.item, report.category);
 		if (response.status == 200)
 			return res.status(response.status).json({ message: 'Report and ' + report.category + ' deleted', token: res.locals.token });
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
@@ -86,7 +86,7 @@ router.post('/accept/:_id', token.checkToken(true), async (req, res) => {
 // delete report by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'report');
+		const response = await deleteRoute.deleteObject(req.params._id, 'report');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {

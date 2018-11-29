@@ -65,7 +65,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['error']), val
 // delete bug by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
-		const response = await deleteRoute.delete(req.params._id, 'bug');
+		const response = await deleteRoute.deleteObject(req.params._id, 'bug');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });
 	}
 	catch (err) {
