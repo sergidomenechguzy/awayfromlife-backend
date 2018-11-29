@@ -63,11 +63,11 @@ const categories = {
 	report: { model: Report, string: 'report' }
 };
 
-module.exports.getMultiple = (categoryList, count) => {
+module.exports.getMultiple = function getMultiple(categoryList, count) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const promises = categoryList.map(async (category) => {
-				let result = await get(category, count);
+				let result = await this.get(category, count);
 				result = result.map(object => {
 					object.collection = category;
 					return object;
@@ -90,7 +90,7 @@ module.exports.getMultiple = (categoryList, count) => {
 };
 
 // delete object by id from specified collection and delete or update all connected objects
-const get = module.exports.get = (category, count) => {
+module.exports.get = function get(category, count) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			let objects = await categories[category].model.find();
@@ -110,7 +110,34 @@ const get = module.exports.get = (category, count) => {
 					return copy;
 				});
 			}
+			if (category == 'festivalEvent' || category == 'unvalidatedFestivalEvent') {
+				objects = await addFestivalUrl(objects, category);
+			}
 			resolve(objects);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+function addFestivalUrl(objects, category) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const promises = objects.map(async (object) => {
+				let festival = await Festival.findOne({ events: object._id });
+				if (festival == undefined) {
+					object.url = 'festival-not-found';
+					if (category == 'unvalidatedFestivalEvent') {
+						festival = await UnvalidatedFestival.findOne({ events: object._id });
+						if (festival != undefined) object.url = festival.url;
+					}
+				}
+				else object.url = festival.url;
+				return object;
+			});
+			const objectList = Promise.all(promises);
+			resolve(objectList);
 		}
 		catch (err) {
 			reject(err);
