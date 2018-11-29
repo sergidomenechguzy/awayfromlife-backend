@@ -6,7 +6,7 @@ require('../models/Event');
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
 
-module.exports.events = () => {
+function events() {
 	return new Promise(async (resolve, reject) => {
 		try {
 			let archiveEvents = [];
@@ -41,4 +41,8 @@ module.exports.events = () => {
 			reject(err);
 		}
 	});
+}
+
+module.exports = {
+	events: events
 };

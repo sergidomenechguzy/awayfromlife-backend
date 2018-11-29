@@ -63,11 +63,11 @@ const categories = {
 	report: { model: Report, string: 'report' }
 };
 
-module.exports.getMultiple = function getMultiple(categoryList, count) {
+function getMultiple(categoryList, count) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const promises = categoryList.map(async (category) => {
-				let result = await this.get(category, count);
+				let result = await get(category, count);
 				result = result.map(object => {
 					object.collection = category;
 					return object;
@@ -87,10 +87,10 @@ module.exports.getMultiple = function getMultiple(categoryList, count) {
 			reject(err);
 		}
 	});
-};
+}
 
 // delete object by id from specified collection and delete or update all connected objects
-module.exports.get = function get(category, count) {
+function get(category, count) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			let objects = await categories[category].model.find();
@@ -144,3 +144,8 @@ function addFestivalUrl(objects, category) {
 		}
 	});
 }
+
+module.exports = {
+	getMultiple: getMultiple,
+	get: get
+};

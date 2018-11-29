@@ -43,7 +43,7 @@ require('../../models/Feedback');
 const Feedback = mongoose.model('feedback');
 
 // delete object by id from specified collection and delete or update all connected objects
-module.exports.delete = (id, collection) => {
+function deleteObject(id, collection) {
 	return new Promise(async (resolve, reject) => {
 		const categories = {
 			event: { model: Event, string: 'Event' },
@@ -143,7 +143,7 @@ module.exports.delete = (id, collection) => {
 	});
 }
 
-const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollection = (collection, id, newId) => {
+function deleteBandFromEventCollection(collection, id, newId) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const events = await collection.find({ bands: id });
@@ -165,7 +165,7 @@ const deleteBandFromEventCollection = module.exports.deleteBandFromEventCollecti
 	});
 }
 
-const deleteLocationFromEventCollection = module.exports.deleteLocationFromEventCollection = (collection, id, newId) => {
+function deleteLocationFromEventCollection(collection, id, newId) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const events = await collection.find({ location: id });
@@ -187,7 +187,7 @@ const deleteLocationFromEventCollection = module.exports.deleteLocationFromEvent
 	});
 }
 
-const checkVerifiable = (location, bands) => {
+function checkVerifiable(location, bands) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (location == 'Location was deleted') resolve(false);
@@ -201,3 +201,9 @@ const checkVerifiable = (location, bands) => {
 		}
 	});
 }
+
+module.exports = {
+	deleteObject: deleteObject,
+	deleteBandFromEventCollection: deleteBandFromEventCollection,
+	deleteLocationFromEventCollection: deleteLocationFromEventCollection
+};

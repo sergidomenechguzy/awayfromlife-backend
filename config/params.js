@@ -1,5 +1,5 @@
 // checks if given parameters exist in request
-module.exports.checkParameters = params => {
+function checkParameters(params) {
 	return (req, res, next) => {
 		let missingParams = [];
 		params.forEach((param) => {
@@ -10,7 +10,7 @@ module.exports.checkParameters = params => {
 	}
 }
 
-module.exports.checkListParameters = params => {
+function checkListParameters(params) {
 	return (req, res, next) => {
 		if (!req.body.list) return res.status(400).json({ message: 'Parameter(s) missing: list' });
 
@@ -28,3 +28,8 @@ module.exports.checkListParameters = params => {
 		return next();
 	}
 }
+
+module.exports = {
+	checkParameters: checkParameters,
+	checkListParameters: checkListParameters
+};

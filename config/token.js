@@ -10,21 +10,20 @@ const User = mongoose.model('users');
 const secrets = require('../config/secrets');
 
 const expTime = (20 * 60);
-module.exports.expTime = expTime;
 
 // signs jwt with given user id
-module.exports.signJWT = (userID, sessionID) => {
+function signJWT(userID, sessionID) {
 	return jwt.sign({ userID: userID, sessionID: sessionID, exp: Math.floor(Date.now() / 1000) + expTime }, secrets.authSecret);
 }
 
-module.exports.createSession = () => {
+function createSession() {
 	return {
 		sessionID: uuidv4(),
 		expireTime: Math.floor(Date.now() / 1000) + expTime
 	};
 }
 
-module.exports.checkToken = (forbidden) => {
+function checkToken(forbidden) {
 	return (req, res, next) => {
 		if (!req.headers.authorization || req.headers.authorization.split(' ')[0] != 'JWT') {
 			if (forbidden) return res.status(401).json({ message: 'Unauthorized' });
@@ -68,3 +67,10 @@ module.exports.checkToken = (forbidden) => {
 		});
 	}
 }
+
+module.exports = {
+	expTime: expTime,
+	signJWT: signJWT,
+	createSession: createSession,
+	checkToken: checkToken
+};

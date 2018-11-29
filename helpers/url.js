@@ -21,7 +21,7 @@ const Festival = mongoose.model('festivals');
 // load dereference.js
 const dereference = require('./dereference');
 
-module.exports.generateUrl = (object, model, urlList) => {
+function generateUrl(object, model, urlList) {
 	return new Promise(async (resolve, reject) => {
 		const urlListChecked = urlList || [];
 		const copiedObject = JSON.parse(JSON.stringify(object));
@@ -36,7 +36,7 @@ module.exports.generateUrl = (object, model, urlList) => {
 	});
 }
 
-const checkUrl = (object, model, url, urlList, counter) => {
+function checkUrl(object, model, url, urlList, counter) {
 	return new Promise(async (resolve, reject) => {
 		if (!object) resolve(null);
 
@@ -77,7 +77,7 @@ const checkUrl = (object, model, url, urlList, counter) => {
 	});
 }
 
-module.exports.generateEventUrl = (object, model, urlList) => {
+function generateEventUrl(object, model, urlList) {
 	return new Promise(async (resolve, reject) => {
 		const urlListChecked = urlList || [];
 		try {
@@ -93,7 +93,7 @@ module.exports.generateEventUrl = (object, model, urlList) => {
 	});
 }
 
-const checkEventUrl = (object, model, url, urlList, counter) => {
+function checkEventUrl(object, model, url, urlList, counter) {
 	return new Promise(async (resolve, reject) => {
 		if (!object) resolve(null);
 
@@ -144,7 +144,7 @@ const checkEventUrl = (object, model, url, urlList, counter) => {
 	});
 }
 
-const generateUrlFromObject = (object, type) => {
+function generateUrlFromObject(object, type) {
 	let url = '';
 	
 	switch (type) {
@@ -162,7 +162,7 @@ const generateUrlFromObject = (object, type) => {
 	return url.toLocaleLowerCase();
 }
 
-const deUmlaut = (value) => {
+function deUmlaut(value) {
 	value = value.replace(/ä/g, 'ae');
 	value = value.replace(/ö/g, 'oe');
 	value = value.replace(/ü/g, 'ue');
@@ -181,3 +181,8 @@ const deUmlaut = (value) => {
 	value = value.replace(/^-/g, '');
 	return value;
 }
+
+module.exports = {
+	generateUrl: generateUrl,
+	generateEventUrl: generateEventUrl
+};

@@ -27,7 +27,7 @@ require('../models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
-const objectArray = module.exports.objectArray = (objects, model, sortBy, order) => {
+function objectArray(objects, model, sortBy, order) {
 	return new Promise(async (resolve, reject) => {
 		if (objects.length === 0) resolve([]);
 
@@ -67,7 +67,7 @@ const objectArray = module.exports.objectArray = (objects, model, sortBy, order)
 	});
 }
 
-const bandObject = module.exports.bandObject = (band) => {
+function bandObject(band) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof band == 'string') resolve(band);
 
@@ -106,7 +106,7 @@ const bandObject = module.exports.bandObject = (band) => {
 	});
 }
 
-const eventObject = module.exports.eventObject = (event) => {
+function eventObject(event) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof event == 'string') resolve(event);
 
@@ -174,7 +174,7 @@ const eventObject = module.exports.eventObject = (event) => {
 	});
 }
 
-const festivalEventObject = module.exports.festivalEventObject = (festivalEvent) => {
+function festivalEventObject(festivalEvent) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof festivalEvent == 'string') resolve(festivalEvent);
 
@@ -219,7 +219,7 @@ const festivalEventObject = module.exports.festivalEventObject = (festivalEvent)
 	});
 }
 
-const festivalObject = module.exports.festivalObject = (festival) => {
+function festivalObject(festival) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof festival == 'string') resolve(festival);
 
@@ -267,7 +267,7 @@ const festivalObject = module.exports.festivalObject = (festival) => {
 	});
 }
 
-const locationObject = module.exports.locationObject = (location) => {
+function locationObject(location) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof location == 'string') resolve(location);
 
@@ -290,7 +290,7 @@ const locationObject = module.exports.locationObject = (location) => {
 	});
 }
 
-const reportObject = module.exports.reportObject = (report) => {
+function reportObject(report) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof report == 'string') resolve(report);
 
@@ -325,53 +325,7 @@ const reportObject = module.exports.reportObject = (report) => {
 	});
 }
 
-// module.exports.reportObjectArray = (reports, order, next) => {
-// 	if (reports.length === 0) return next(null, []);
-
-// 	let responseReports = [];
-// 	let reportList = {
-// 		event: [],
-// 		location: [],
-// 		band: [],
-// 		festival: []
-// 	}
-// 	reports.forEach((report, index, array) => {
-// 		let model = Event;
-// 		if (report.category == 'location') model = Location;
-// 		else if (report.category == 'band') model = Band;
-// 		else if (report.category == 'festival') model = Festival;
-
-// 		reportObject(report, model, (err, responseReport) => {
-// 			if (err) return next(err, null);
-
-// 			reportList[responseReport.category].push(responseReport);
-
-// 			if ((reportList.event.length + reportList.location.length + reportList.band.length + reportList.festival.length) == array.length) {
-// 				reportList.event.sort((a, b) => {
-// 					if (order === -1) return b.item.name.localeCompare(a.item.name);
-// 					return a.item.name.localeCompare(b.item.name);
-// 				});
-// 				reportList.location.sort((a, b) => {
-// 					if (order === -1) return b.item.name.localeCompare(a.item.name);
-// 					return a.item.name.localeCompare(b.item.name);
-// 				});
-// 				reportList.band.sort((a, b) => {
-// 					if (order === -1) return b.item.name.localeCompare(a.item.name);
-// 					return a.item.name.localeCompare(b.item.name);
-// 				});
-// 				reportList.festival.sort((a, b) => {
-// 					if (order === -1) return b.item.name.localeCompare(a.item.name);
-// 					return a.item.name.localeCompare(b.item.name);
-// 				});
-// 				responseReports = responseReports.concat(reportList.band).concat(reportList.event).concat(reportList.festival).concat(reportList.location);
-
-// 				return next(null, responseReports);
-// 			}
-// 		});
-// 	});
-// }
-
-const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (unvalidatedFestival) => {
+function unvalidatedFestivalObject(unvalidatedFestival) {
 	return new Promise(async (resolve, reject) => {
 		if (typeof unvalidatedFestival == 'string') resolve(unvalidatedFestival);
 
@@ -407,7 +361,7 @@ const unvalidatedFestivalObject = module.exports.unvalidatedFestivalObject = (un
 	});
 }
 
-const bandSort = module.exports.bandSort = (objectList, sortBy, order) => {
+function bandSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -427,7 +381,7 @@ const bandSort = module.exports.bandSort = (objectList, sortBy, order) => {
 	});
 }
 
-const eventSort = module.exports.eventSort = (objectList, sortBy, order) => {
+function eventSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -446,7 +400,7 @@ const eventSort = module.exports.eventSort = (objectList, sortBy, order) => {
 	});
 }
 
-const festivalSort = (objectList, sortBy, order) => {
+function festivalSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (sortBy === 'city' || sortBy === 'country') {
 			if (order === -1) return b.address[sortBy].localeCompare(a.address[sortBy]);
@@ -459,7 +413,7 @@ const festivalSort = (objectList, sortBy, order) => {
 	});
 }
 
-const festivalEventSort = (objectList, sortBy, order) => {
+function festivalEventSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -468,7 +422,7 @@ const festivalEventSort = (objectList, sortBy, order) => {
 	});
 }
 
-const locationSort = module.exports.locationSort = (objectList, sortBy, order) => {
+function locationSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (sortBy == 'street' || sortBy == 'city') {
 			if (order === -1) return b.address[sortBy].localeCompare(a.address[sortBy]);
@@ -479,7 +433,7 @@ const locationSort = module.exports.locationSort = (objectList, sortBy, order) =
 	});
 }
 
-const reportSort = (objectList, sortBy, order) => {
+function reportSort(objectList, sortBy, order) {
 	return objectList.sort((a, b) => {
 		if (typeof a == 'string') return 1;
 		if (typeof b == 'string') return -1;
@@ -487,3 +441,17 @@ const reportSort = (objectList, sortBy, order) => {
 		return a.category.localeCompare(b.category);
 	});
 }
+
+module.exports = {
+	objectArray: objectArray,
+	bandObject: bandObject,
+	eventObject: eventObject,
+	festivalEventObject: festivalEventObject,
+	festivalObject: festivalObject,
+	locationObject: locationObject,
+	reportObject: reportObject,
+	unvalidatedFestival: unvalidatedFestivalObject,
+	bandSort: bandSort,
+	eventSort: eventSort,
+	locationSort: locationSort
+};
