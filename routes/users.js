@@ -5,13 +5,13 @@ const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 // load user model
-require('../models/User');
+require(dirPath + '/models/User');
 const User = mongoose.model('users');
 
 // load secrets
-const secrets = require('../config/secrets');
+const secrets = require(dirPath + '/config/secrets');
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 
 // users routes
 // logout and clear current valid token

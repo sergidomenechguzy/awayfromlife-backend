@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 
 // get latest added events
 router.get('/latest', token.checkToken(false), async (req, res) => {

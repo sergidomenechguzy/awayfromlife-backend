@@ -3,27 +3,27 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load report model
-require('../models/Report');
+require(dirPath + '/models/Report');
 const Report = mongoose.model('reports');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params.js');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token.js');
+const token = require(dirPath + '/config/token');
 // load dereference.js
-const dereference = require('../helpers/dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 // load validateReport.js
-const validateReport = require('../helpers/validateReport');
+const validateReport = require(dirPath + '/helpers/validateReport');
 
 // reports routes
 // get all reports
-router.get('/', token.checkToken(false), async (req, res) => {
+router.get('/', token.checkToken(true), async (req, res) => {
 	try {
 		const reports = await Report.find();
 		if (reports.length === 0)
@@ -39,7 +39,7 @@ router.get('/', token.checkToken(false), async (req, res) => {
 });
 
 // get latest added reports
-router.get('/latest', token.checkToken(false), async (req, res) => {
+router.get('/latest', token.checkToken(true), async (req, res) => {
 	try {
 		let count = 5;
 		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);

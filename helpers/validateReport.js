@@ -1,19 +1,19 @@
 const mongoose = require('mongoose');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // validate all attributes for report objects in the request body

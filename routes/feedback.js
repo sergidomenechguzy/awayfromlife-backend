@@ -3,21 +3,21 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load feedback model
-require('../models/Feedback');
+require(dirPath + '/models/Feedback');
 const Feedback = mongoose.model('feedback');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params.js');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token.js');
+const token = require(dirPath + '/config/token');
 // load validateFeedback.js
-const validateFeedback = require('../helpers/validateFeedback');
+const validateFeedback = require(dirPath + '/helpers/validateFeedback');
 
 // feedback routes
 // get all feedback
@@ -36,7 +36,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get latest added feedback
-router.get('/latest', token.checkToken(false), async (req, res) => {
+router.get('/latest', token.checkToken(true), async (req, res) => {
 	try {
 		let count = 5;
 		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);

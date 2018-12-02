@@ -3,21 +3,21 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load bug model
-require('../models/Bug');
+require(dirPath + '/models/Bug');
 const Bug = mongoose.model('bugs');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params.js');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token.js');
+const token = require(dirPath + '/config/token');
 // load validateBug.js
-const validateBug = require('../helpers/validateBug');
+const validateBug = require(dirPath + '/helpers/validateBug');
 
 // bugs routes
 // get all bugs
@@ -36,7 +36,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 });
 
 // get latest added bugs
-router.get('/latest', token.checkToken(false), async (req, res) => {
+router.get('/latest', token.checkToken(true), async (req, res) => {
 	try {
 		let count = 5;
 		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);

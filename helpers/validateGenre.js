@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // load genre model
-require('../models/Genre');
+require(dirPath + '/models/Genre');
 const Genre = mongoose.model('genres');
 
 // validate all attributes for one genre object in the request body

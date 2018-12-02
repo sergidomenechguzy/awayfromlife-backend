@@ -3,40 +3,40 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 
 // load event model
-require('../models/Festival_Event');
+require(dirPath + '/models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // load genre model
-require('../models/Genre');
+require(dirPath + '/models/Genre');
 const Genre = mongoose.model('genres');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 // load dereference.js
-const dereference = require('../helpers/dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 // load validateBand.js
-const validateBand = require('../helpers/validateBand');
+const validateBand = require(dirPath + '/helpers/validateBand');
 
 // bands routes
 // get all bands

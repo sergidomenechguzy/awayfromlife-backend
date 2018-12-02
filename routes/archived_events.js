@@ -4,33 +4,33 @@ const router = express.Router();
 const moment = require('moment');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const ArchivedEvent = mongoose.model('archived_events');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 // load dereference.js
-const dereference = require('../helpers/dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 // load archive.js
-const archive = require('../config/archive');
+const archive = require(dirPath + '/config/archive');
 // load validateEvent.js
-const validateEvent = require('../helpers/validateEvent');
+const validateEvent = require(dirPath + '/helpers/validateEvent');
 
 // events routes
 // get all events

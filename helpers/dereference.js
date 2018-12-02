@@ -1,29 +1,29 @@
 const mongoose = require('mongoose');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load genre model
-require('../models/Genre');
+require(dirPath + '/models/Genre');
 const Genre = mongoose.model('genres');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // load festival event model
-require('../models/Festival_Event');
+require(dirPath + '/models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 

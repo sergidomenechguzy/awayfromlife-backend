@@ -2,23 +2,23 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load url.js
-const url = require('./url');
+const url = require(dirPath + '/helpers/url');
 
 // validate all attributes for one event object in the request body
 module.exports.validateObject = (type, model) => {

@@ -3,29 +3,29 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // load event model
-require('../models/Festival_Event');
+require(dirPath + '/models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 // load dereference.js
-const dereference = require('../helpers/dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 // load validateFestival.js
-const validateFestival = require('../helpers/validateFestival');
+const validateFestival = require(dirPath + '/helpers/validateFestival');
 // load validateFestivalAndFestivalEvent.js
-const validateFestivalAndFestivalEvent = require('../helpers/validateFestivalAndFestivalEvent');
+const validateFestivalAndFestivalEvent = require(dirPath + '/helpers/validateFestivalAndFestivalEvent');
 
 // festivals routes
 // get all festivals

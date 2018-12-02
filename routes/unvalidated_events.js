@@ -3,24 +3,24 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token');
+const token = require(dirPath + '/config/token');
 // load dereference.js
-const dereference = require('../helpers/dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 // load validateEvent.js
-const validateEvent = require('../helpers/validateEvent');
+const validateEvent = require(dirPath + '/helpers/validateEvent');
 
 // unvalidated_events routes
 // get all events

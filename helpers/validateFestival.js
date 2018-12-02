@@ -3,16 +3,16 @@ const algoliasearch = require('algoliasearch');
 const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 const UnvalidatedFestival = mongoose.model('unvalidated_festivals');
 
 // load genre model
-require('../models/Genre');
+require(dirPath + '/models/Genre');
 const Genre = mongoose.model('genres');
 
 // load url.js
-const url = require('./url');
+const url = require(dirPath + '/helpers/url');
 
 // validate all attributes for one band object in the request body
 module.exports.validateObject = () => {

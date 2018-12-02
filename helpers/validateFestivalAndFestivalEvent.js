@@ -1,7 +1,7 @@
 // load validateFestival.js
-const validateFestival = require('./validateFestival');
+const validateFestival = require(dirPath + '/helpers/validateFestival');
 // load validateFestivalEvent.js
-const validateFestivalEvent = require('./validateFestivalEvent');
+const validateFestivalEvent = require(dirPath + '/helpers/validateFestivalEvent');
 
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {

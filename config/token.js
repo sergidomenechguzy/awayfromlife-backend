@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 const uuidv4 = require('uuid/v4');
 
 // load user model
-require('../models/User');
+require(dirPath + '/models/User');
 const User = mongoose.model('users');
 
 // load secrets
-const secrets = require('../config/secrets');
+const secrets = require(dirPath + '/config/secrets');
 
 const expTime = (20 * 60);
 

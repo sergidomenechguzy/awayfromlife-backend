@@ -3,21 +3,21 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // load genre model
-require('../models/Genre');
+require(dirPath + '/models/Genre');
 const Genre = mongoose.model('genres');
 
 // load delete route
-const deleteRoute = require('./controller/delete');
+const deleteRoute = require(dirPath + '/routes/controller/delete');
 
 // load delete route
-const latest = require('./controller/latest');
+const latest = require(dirPath + '/routes/controller/latest');
 
 // load params.js
-const params = require('../config/params.js');
+const params = require(dirPath + '/config/params');
 // load token.js
-const token = require('../config/token.js');
+const token = require(dirPath + '/config/token');
 // load validateGenre.js
-const validateGenre = require('../helpers/validateGenre');
+const validateGenre = require(dirPath + '/helpers/validateGenre');
 
 // genres routes
 // get all genres

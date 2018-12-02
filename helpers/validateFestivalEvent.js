@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
 
 // load festival event model
-require('../models/Festival_Event');
+require(dirPath + '/models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 

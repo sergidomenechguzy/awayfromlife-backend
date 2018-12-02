@@ -2,24 +2,24 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 
 // load event model
-require('../models/Event');
+require(dirPath + '/models/Event');
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
 
 // load band model
-require('../models/Band');
+require(dirPath + '/models/Band');
 const Band = mongoose.model('bands');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 
 // load festival model
-require('../models/Festival');
+require(dirPath + '/models/Festival');
 const Festival = mongoose.model('festivals');
 
 // load dereference.js
-const dereference = require('./dereference');
+const dereference = require(dirPath + '/helpers/dereference');
 
 function generateUrl(object, model, urlList) {
 	return new Promise(async (resolve, reject) => {

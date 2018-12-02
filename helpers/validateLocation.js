@@ -3,12 +3,12 @@ const algoliasearch = require('algoliasearch');
 const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
 
 // load location model
-require('../models/Location');
+require(dirPath + '/models/Location');
 const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load url.js
-const url = require('./url');
+const url = require(dirPath + '/helpers/url');
 
 // validate all attributes for one location object in the request body
 module.exports.validateObject = (type) => {
