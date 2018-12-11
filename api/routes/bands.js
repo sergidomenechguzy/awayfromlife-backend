@@ -482,4 +482,17 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
+
+router.post('/withImage', multerConfig.bandUpload.single('image'), validateBand.validateObject('post'), async (req, res) => {
+	const newBand = await new Band(res.locals.validated).save();
+	return res.status(200).json({ message: 'Band saved', data: newBand, token: res.locals.token });
+});
+
+
+
+
 module.exports = router;

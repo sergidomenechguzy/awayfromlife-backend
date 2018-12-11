@@ -96,7 +96,8 @@ function bandObject(band) {
 				website: band.website,
 				bandcampUrl: band.bandcampUrl,
 				soundcloudUrl: band.soundcloudUrl,
-				facebookUrl: band.facebookUrl
+				facebookUrl: band.facebookUrl,
+				image: band.image
 			};
 			resolve(responseBand);
 		}

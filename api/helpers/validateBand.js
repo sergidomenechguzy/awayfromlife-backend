@@ -18,9 +18,13 @@ const url = require(dirPath + '/api/helpers/url');
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
-			let response;
-			if (type == 'put' || type == 'validate') response = await validateBand(req.body, type, { id: req.params._id });
-			else response = await validateBand(req.body, type);
+			let options = {};
+			if (type == 'put' || type == 'validate')
+				options.id = req.params._id;
+			if (req.file != undefined)
+				options.image = req.file.path;
+
+			const response = await validateBand(JSON.parse(req.body.json), type, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -38,7 +42,8 @@ module.exports.validateList = (type) => {
 		try {
 			let responseList = [];
 			let urlList = [];
-			for (const current of req.body.list) {
+			const json = JSON.parse(req.body.json);
+			for (const current of json.list) {
 				const response = await validateBand(current, type, { urlList: urlList });
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
@@ -60,6 +65,7 @@ const validateBand = (data, type, options) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
 		const urlList = optionsChecked.urlList || [];
+		const image = optionsChecked.image || '';
 
 		try {
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
@@ -229,7 +235,8 @@ const validateBand = (data, type, options) => {
 					website: data.website != undefined ? data.website : object.website,
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : object.bandcampUrl,
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : object.soundcloudUrl,
-					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl
+					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
+					image: image
 				};
 				if (type == 'put') newBand._id = id;
 				const updatedObject = await url.generateUrl(newBand, 'band');
@@ -260,7 +267,8 @@ const validateBand = (data, type, options) => {
 					website: data.website != undefined ? data.website : '',
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : '',
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : '',
-					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : ''
+					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
+					image: image
 				};
 				if (type == 'unvalidated') resolve(newBand);
 				else {
