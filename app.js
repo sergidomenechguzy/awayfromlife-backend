@@ -57,11 +57,11 @@ app.use(bodyParser.json());
 
 // morgan logger setup
 app.use(morgan('combined', {
-	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/access.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/access.log'), { flags: 'a' })
 }));
 app.use(morgan('combined', {
 	skip: (req, res) => { return res.statusCode < 400 },
-	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/error.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/error.log'), { flags: 'a' })
 }));
 
 app.use(function (req, res, next) {
@@ -108,6 +108,10 @@ const port = secrets.port;
 
 app.listen(port, () => {
 	console.log(`> Server startet on port ${port}`);
+});
+
+app.use((req, res) => {
+	res.status(404).json({ error: "404 - Not found" });
 });
 
 if (process.env.NODE_ENV === 'production') {
