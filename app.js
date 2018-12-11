@@ -10,37 +10,37 @@ const app = express();
 global.dirPath = __dirname;
 
 // load routes
-const general = require(dirPath + '/routes/general');
+const general = require(dirPath + '/api/routes/general');
 
-const events = require(dirPath + '/routes/events');
-const unvalidated_events = require(dirPath + '/routes/unvalidated_events');
-const archived_events = require(dirPath + '/routes/archived_events');
+const events = require(dirPath + '/api/routes/events');
+const unvalidated_events = require(dirPath + '/api/routes/unvalidated_events');
+const archived_events = require(dirPath + '/api/routes/archived_events');
 
-const festivals = require(dirPath + '/routes/festivals');
-const unvalidated_festivals = require(dirPath + '/routes/unvalidated_festivals');
-const festival_events = require(dirPath + '/routes/festival_events');
-const unvalidated_festival_events = require(dirPath + '/routes/unvalidated_festival_events');
+const festivals = require(dirPath + '/api/routes/festivals');
+const unvalidated_festivals = require(dirPath + '/api/routes/unvalidated_festivals');
+const festival_events = require(dirPath + '/api/routes/festival_events');
+const unvalidated_festival_events = require(dirPath + '/api/routes/unvalidated_festival_events');
 
-const locations = require(dirPath + '/routes/locations');
-const unvalidated_locations = require(dirPath + '/routes/unvalidated_locations');
+const locations = require(dirPath + '/api/routes/locations');
+const unvalidated_locations = require(dirPath + '/api/routes/unvalidated_locations');
 
-const bands = require(dirPath + '/routes/bands');
-const unvalidated_bands = require(dirPath + '/routes/unvalidated_bands');
+const bands = require(dirPath + '/api/routes/bands');
+const unvalidated_bands = require(dirPath + '/api/routes/unvalidated_bands');
 
-const genres = require(dirPath + '/routes/genres');
+const genres = require(dirPath + '/api/routes/genres');
 
-const search = require(dirPath + '/routes/search');
+const search = require(dirPath + '/api/routes/search');
 
-const bugs = require(dirPath + '/routes/bugs');
-const feedback = require(dirPath + '/routes/feedback');
-const reports = require(dirPath + '/routes/reports');
+const bugs = require(dirPath + '/api/routes/bugs');
+const feedback = require(dirPath + '/api/routes/feedback');
+const reports = require(dirPath + '/api/routes/reports');
 
-const users = require(dirPath + '/routes/users');
+const users = require(dirPath + '/api/routes/users');
 
-// load secrets
-const secrets = require(dirPath + '/config/secrets');
+// load secrets.js
+const secrets = require(dirPath + '/api/config/secrets');
 // load archive.js
-const archive = require(dirPath + '/config/archive');
+const archive = require(dirPath + '/api/routes/controller/archive');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
@@ -48,17 +48,20 @@ mongoose.connect(secrets.dbURL, { useMongoClient: true })
 	.then(() => console.log('> MongoDB connected'))
 	.catch(err => console.log(err));
 
+// make images folder publicly available
+app.use('/images', express.static('images'));
+
 // body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // morgan logger setup
 app.use(morgan('combined', {
-	stream: fs.createWriteStream(path.join(__dirname, '/logs/access.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/access.log'), {flags: 'a'})
 }));
 app.use(morgan('combined', {
 	skip: (req, res) => { return res.statusCode < 400 },
-	stream: fs.createWriteStream(path.join(__dirname, '/logs/error.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/error.log'), {flags: 'a'})
 }));
 
 app.use(function (req, res, next) {
