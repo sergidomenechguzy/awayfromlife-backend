@@ -71,7 +71,7 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 
 		let finalList = dereferenced.concat(dereferencedUnvalidated);
 		finalList = dereference.eventSort(finalList, 'name', 1);
-		
+
 		return res.status(200).json({ data: finalList, token: res.locals.token });
 	}
 	catch (err) {
@@ -575,9 +575,14 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 router.post('/withImage', multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
-	const newEvent = new Event(res.locals.validated);
-	// const newEvent = await new Event(res.locals.validated).save();
-	return res.status(200).json({ message: 'Event saved', data: newEvent, token: res.locals.token });
+	try {
+		const newEvent = await new Event(res.locals.validated).save();
+		return res.status(200).json({ message: 'Event saved', data: newEvent, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
 });
 
 
