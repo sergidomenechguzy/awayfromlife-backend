@@ -8,3 +8,6 @@ api/logs/*
 
 images/bands/*
 !images/bands/.gitkeep
+
+images/events/*
+!images/events/.gitkeep

@@ -26,3 +26,21 @@ module.exports.bandUpload = multer({
 	},
 	fileFilter: fileFilter
 });
+
+const eventStorage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		cb(null, './images/events/');
+	},
+	filename: (req, file, cb) => {
+		cb(null, Date.now() + '_' + file.originalname);
+	}
+});
+
+
+module.exports.eventUpload = multer({
+	storage: eventStorage,
+	limits: {
+		fileSize: fileSize
+	},
+	fileFilter: fileFilter
+});

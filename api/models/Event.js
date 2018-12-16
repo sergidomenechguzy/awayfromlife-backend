@@ -42,6 +42,9 @@ const EventSchema = new Schema({
 	lastModified: {
 		type: Number,
 		default: Date.now()
+	},
+	image: {
+		type: String
 	}
 });
 

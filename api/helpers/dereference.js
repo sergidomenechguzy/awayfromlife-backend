@@ -165,7 +165,8 @@ function eventObject(event) {
 				bands: bandListSorted,
 				canceled: event.canceled,
 				ticketLink: event.ticketLink,
-				verifiable: event.verifiable
+				verifiable: event.verifiable,
+				image: event.image
 			};
 			resolve(responseEvent);
 		}

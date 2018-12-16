@@ -569,4 +569,18 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
+
+router.post('/withImage', multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
+	const newEvent = new Event(res.locals.validated);
+	// const newEvent = await new Event(res.locals.validated).save();
+	return res.status(200).json({ message: 'Event saved', data: newEvent, token: res.locals.token });
+});
+
+
+
+
 module.exports = router;

@@ -24,9 +24,13 @@ const url = require(dirPath + '/api/helpers/url');
 module.exports.validateObject = (type, model) => {
 	return async (req, res, next) => {
 		try {
-			let response;
-			if (type == 'put' || type == 'validate') response = await validateEvent(req.body, type, model, { id: req.params._id });
-			else response = await validateEvent(req.body, type, model);
+			let options = {};
+			if (type == 'put' || type == 'validate')
+				options.id = req.params._id;
+			if (req.file != undefined)
+				options.image = req.file.path;
+
+			const response = await validateEvent(JSON.parse(req.body.json), type, model, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -44,7 +48,8 @@ module.exports.validateList = (type, model) => {
 		try {
 			let responseList = [];
 			let urlList = [];
-			for (const current of req.body.list) {
+			const json = JSON.parse(req.body.json);
+			for (const current of json.list) {
 				const response = await validateEvent(current, type, model, { urlList: urlList });
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
@@ -66,6 +71,7 @@ const validateEvent = (data, type, collection, options) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
 		const urlList = optionsChecked.urlList || [];
+		const image = optionsChecked.image || '';
 
 		try {
 			let verifiable = true;
@@ -176,7 +182,8 @@ const validateEvent = (data, type, collection, options) => {
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					verifiable: verifiable,
-					lastModified: Date.now()
+					lastModified: Date.now(),
+					image: image
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);
@@ -193,7 +200,8 @@ const validateEvent = (data, type, collection, options) => {
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : '',
-					verifiable: verifiable
+					verifiable: verifiable,
+					image: image
 				};
 				if (type == 'unvalidated') resolve(newEvent);
 				else {
