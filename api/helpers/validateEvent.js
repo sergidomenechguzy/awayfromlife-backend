@@ -19,6 +19,8 @@ const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load url.js
 const url = require(dirPath + '/api/helpers/url');
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
 
 // validate all attributes for one event object in the request body
 module.exports.validateObject = (type, model) => {
@@ -71,7 +73,7 @@ const validateEvent = (data, type, collection, options) => {
 		const optionsChecked = options || {};
 		const id = optionsChecked.id || '';
 		const urlList = optionsChecked.urlList || [];
-		const image = optionsChecked.image || '';
+		const imagePath = optionsChecked.image || '';
 
 		try {
 			let verifiable = true;
@@ -160,6 +162,10 @@ const validateEvent = (data, type, collection, options) => {
 			if (!(data.ticketLink == undefined || typeof data.ticketLink == 'string'))
 				resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
 
+			let imageList = [];
+			if (imagePath.length > 0)
+				imageList = await image.saveImages(imagePath);
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -183,7 +189,7 @@ const validateEvent = (data, type, collection, options) => {
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					verifiable: verifiable,
 					lastModified: Date.now(),
-					image: image
+					image: imageList
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);
@@ -201,7 +207,7 @@ const validateEvent = (data, type, collection, options) => {
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : '',
 					verifiable: verifiable,
-					image: image
+					image: imageList
 				};
 				if (type == 'unvalidated') resolve(newEvent);
 				else {

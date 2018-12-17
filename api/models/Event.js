@@ -44,7 +44,7 @@ const EventSchema = new Schema({
 		default: Date.now()
 	},
 	image: {
-		type: String
+		type: [String]
 	}
 });
 
