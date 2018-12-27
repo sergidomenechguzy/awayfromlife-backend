@@ -1,8 +1,4 @@
 const mongoose = require('mongoose');
-const fs = require('fs');
-const { promisify } = require('util');
-
-const unlinkAsync = promisify(fs.unlink);
 
 // load event model
 require(dirPath + '/api/models/Event');
@@ -46,6 +42,9 @@ const Bug = mongoose.model('bugs');
 require(dirPath + '/api/models/Feedback');
 const Feedback = mongoose.model('feedback');
 
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
+
 // delete object by id from specified collection and delete or update all connected objects
 function deleteObject(id, collection) {
 	return new Promise(async (resolve, reject) => {
@@ -72,7 +71,7 @@ function deleteObject(id, collection) {
 				resolve({ status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
 			await categories[collection].model.remove({ _id: id });
 			if (item.image != undefined)
-				await deleteImages(item.image);
+				await image.deleteImages(item.image);
 			switch (collection) {
 				case 'event':
 					await Report.remove({ category: 'event', item: id });
@@ -142,24 +141,6 @@ function deleteObject(id, collection) {
 				default:
 					resolve({ status: 200, message: categories[collection].string + ' deleted' });
 			}
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
-
-function deleteImages(array) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const promises = array.map(async (path) => {
-				if (path.includes('images/placeholders/'))
-					return;
-				const result = await unlinkAsync(path);
-				return result;
-			});
-			await Promise.all(promises);
-			resolve();
 		}
 		catch (err) {
 			reject(err);

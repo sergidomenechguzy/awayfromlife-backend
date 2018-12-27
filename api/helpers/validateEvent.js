@@ -179,6 +179,9 @@ const validateEvent = (data, type, collection, options) => {
 				if (!object)
 					resolve('No event found with this ID');
 
+				if (imageList.length > 0)
+					await image.deleteImages(object.image);
+
 				let newEvent = {
 					name: data.name.trim(),
 					url: '',
@@ -191,7 +194,7 @@ const validateEvent = (data, type, collection, options) => {
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					verifiable: verifiable,
 					lastModified: Date.now(),
-					image: imageList.length > 0 ? imageList : object.imageList
+					image: imageList.length > 0 ? imageList : object.image
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);

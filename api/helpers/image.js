@@ -49,6 +49,24 @@ function saveImages(path) {
 	});
 }
 
+function deleteImages(array) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const promises = array.map(async (path) => {
+				if (path.includes('images/placeholders/'))
+					return;
+				const result = await unlinkAsync(path);
+				return result;
+			});
+			await Promise.all(promises);
+			resolve();
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
 function scale(imageBuffer, outputPath, size) {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -86,5 +104,6 @@ function modifyPath(path, letter) {
 
 module.exports = {
 	randomPlaceholder: randomPlaceholder,
-	saveImages: saveImages
+	saveImages: saveImages,
+	deleteImages: deleteImages
 };
