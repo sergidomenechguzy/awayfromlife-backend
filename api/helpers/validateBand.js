@@ -24,7 +24,7 @@ module.exports.validateObject = (type) => {
 			if (req.file != undefined)
 				options.image = req.file.path;
 
-			const response = await validateBand(JSON.parse(req.body.json), type, options);
+			const response = await validateBand(JSON.parse(req.body.data), type, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -42,8 +42,8 @@ module.exports.validateList = (type) => {
 		try {
 			let responseList = [];
 			let urlList = [];
-			const json = JSON.parse(req.body.json);
-			for (const current of json.list) {
+			const data = JSON.parse(req.body.data);
+			for (const current of data.list) {
 				const response = await validateBand(current, type, { urlList: urlList });
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
