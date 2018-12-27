@@ -585,7 +585,17 @@ router.post('/withImage', multerConfig.eventUpload.single('image'), validateEven
 	}
 });
 
-
-
+// update event by id
+router.put('/withImage/:_id', multerConfig.eventUpload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
+	try {
+		const updated = await Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.eventObject(updated);
+		return res.status(200).json({ message: 'Event updated', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
 module.exports = router;

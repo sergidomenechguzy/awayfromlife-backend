@@ -6,6 +6,16 @@ const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
 const renameAsync = promisify(fs.rename);
 
+function randomPlaceholder() {
+	const randomNumber = Math.floor(Math.random() * Math.floor(17)) + 1;
+	const pathArray = [
+		`images/placeholders/${randomNumber}_S.jpg`,
+		`images/placeholders/${randomNumber}_M.jpg`,
+		`images/placeholders/${randomNumber}_L.jpg`
+	];
+	return pathArray;
+}
+
 function saveImages(path) {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -75,5 +85,6 @@ function modifyPath(path, letter) {
 }
 
 module.exports = {
+	randomPlaceholder: randomPlaceholder,
 	saveImages: saveImages
 };

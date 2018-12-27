@@ -32,7 +32,7 @@ module.exports.validateObject = (type, model) => {
 			if (req.file != undefined)
 				options.image = req.file.path;
 
-			const response = await validateEvent(JSON.parse(req.body.json), type, model, options);
+			const response = await validateEvent(JSON.parse(req.body.data), type, model, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -50,8 +50,8 @@ module.exports.validateList = (type, model) => {
 		try {
 			let responseList = [];
 			let urlList = [];
-			const json = JSON.parse(req.body.json);
-			for (const current of json.list) {
+			const data = JSON.parse(req.body.data);
+			for (const current of data.list) {
 				const response = await validateEvent(current, type, model, { urlList: urlList });
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
@@ -165,6 +165,8 @@ const validateEvent = (data, type, collection, options) => {
 			let imageList = [];
 			if (imagePath.length > 0)
 				imageList = await image.saveImages(imagePath);
+			else if (type == 'post' || type == 'unvalidated' || data.image.length == 0)
+				imageList = image.randomPlaceholder();
 
 
 			if (type == 'put' || type == 'validate') {
@@ -189,7 +191,7 @@ const validateEvent = (data, type, collection, options) => {
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					verifiable: verifiable,
 					lastModified: Date.now(),
-					image: imageList
+					image: imageList.length > 0 ? imageList : object.imageList
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);
