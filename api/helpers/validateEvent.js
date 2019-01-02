@@ -70,12 +70,11 @@ module.exports.validateList = (type, model) => {
 // check all attributes and build the finished object
 const validateEvent = (data, type, collection, options) => {
 	return new Promise(async (resolve, reject) => {
-		const optionsChecked = options || {};
-		const id = optionsChecked.id || '';
-		const urlList = optionsChecked.urlList || [];
-		const imagePath = optionsChecked.image || '';
-
 		try {
+			const optionsChecked = options || {};
+			const id = optionsChecked.id || '';
+			const urlList = optionsChecked.urlList || [];
+			const imagePath = optionsChecked.image || '';
 			let verifiable = true;
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))

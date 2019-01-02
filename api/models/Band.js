@@ -85,7 +85,7 @@ const BandSchema = new Schema({
 		type: String
 	},
 	image: {
-		type: String
+		type: [String]
 	}
 });
 

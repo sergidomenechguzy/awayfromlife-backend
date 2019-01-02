@@ -574,6 +574,7 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
+// post event to database
 router.post('/withImage', multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
 	try {
 		const newEvent = await new Event(res.locals.validated).save();

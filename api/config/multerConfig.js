@@ -18,8 +18,7 @@ const bandStorage = multer.diskStorage({
 	}
 });
 
-
-module.exports.bandUpload = multer({
+const bandUpload = multer({
 	storage: bandStorage,
 	limits: {
 		fileSize: fileSize
@@ -36,11 +35,15 @@ const eventStorage = multer.diskStorage({
 	}
 });
 
-
-module.exports.eventUpload = multer({
+const eventUpload = multer({
 	storage: eventStorage,
 	limits: {
 		fileSize: fileSize
 	},
 	fileFilter: fileFilter
 });
+
+module.exports = {
+	bandUpload: bandUpload,
+	eventUpload: eventUpload
+};

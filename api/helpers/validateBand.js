@@ -13,6 +13,8 @@ const Genre = mongoose.model('genres');
 
 // load url.js
 const url = require(dirPath + '/api/helpers/url');
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
 
 // validate all attributes for one band object in the request body
 module.exports.validateObject = (type) => {
@@ -62,12 +64,12 @@ module.exports.validateList = (type) => {
 // check all attributes and build the finished object
 const validateBand = (data, type, options) => {
 	return new Promise(async (resolve, reject) => {
-		const optionsChecked = options || {};
-		const id = optionsChecked.id || '';
-		const urlList = optionsChecked.urlList || [];
-		const image = optionsChecked.image || '';
-
 		try {
+			const optionsChecked = options || {};
+			const id = optionsChecked.id || '';
+			const urlList = optionsChecked.urlList || [];
+			const imagePath = optionsChecked.image || '';
+
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
@@ -201,6 +203,12 @@ const validateBand = (data, type, options) => {
 				}
 			}
 
+			let imageList = [];
+			if (imagePath.length > 0)
+				imageList = await image.saveImages(imagePath);
+			else if (type == 'post' || type == 'unvalidated' || data.image.length == 0)
+				imageList = image.randomPlaceholder();
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -210,6 +218,9 @@ const validateBand = (data, type, options) => {
 				const object = await model[type].findById(id);
 				if (!object)
 					resolve('No band found with this ID');
+
+				if (imageList.length > 0)
+					await image.deleteImages(object.image);
 
 				let newBand = {
 					name: data.name.trim(),
@@ -236,7 +247,7 @@ const validateBand = (data, type, options) => {
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : object.bandcampUrl,
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : object.soundcloudUrl,
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
-					image: image
+					image: imageList.length > 0 ? imageList : object.image
 				};
 				if (type == 'put') newBand._id = id;
 				const updatedObject = await url.generateUrl(newBand, 'band');
@@ -268,7 +279,7 @@ const validateBand = (data, type, options) => {
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : '',
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : '',
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
-					image: image
+					image: imageList
 				};
 				if (type == 'unvalidated') resolve(newBand);
 				else {
