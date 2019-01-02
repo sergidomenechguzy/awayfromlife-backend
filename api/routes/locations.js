@@ -400,4 +400,33 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
+
+// post location to database
+router.post('/withImage', multerConfig.locationUpload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
+	try {
+		const newLocation = await new Location(res.locals.validated).save();
+		return res.status(200).json({ message: 'Location saved', data: newLocation, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// update location by id
+router.put('/withImage/:_id', multerConfig.locationUpload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
+	try {
+		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 module.exports = router;

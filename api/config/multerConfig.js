@@ -43,7 +43,25 @@ const eventUpload = multer({
 	fileFilter: fileFilter
 });
 
+const locationStorage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		cb(null, './images/locations/');
+	},
+	filename: (req, file, cb) => {
+		cb(null, Date.now() + '_' + file.originalname);
+	}
+});
+
+const locationUpload = multer({
+	storage: locationStorage,
+	limits: {
+		fileSize: fileSize
+	},
+	fileFilter: fileFilter
+});
+
 module.exports = {
 	bandUpload: bandUpload,
-	eventUpload: eventUpload
+	eventUpload: eventUpload,
+	locationUpload: locationUpload
 };

@@ -73,6 +73,9 @@ const LocationSchema = new Schema({
 	},
 	facebookUrl: {
 		type: String
+	},
+	image: {
+		type: [String]
 	}
 });
 

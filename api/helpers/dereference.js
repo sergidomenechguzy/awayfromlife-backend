@@ -282,7 +282,8 @@ function locationObject(location) {
 				status: location.status,
 				information: location.information,
 				website: location.website,
-				facebookUrl: location.facebookUrl
+				facebookUrl: location.facebookUrl,
+				image: location.image
 			};
 			resolve(responseLocation);
 		}

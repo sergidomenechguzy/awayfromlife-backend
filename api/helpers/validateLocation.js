@@ -9,14 +9,20 @@ const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // load url.js
 const url = require(dirPath + '/api/helpers/url');
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
 
 // validate all attributes for one location object in the request body
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
-			let response;
-			if (type == 'put' || type == 'validate') response = await validateLocation(req.body, type, { id: req.params._id });
-			else response = await validateLocation(req.body, type);
+			let options = {};
+			if (type == 'put' || type == 'validate')
+				options.id = req.params._id;
+			if (req.file != undefined)
+				options.image = req.file.path;
+
+			const response = await validateLocation(JSON.parse(req.body.data), type, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -34,7 +40,8 @@ module.exports.validateList = (type) => {
 		try {
 			let responseList = [];
 			let urlList = [];
-			for (const current of req.body.list) {
+			const data = JSON.parse(req.body.data);
+			for (const current of data.list) {
 				const response = await validateLocation(current, type, { urlList: urlList });
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
@@ -53,11 +60,12 @@ module.exports.validateList = (type) => {
 // check all attributes and build the finished object
 const validateLocation = (data, type, options) => {
 	return new Promise(async (resolve, reject) => {
-		const optionsChecked = options || {};
-		const id = optionsChecked.id || '';
-		const urlList = optionsChecked.urlList || [];
-
 		try {
+			const optionsChecked = options || {};
+			const id = optionsChecked.id || '';
+			const urlList = optionsChecked.urlList || [];
+			const imagePath = optionsChecked.image || '';
+
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
@@ -147,6 +155,12 @@ const validateLocation = (data, type, options) => {
 				}
 			}
 
+			let imageList = [];
+			if (imagePath.length > 0)
+				imageList = await image.saveImages(imagePath);
+			else if (type == 'post' || type == 'unvalidated' || data.image.length == 0)
+				imageList = image.randomPlaceholder();
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -156,6 +170,9 @@ const validateLocation = (data, type, options) => {
 				const object = await model[type].findById(id);
 				if (!object)
 					resolve('No location found with this ID');
+
+				if (imageList.length > 0)
+					await image.deleteImages(object.image);
 
 				let newLocation = {
 					name: data.name.trim(),
@@ -178,7 +195,8 @@ const validateLocation = (data, type, options) => {
 					status: data.status != undefined ? data.status : object.status,
 					information: data.information != undefined ? data.information : object.information,
 					website: data.website != undefined ? data.website : object.website,
-					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl
+					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
+					image: imageList.length > 0 ? imageList : object.image
 				};
 				if (type == 'put') newLocation._id = id;
 				const updatedObject = await url.generateUrl(newLocation, 'location');
@@ -206,7 +224,8 @@ const validateLocation = (data, type, options) => {
 					status: data.status != undefined ? data.status : 'opened',
 					information: data.information != undefined ? data.information : '',
 					website: data.website != undefined ? data.website : '',
-					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : ''
+					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
+					image: imageList
 				};
 				if (type == 'unvalidated') resolve(newLocation);
 				else {
