@@ -107,8 +107,11 @@ const validateEvent = (data, type, collection, options) => {
 				}
 			}
 
+			let finalDate;
 			if (!(typeof data.date == 'string' && data.date.length > 0 && moment(data.date, 'YYYY-MM-DD', true).isValid()))
 				resolve('Attribute \'date\' has to be a string in the \'YYYY-MM-DD\' date format.');
+			else
+				finalDate = new Date(data.date);
 
 			if (!(data.time == undefined || typeof data.time == 'string'))
 				resolve('Attribute \'time\' can be left out or has to be a string.');
@@ -155,7 +158,7 @@ const validateEvent = (data, type, collection, options) => {
 			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 			if ((type == 'put' || type == 'post') && unvalidCount == bandList.length) resolve('Attribute \'bands\' has to include at least one validated band from the database.');
 
-			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && (data.canceled == 0 || data.canceled == 1 || data.canceled == 2))))
+			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && data.canceled >= 0 && data.canceled <= 2)))
 				resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
 
 			if (!(data.ticketLink == undefined || typeof data.ticketLink == 'string'))
@@ -182,11 +185,12 @@ const validateEvent = (data, type, collection, options) => {
 					await image.deleteImages(object.image);
 
 				let newEvent = {
-					name: data.name.trim(),
+					name: data.name,
 					url: '',
 					description: data.description != undefined ? data.description : object.description,
 					location: locationId,
 					date: data.date,
+					dateObject: finalDate,
 					time: data.time != undefined ? data.time : object.time,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
@@ -201,11 +205,12 @@ const validateEvent = (data, type, collection, options) => {
 			}
 			else {
 				let newEvent = {
-					name: data.name.trim(),
+					name: data.name,
 					url: '',
 					description: data.description != undefined ? data.description : '',
 					location: locationId,
 					date: data.date,
+					dateObject: finalDate,
 					time: data.time != undefined ? data.time : '',
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,

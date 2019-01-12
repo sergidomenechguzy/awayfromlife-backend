@@ -5,20 +5,23 @@ const Schema = mongoose.Schema;
 const EventSchema = new Schema({
 	name: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	url: {
-		type: String
+		type: String,
+		trim: true
 	},
 	description: {
-		type: String
+		type: String,
+		trim: true
 	},
 	location: {
 		type: String,
 		required: true
 	},
 	date: {
-		type: String,
+		type: Date,
 		required: true
 	},
 	time: {
@@ -30,10 +33,13 @@ const EventSchema = new Schema({
 	},
 	canceled: {
 		type: Number,
-		default: 0
+		default: 0,
+		min: 0,
+		max: 2
 	},
 	ticketLink: {
-		type: String
+		type: String,
+		trim: true
 	},
 	verifiable: {
 		type: Boolean,

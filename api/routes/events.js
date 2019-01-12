@@ -599,4 +599,44 @@ router.put('/withImage/:_id', multerConfig.eventUpload.single('image'), validate
 	}
 });
 
+
+
+
+
+
+
+
+// router.get('/updateDate', async (req, res) => {
+// 	try {
+// 		const events = await Event.find();
+// 		const promises = events.map(async (event) => {
+// 			event.date = new Date(event.date);
+// 			const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 			return updated;
+// 		});
+// 		const eventList = await Promise.all(promises);
+
+// 		const unevents = await UnvalidatedEvent.find();
+// 		const unpromises = unevents.map(async (event) => {
+// 			event.date = new Date(event.date);
+// 			const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 			return updated;
+// 		});
+// 		const uneventList = await Promise.all(unpromises);
+
+// 		const arevents = await ArchivedEvent.find();
+// 		const arpromises = arevents.map(async (event) => {
+// 			event.date = new Date(event.date);
+// 			const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 			return updated;
+// 		});
+// 		const areventList = await Promise.all(arpromises);
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
 module.exports = router;

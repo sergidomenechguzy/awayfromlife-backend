@@ -179,4 +179,41 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+
+
+
+
+
+
+
+
+// const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
+
+// router.get('/updateDate', async (req, res) => {
+// 	try {
+// 		const events = await FestivalEvent.find();
+// 		const promises = events.map(async (event) => {
+// 			event.startDate = new Date(event.startDate);
+// 			event.endDate = new Date(event.endDate);
+// 			const updated = await FestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 			return updated;
+// 		});
+// 		const eventList = await Promise.all(promises);
+
+// 		const unevents = await UnvalidatedFestivalEvent.find();
+// 		const unpromises = unevents.map(async (event) => {
+// 			event.startDate = new Date(event.startDate);
+// 			event.endDate = new Date(event.endDate);
+// 			const updated = await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 			return updated;
+// 		});
+// 		const uneventList = await Promise.all(unpromises);
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
 module.exports = router;

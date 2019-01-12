@@ -5,14 +5,15 @@ const Schema = mongoose.Schema;
 const FestivalEventSchema = new Schema({
 	name: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	startDate: {
-		type: String,
+		type: Date,
 		required: true
 	},
 	endDate: {
-		type: String,
+		type: Date,
 		required: true
 	},
 	bands: {
@@ -21,7 +22,9 @@ const FestivalEventSchema = new Schema({
 	},
 	canceled: {
 		type: Number,
-		default: 0
+		default: 0,
+		min: 0,
+		max: 2
 	},
 	verifiable: {
 		type: Boolean,

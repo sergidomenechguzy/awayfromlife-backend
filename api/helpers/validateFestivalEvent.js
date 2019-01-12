@@ -61,11 +61,17 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
+			let finalStartDate;
 			if (!(typeof data.startDate == 'string' && data.startDate.length > 0 && moment(data.startDate, 'YYYY-MM-DD', true).isValid()))
 				resolve('Attribute \'startDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
+			else
+				finalStartDate = new Date(data.startDate);
 
+			let finalEndDate;
 			if (!(typeof data.endDate == 'string' && data.endDate.length > 0 && moment(data.endDate, 'YYYY-MM-DD', true).isValid()))
 				resolve('Attribute \'endDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
+			else
+				finalEndDate = new Date(data.endDate);
 
 			let bandList = [];
 			if (!(Array.isArray(data.bands) && data.bands.length > 0))
@@ -122,8 +128,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 
 				let newFestivalEvent = {
 					name: data.name.trim(),
-					startDate: data.startDate,
-					endDate: data.endDate,
+					startDate: finalStartDate,
+					endDate: finalEndDate,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
 					verifiable: verifiable
@@ -134,8 +140,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			else {
 				let newFestivalEvent = {
 					name: data.name.trim(),
-					startDate: data.startDate,
-					endDate: data.endDate,
+					startDate: finalStartDate,
+					endDate: finalEndDate,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					verifiable: verifiable

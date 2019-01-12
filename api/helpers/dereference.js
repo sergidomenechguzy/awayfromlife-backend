@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 // load event model
 require(dirPath + '/api/models/Event');
@@ -160,7 +161,7 @@ function eventObject(event) {
 				url: event.url,
 				description: event.description,
 				location: location,
-				date: event.date,
+				date: moment(event.date).format('YYYY-MM-DD'),
 				time: event.time,
 				bands: bandListSorted,
 				canceled: event.canceled,
@@ -207,8 +208,8 @@ function festivalEventObject(festivalEvent) {
 			const responseFestivalEvent = {
 				_id: festivalEvent._id,
 				name: festivalEvent.name,
-				startDate: festivalEvent.startDate,
-				endDate: festivalEvent.endDate,
+				startDate: moment(festivalEvent.startDate).format('YYYY-MM-DD'),
+				endDate: moment(festivalEvent.endDate).format('YYYY-MM-DD'),
 				bands: bandListSorted,
 				canceled: festivalEvent.canceled,
 				verifiable: festivalEvent.verifiable
