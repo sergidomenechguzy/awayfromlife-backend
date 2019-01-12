@@ -575,7 +575,7 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // post event to database
-router.post('/withImage', multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
+router.post('/withImage', token.checkToken(true), multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
 	try {
 		const newEvent = await new Event(res.locals.validated).save();
 		return res.status(200).json({ message: 'Event saved', data: newEvent, token: res.locals.token });
@@ -587,7 +587,7 @@ router.post('/withImage', multerConfig.eventUpload.single('image'), validateEven
 });
 
 // update event by id
-router.put('/withImage/:_id', multerConfig.eventUpload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
+router.put('/withImage/:_id', token.checkToken(true), multerConfig.eventUpload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
 	try {
 		const updated = await Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.eventObject(updated);
@@ -631,6 +631,75 @@ router.put('/withImage/:_id', multerConfig.eventUpload.single('image'), validate
 // 			return updated;
 // 		});
 // 		const areventList = await Promise.all(arpromises);
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
+// const image = require(dirPath + '/api/helpers/image');
+
+// router.get('/updatePlaceholder', async (req, res) => {
+// 	try {
+// 		const events = await Event.find();
+// 		const promises = events.map(async (event) => {
+// 			if (event.image.length != 3) {
+// 				event.image = image.randomPlaceholder();
+// 				const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const eventList = await Promise.all(promises);
+
+// 		const unevents = await UnvalidatedEvent.find();
+// 		const unpromises = unevents.map(async (event) => {
+// 			if (event.image.length != 3) {
+// 				event.image = image.randomPlaceholder();
+// 				const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const uneventList = await Promise.all(unpromises);
+
+// 		const arevents = await ArchivedEvent.find();
+// 		const arpromises = arevents.map(async (event) => {
+// 			if (event.image.length != 3) {
+// 				event.image = image.randomPlaceholder();
+// 				const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const areventList = await Promise.all(arpromises);
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
+// router.get('/testImage', async (req, res) => {
+// 	try {
+// 		const events = await Event.find();
+// 		const eventList = events.filter(event => {
+// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+// 			return false;
+// 		});
+// 		const unevents = await UnvalidatedEvent.find();
+// 		const uneventList = unevents.filter(event => {
+// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+// 			return false;
+// 		});
+// 		const arevents = await ArchivedEvent.find();
+// 		const areventList = arevents.filter(event => {
+// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+// 			return false;
+// 		});
 // 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
 // 	}
 // 	catch (err) {

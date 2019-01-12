@@ -420,7 +420,7 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // post location to database
-router.post('/withImage', multerConfig.locationUpload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
+router.post('/withImage', token.checkToken(false), multerConfig.locationUpload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
 	try {
 		const newLocation = await new Location(res.locals.validated).save();
 		return res.status(200).json({ message: 'Location saved', data: newLocation, token: res.locals.token });
@@ -432,7 +432,7 @@ router.post('/withImage', multerConfig.locationUpload.single('image'), validateL
 });
 
 // update location by id
-router.put('/withImage/:_id', multerConfig.locationUpload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
+router.put('/withImage/:_id', token.checkToken(false), multerConfig.locationUpload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
@@ -442,5 +442,73 @@ router.put('/withImage/:_id', multerConfig.locationUpload.single('image'), valid
 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const image = require(dirPath + '/api/helpers/image');
+
+// router.get('/updatePlaceholder', async (req, res) => {
+// 	try {
+// 		const locations = await Location.find();
+// 		const promises = locations.map(async (location) => {
+// 			if (location.image.length != 3) {
+// 				location.image = image.randomPlaceholder();
+// 				const updated = await Location.findOneAndUpdate({ _id: location._id }, location, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const locationList = await Promise.all(promises);
+
+// 		const unlocations = await UnvalidatedLocation.find();
+// 		const unpromises = unlocations.map(async (location) => {
+// 			if (location.image.length != 3) {
+// 				location.image = image.randomPlaceholder();
+// 				const updated = await UnvalidatedLocation.findOneAndUpdate({ _id: location._id }, location, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const unlocationList = await Promise.all(unpromises);
+
+// 		return res.status(200).json({ locations: locationList, unvalidatedLocations: unlocationList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
+// router.get('/testImage', async (req, res) => {
+// 	try {
+// 		const events = await Location.find();
+// 		const eventList = events.filter(event => {
+// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+// 			return false;
+// 		});
+// 		const unevents = await UnvalidatedLocation.find();
+// 		const uneventList = unevents.filter(event => {
+// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+// 			return false;
+// 		});
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
 
 module.exports = router;

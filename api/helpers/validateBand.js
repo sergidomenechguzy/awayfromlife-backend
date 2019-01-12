@@ -206,7 +206,7 @@ const validateBand = (data, type, options) => {
 			let imageList = [];
 			if (imagePath.length > 0)
 				imageList = await image.saveImages(imagePath);
-			else if (type == 'post' || type == 'unvalidated' || data.image.length == 0)
+			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
 
