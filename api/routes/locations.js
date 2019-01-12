@@ -15,6 +15,8 @@ const Event = mongoose.model('events');
 const deleteRoute = require(dirPath + '/api/routes/controller/delete');
 // load latest.js
 const latest = require(dirPath + '/api/routes/controller/latest');
+// load pastAndUpcomingEvents.js
+const pastAndUpcomingEventsRoute = require(dirPath + '/api/routes/controller/pastAndUpcomingEvents');
 // load params.js
 const params = require(dirPath + '/api/helpers/params');
 // load token.js
@@ -65,7 +67,7 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 
 		let finalList = dereferenced.concat(dereferencedUnvalidated);
 		finalList = dereference.locationSort(finalList, 'name', 1);
-		
+
 		return res.status(200).json({ data: finalList, token: res.locals.token });
 	}
 	catch (err) {
@@ -176,15 +178,27 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get events by location id
-router.get('/events/:_id', token.checkToken(false), async (req, res) => {
+// get all locations upcoming events
+router.get('/:_id/upcomingEvents', token.checkToken(false), async (req, res) => {
 	try {
-		const events = await Event.find({ location: req.params._id });
-		if (events.length === 0)
-			return res.status(200).json({ message: 'No events found for this location', token: res.locals.token });
+		const events = await pastAndUpcomingEventsRoute.getEvents('upcoming', 'location', req.params._id);
+		if (typeof events == 'string')
+			return res.status(200).json({ message: events, token: res.locals.token });
+		return res.status(200).json({ data: events, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-		const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
-		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+// get all locations past events
+router.get('/:_id/pastEvents', token.checkToken(false), async (req, res) => {
+	try {
+		const events = await pastAndUpcomingEventsRoute.getEvents('past', 'location', req.params._id);
+		if (typeof events == 'string')
+			return res.status(200).json({ message: events, token: res.locals.token });
+		return res.status(200).json({ data: events, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

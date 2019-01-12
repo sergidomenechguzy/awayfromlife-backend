@@ -27,6 +27,8 @@ const Genre = mongoose.model('genres');
 const deleteRoute = require(dirPath + '/api/routes/controller/delete');
 // load latest.js
 const latest = require(dirPath + '/api/routes/controller/latest');
+// load pastAndUpcomingEvents.js
+const pastAndUpcomingEventsRoute = require(dirPath + '/api/routes/controller/pastAndUpcomingEvents');
 // load params.js
 const params = require(dirPath + '/api/helpers/params');
 // load token.js
@@ -77,7 +79,7 @@ router.get('/all', token.checkToken(false), async (req, res) => {
 
 		let finalList = dereferenced.concat(dereferencedUnvalidated);
 		finalList = dereference.bandSort(finalList, 'name', 1);
-		
+
 		return res.status(200).json({ data: finalList, token: res.locals.token });
 	}
 	catch (err) {
@@ -202,7 +204,7 @@ router.get('/events/:_id', token.checkToken(false), async (req, res) => {
 
 			if (events.length == 0 && festivalEvents.length == 0)
 				return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
-			
+
 			const promises = festivalEvents.map(async (festivalEvent) => {
 				let finalFestivalEvent = await dereference.festivalEventObject(festivalEvent);
 				const festival = await Festival.findOne({ events: festivalEvent._id });
@@ -224,6 +226,34 @@ router.get('/events/:_id', token.checkToken(false), async (req, res) => {
 
 		dereferenced = dereference.eventSort(dereferenced, 'date', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get all bands upcoming events
+router.get('/:_id/upcomingEvents', token.checkToken(false), async (req, res) => {
+	try {
+		const events = await pastAndUpcomingEventsRoute.getEvents('upcoming', 'bands', req.params._id);
+		if (typeof events == 'string')
+			return res.status(200).json({ message: events, token: res.locals.token });
+		return res.status(200).json({ data: events, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get all bands past events
+router.get('/:_id/pastEvents', token.checkToken(false), async (req, res) => {
+	try {
+		const events = await pastAndUpcomingEventsRoute.getEvents('past', 'bands', req.params._id);
+		if (typeof events == 'string')
+			return res.status(200).json({ message: events, token: res.locals.token });
+		return res.status(200).json({ data: events, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
