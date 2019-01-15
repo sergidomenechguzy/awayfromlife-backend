@@ -186,7 +186,7 @@ const eventFind = (queries, regex) => {
 					});
 				}
 			});
-			resolve(eventResults);
+			return resolve(eventResults);
 		}
 		catch (err) {
 			reject(err);
@@ -286,7 +286,7 @@ const festivalFind = (queries, regex) => {
 			let festivalResults = await Promise.all(promises);
 			festivalResults = festivalResults.filter(festivalObject => festivalObject != null);
 
-			resolve(festivalResults);
+			return resolve(festivalResults);
 		}
 		catch (err) {
 			reject(err);
@@ -344,7 +344,7 @@ const locationFind = (queries, regex) => {
 			let locationResults = await Promise.all(promises);
 			locationResults = locationResults.filter(locationObject => locationObject != null);
 
-			resolve(locationResults);
+			return resolve(locationResults);
 		}
 		catch (err) {
 			reject(err);
@@ -441,7 +441,7 @@ const bandFind = (queries, regex) => {
 			let bandResults = await Promise.all(promises);
 			bandResults = bandResults.filter(bandObject => bandObject != null);
 
-			resolve(bandResults);
+			return resolve(bandResults);
 		}
 		catch (err) {
 			reject(err);

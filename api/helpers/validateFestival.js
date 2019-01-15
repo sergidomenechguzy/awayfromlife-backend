@@ -40,14 +40,14 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 
 		try {
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(data.description == undefined || typeof data.description == 'string'))
-				resolve('Attribute \'description\' can be left out or has to be a string.');
+				return resolve('Attribute \'description\' can be left out or has to be a string.');
 
 			let genreList = [];
 			if (!(Array.isArray(data.genre) && data.genre.length > 0 && data.genre.length < 4))
-				resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+				return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 			else {
 				if (
 					data.genre.some(gerne => {
@@ -65,7 +65,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 						}
 					})
 				)
-					resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+					return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 			}
 			const genres = await Genre.find();
 			let finalGenres = [];
@@ -79,46 +79,46 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 						return false;
 					});
 				})
-			) resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+			) return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 
 			if (!(typeof data.address.street == 'string' && data.address.street.length > 0))
-				resolve('Attribute \'address.street\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.street\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.administrative == undefined || typeof data.address.administrative == 'string'))
-				resolve('Attribute \'address.administrative\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.administrative\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.city == 'string' && data.address.city.length > 0))
-				resolve('Attribute \'address.city\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.city\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.county == undefined || typeof data.address.county == 'string'))
-				resolve('Attribute \'address.county\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.county\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.country == 'string' && data.address.country.length > 0))
-				resolve('Attribute \'address.country\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.country\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.postcode == undefined || typeof data.address.postcode == 'string'))
-				resolve('Attribute \'address.postcode\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.postcode\' can be left out or has to be a string.');
 
 			if (typeof data.address.lat != 'number')
-				resolve('Attribute \'address.lat\' has to be a number.');
+				return resolve('Attribute \'address.lat\' has to be a number.');
 
 			if (typeof data.address.lng != 'number')
-				resolve('Attribute \'address.lng\' has to be a number.');
+				return resolve('Attribute \'address.lng\' has to be a number.');
 
 			if (!(data.address.value == undefined || typeof data.address.value == 'string'))
-				resolve('Attribute \'address.value\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.value\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.countryCode == 'string' && data.address.countryCode.length > 0))
-				resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
 
 			if (!(data.ticketLink == undefined || typeof data.ticketLink == 'string'))
-				resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
+				return resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
 
 			if (!(data.website == undefined || typeof data.website == 'string'))
-				resolve('Attribute \'website\' can be left out or has to be a string.');
+				return resolve('Attribute \'website\' can be left out or has to be a string.');
 
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
-				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
+				return resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
 			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode, type: 'address' });
 			if (res.hits[0] == undefined)
@@ -172,10 +172,10 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 
 				const object = await model[type].findById(id);
 				if (!object)
-					resolve('No festival found with this ID');
+					return resolve('No festival found with this ID');
 
 				if (type == 'validate' && !object.events.includes(festivalEventId))
-					resolve('Festival event ID not found in the festival\'s festival events list');
+					return resolve('Festival event ID not found in the festival\'s festival events list');
 
 				let newFestival = {
 					name: data.name.trim(),
@@ -205,7 +205,7 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 				if (type == 'put') newFestival._id = id;
 
 				const updatedObject = await url.generateUrl(newFestival, 'festival');
-				resolve(updatedObject);
+				return resolve(updatedObject);
 			}
 			else {
 				let newFestival = {
@@ -233,10 +233,10 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 					website: data.website != undefined ? data.website : '',
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : ''
 				};
-				if (type == 'unvalidated') resolve(newFestival);
+				if (type == 'unvalidated') return resolve(newFestival);
 				else {
 					const updatedObject = await url.generateUrl(newFestival, 'festival', urlList);
-					resolve(updatedObject);
+					return resolve(updatedObject);
 				}
 			}
 		}

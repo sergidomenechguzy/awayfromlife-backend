@@ -28,7 +28,7 @@ function generateUrl(object, model, urlList) {
 		copiedObject.url = generateUrlFromObject(object, model);
 		try {
 			const response = await checkUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
-			resolve(response);
+			return resolve(response);
 		}
 		catch (err) {
 			reject(err);
@@ -38,7 +38,7 @@ function generateUrl(object, model, urlList) {
 
 function checkUrl(object, model, url, urlList, counter) {
 	return new Promise(async (resolve, reject) => {
-		if (!object) resolve(null);
+		if (!object) return resolve(null);
 
 		const collection = {
 			band: Band,
@@ -51,23 +51,23 @@ function checkUrl(object, model, url, urlList, counter) {
 				url = object.url + '--' + counter;
 				counter++;
 				const response = await checkUrl(object, model, url, urlList, counter);
-				resolve(response);
+				return resolve(response);
 			}
 
 			const savedObject = await collection[model].findOne({ url: new RegExp('^' + url + '$', 'i') });
 			if (!savedObject) {
 				object.url = url;
-				resolve(object);
+				return resolve(object);
 			}
 			else if (object._id && object._id.toString() == savedObject._id.toString()) {
 				object.url = url;
-				resolve(object);
+				return resolve(object);
 			}
 			else {
 				url = object.url + '--' + counter;
 				counter++;
 				const response = await checkUrl(object, model, url, urlList, counter);
-				resolve(response);
+				return resolve(response);
 			}
 
 		}
@@ -85,7 +85,7 @@ function generateEventUrl(object, model, urlList) {
 			const dereferenced = await dereference.eventObject(object);
 			copiedObject.url = generateUrlFromObject(dereferenced, model);
 			const response = await checkEventUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
-			resolve(response);
+			return resolve(response);
 		}
 		catch (err) {
 			reject(err);
@@ -95,27 +95,27 @@ function generateEventUrl(object, model, urlList) {
 
 function checkEventUrl(object, model, url, urlList, counter) {
 	return new Promise(async (resolve, reject) => {
-		if (!object) resolve(null);
+		if (!object) return resolve(null);
 
 		try {
 			if ((urlList.length > 0) && urlList.includes(url)) {
 				url = object.url + '--' + counter;
 				counter++;
 				const response = await checkEventUrl(object, model, url, urlList, counter);
-				resolve(response);
+				return resolve(response);
 			}
 
 			const savedEvent = await Event.findOne({ url: new RegExp('^' + url + '$', 'i') });
 			if (savedEvent != undefined) {
 				if (object._id && model == 'event' && object._id.toString() == savedEvent._id.toString()) {
 					object.url = url;
-					resolve(object);
+					return resolve(object);
 				}
 				else {
 					url = object.url + '--' + counter;
 					counter++;
 					const response = await checkEventUrl(object, model, url, urlList, counter);
-					resolve(response);
+					return resolve(response);
 				}
 			}
 			else {
@@ -123,18 +123,18 @@ function checkEventUrl(object, model, url, urlList, counter) {
 				if (savedArchivedEvent != undefined) {
 					if (object._id && model == 'archive' && object._id.toString() == savedArchivedEvent._id.toString()) {
 						object.url = url;
-						resolve(object);
+						return resolve(object);
 					}
 					else {
 						url = object.url + '--' + counter;
 						counter++;
 						const response = await checkEventUrl(object, model, url, urlList, counter);
-						resolve(response);
+						return resolve(response);
 					}
 				}
 				else {
 					object.url = url;
-					resolve(object);
+					return resolve(object);
 				}
 			}
 		}

@@ -57,15 +57,15 @@ router.get('/unvalidated', token.checkToken(false), async (req, res) => {
 					const festival = await Festival.findOne({ events: event._id });
 					if (!festival) {
 						const unvalidatedFestival = await UnvalidatedFestival.findOne({ events: event._id });
-						if (!unvalidatedFestival) resolve(`No festival found for the festival event: (_id: ${event._id}, name: ${event.name}).`);
+						if (!unvalidatedFestival) return resolve(`No festival found for the festival event: (_id: ${event._id}, name: ${event.name}).`);
 						else {
 							const finalFestival = await dereference.unvalidatedFestivalObject(unvalidatedFestival);
-							resolve({ validated: false, festival: finalFestival, event: event });
+							return resolve({ validated: false, festival: finalFestival, event: event });
 						}
 					}
 					else {
 						const finalFestival = await dereference.unvalidatedFestivalObject(festival);
-						resolve({ validated: true, festival: finalFestival, event: event });
+						return resolve({ validated: true, festival: finalFestival, event: event });
 					}
 				}
 				catch (err) {

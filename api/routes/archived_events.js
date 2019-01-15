@@ -280,12 +280,32 @@ router.get('/city/:city', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get events by date
-router.get('/date/:date', token.checkToken(false), async (req, res) => {
+// get events by day
+router.get('/day/:day', token.checkToken(false), async (req, res) => {
 	try {
-		const events = await ArchivedEvent.find({ date: new RegExp('^' + req.params.date) });
+		if (!moment(req.params.day, 'YYYY-MM-DD', true).isValid())
+			return res.status(400).json({ message: 'The date has to be in the format YYYY-MM-DD.' });
+		const events = await ArchivedEvent.find({ date: new Date(req.params.day) });
 		if (events.length === 0)
-			return res.status(200).json({ message: 'No events found on this date.', token: res.locals.token });
+			return res.status(200).json({ message: 'No events found on this day.', token: res.locals.token });
+
+		const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// get events by day
+router.get('/month/:month', token.checkToken(false), async (req, res) => {
+	try {
+		if (!moment(req.params.month, 'YYYY-MM', true).isValid())
+			return res.status(400).json({ message: 'The date has to be in the format YYYY-MM.' });
+		const events = await ArchivedEvent.find({ date: { $gte: new Date(req.params.month), $lte: new Date(moment(req.params.month).add(1, 'months')) } });
+		if (events.length === 0)
+			return res.status(200).json({ message: 'No events found in this month.', token: res.locals.token });
 
 		const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
 		return res.status(200).json({ data: dereferenced, token: res.locals.token });
@@ -301,9 +321,11 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 	try {
 		if (!req.query.location || !req.query.date)
 			return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
+		if (!moment(req.query.date, 'YYYY-MM-DD', true).isValid())
+			return res.status(400).json({ message: 'The date has to be in the format YYYY-MM-DD.' });
 		let query = {};
 		query.location = req.query.location;
-		query.date = new RegExp('^' + req.query.date);
+		query.date = new Date(req.query.date);
 
 		const events = await ArchivedEvent.find(query);
 		if (events.length === 0)

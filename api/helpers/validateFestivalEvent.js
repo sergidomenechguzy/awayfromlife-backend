@@ -59,23 +59,23 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			let verifiable = true;
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			let finalStartDate;
 			if (!(typeof data.startDate == 'string' && data.startDate.length > 0 && moment(data.startDate, 'YYYY-MM-DD', true).isValid()))
-				resolve('Attribute \'startDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
+				return resolve('Attribute \'startDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
 			else
 				finalStartDate = new Date(data.startDate);
 
 			let finalEndDate;
 			if (!(typeof data.endDate == 'string' && data.endDate.length > 0 && moment(data.endDate, 'YYYY-MM-DD', true).isValid()))
-				resolve('Attribute \'endDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
+				return resolve('Attribute \'endDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
 			else
 				finalEndDate = new Date(data.endDate);
 
 			let bandList = [];
 			if (!(Array.isArray(data.bands) && data.bands.length > 0))
-				resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+				return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 			else {
 				if (
 					data.bands.some(band => {
@@ -93,7 +93,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 						}
 					})
 				)
-					resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+					return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 			}
 			const bands = await Band.find();
 			const bandIds = bands.map(band => band._id.toString());
@@ -110,10 +110,10 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					}
 					return false;
 				})
-			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+			) return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 
 			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && (data.canceled == 0 || data.canceled == 1 || data.canceled == 2))))
-				resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
+				return resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
 
 
 			if (type == 'put' || type == 'validate') {
@@ -124,7 +124,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 
 				const object = await model[type].findById(id);
 				if (!object)
-					resolve('No festival event found with this ID');
+					return resolve('No festival event found with this ID');
 
 				let newFestivalEvent = {
 					name: data.name.trim(),
@@ -135,7 +135,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					verifiable: verifiable
 				};
 				if (type == 'put') newFestivalEvent._id = id;
-				resolve(newFestivalEvent);
+				return resolve(newFestivalEvent);
 			}
 			else {
 				let newFestivalEvent = {
@@ -146,7 +146,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					verifiable: verifiable
 				};
-				resolve(newFestivalEvent);
+				return resolve(newFestivalEvent);
 			}
 		}
 		catch (err) {

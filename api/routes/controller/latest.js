@@ -81,7 +81,7 @@ function getMultiple(categoryList, count) {
 				else return -1;
 			});
 			results = results.slice(0, count);
-			resolve(results);
+			return resolve(results);
 		}
 		catch (err) {
 			reject(err);
@@ -113,7 +113,7 @@ function get(category, count) {
 			if (category == 'festivalEvent' || category == 'unvalidatedFestivalEvent') {
 				objects = await addFestivalUrl(objects, category);
 			}
-			resolve(objects);
+			return resolve(objects);
 		}
 		catch (err) {
 			reject(err);
@@ -137,7 +137,7 @@ function addFestivalUrl(objects, category) {
 				return object;
 			});
 			const objectList = Promise.all(promises);
-			resolve(objectList);
+			return resolve(objectList);
 		}
 		catch (err) {
 			reject(err);
