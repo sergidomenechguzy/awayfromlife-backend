@@ -3,6 +3,9 @@
   * [Bands](bands/#bands)
   * [Unvalidated Bands](unvalidated-bands/#unvalidated-bands)
 * [Bugs](bugs/#bugs)
+    * [api/bugs](#apibugs)
+    * [api/bugs/latest](#apibugslatest)
+    * [api/bugs/{_id}](#apibugs_id)
 * Events
   * [Archived Events](archived-events/#archived-events)
   * [Events](events/#events)
