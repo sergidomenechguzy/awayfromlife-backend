@@ -41,7 +41,7 @@ function saveImages(path) {
 			}
 			else
 				await unlinkAsync(path);
-			resolve(imageList);
+			return resolve(imageList);
 		}
 		catch (err) {
 			reject(err);
@@ -59,7 +59,7 @@ function deleteImages(array) {
 				return result;
 			});
 			await Promise.all(promises);
-			resolve();
+			return resolve();
 		}
 		catch (err) {
 			reject(err);
@@ -73,7 +73,7 @@ function scale(imageBuffer, outputPath, size) {
 			await sharp(imageBuffer)
 				.resize(size)
 				.toFile(outputPath);
-			resolve(outputPath);
+			return resolve(outputPath);
 		}
 		catch (err) {
 			reject(err);
@@ -87,7 +87,7 @@ function crop(imageBuffer, outputPath, size, crop) {
 			await sharp(imageBuffer)
 				.resize(size, crop)
 				.toFile(outputPath);
-			resolve(outputPath);
+			return resolve(outputPath);
 		}
 		catch (err) {
 			reject(err);

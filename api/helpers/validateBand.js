@@ -71,11 +71,11 @@ const validateBand = (data, type, options) => {
 			const imagePath = optionsChecked.image || '';
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			let genreList = [];
 			if (!(Array.isArray(data.genre) && data.genre.length > 0 && data.genre.length < 4))
-				resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+				return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 			else {
 				if (
 					data.genre.some(gerne => {
@@ -93,7 +93,7 @@ const validateBand = (data, type, options) => {
 						}
 					})
 				)
-					resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+					return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 			}
 			const genres = await Genre.find();
 			let finalGenres = [];
@@ -107,40 +107,40 @@ const validateBand = (data, type, options) => {
 						return false;
 					});
 				})
-			) resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
+			) return resolve('Attribute \'genre\' has to be an array with 1-3 entries either of names of genres from the database or of genre objects with an _id attribute containing the ID of a genre from the database.');
 
 			if (!(typeof data.origin.city == 'string' && data.origin.city.length > 0))
-				resolve('Attribute \'origin.city\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'origin.city\' has to be a string with 1 or more characters.');
 
 			if (!(data.origin.administrative == undefined || typeof data.origin.administrative == 'string'))
-				resolve('Attribute \'origin.administrative\' can be left out or has to be a string.');
+				return resolve('Attribute \'origin.administrative\' can be left out or has to be a string.');
 
 			if (!(typeof data.origin.country == 'string' && data.origin.country.length > 0))
-				resolve('Attribute \'origin.country\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'origin.country\' has to be a string with 1 or more characters.');
 
 			if (!(data.origin.postcode == undefined || typeof data.origin.postcode == 'string'))
-				resolve('Attribute \'origin.postcode\' can be left out or has to be a string.');
+				return resolve('Attribute \'origin.postcode\' can be left out or has to be a string.');
 
 			if (typeof data.origin.lat != 'number')
-				resolve('Attribute \'origin.lat\' has to be a number.');
+				return resolve('Attribute \'origin.lat\' has to be a number.');
 
 			if (typeof data.origin.lng != 'number')
-				resolve('Attribute \'origin.lng\' has to be a number.');
+				return resolve('Attribute \'origin.lng\' has to be a number.');
 
 			if (!(data.origin.value == undefined || typeof data.origin.value == 'string'))
-				resolve('Attribute \'origin.value\' can be left out or has to be a string.');
+				return resolve('Attribute \'origin.value\' can be left out or has to be a string.');
 
 			if (!(typeof data.origin.countryCode == 'string' && data.origin.countryCode.length > 0))
-				resolve('Attribute \'origin.countryCode\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'origin.countryCode\' has to be a string with 1 or more characters.');
 
 			if (!(data.history == undefined || typeof data.history == 'string'))
-				resolve('Attribute \'history\' can be left out or has to be a string.');
+				return resolve('Attribute \'history\' can be left out or has to be a string.');
 
 			if (!(data.recordLabel == undefined || typeof data.recordLabel == 'string'))
-				resolve('Attribute \'recordLabel\' can be left out or has to be a string.');
+				return resolve('Attribute \'recordLabel\' can be left out or has to be a string.');
 
 			if (!(data.releases == undefined || Array.isArray(data.releases)))
-				resolve('Attribute \'releases\' has to be an array of objects with the attributes \'releaseName\' and \'releaseYear\'.');
+				return resolve('Attribute \'releases\' has to be an array of objects with the attributes \'releaseName\' and \'releaseYear\'.');
 			if (
 				data.releases != undefined
 				&&
@@ -148,22 +148,22 @@ const validateBand = (data, type, options) => {
 					if (release.releaseName == undefined || release.releaseYear == undefined) return true;
 					return false;
 				})
-			) resolve('Attribute \'releases\' has to be an array of objects each with the attributes \'releaseName\' and \'releaseYear\'.');
+			) return resolve('Attribute \'releases\' has to be an array of objects each with the attributes \'releaseName\' and \'releaseYear\'.');
 
 			if (!(data.foundingDate == undefined || typeof data.foundingDate == 'string'))
-				resolve('Attribute \'foundingDate\' can be left out or has to be a string.');
+				return resolve('Attribute \'foundingDate\' can be left out or has to be a string.');
 
 			if (!(data.website == undefined || typeof data.website == 'string'))
-				resolve('Attribute \'website\' can be left out or has to be a string.');
+				return resolve('Attribute \'website\' can be left out or has to be a string.');
 
 			if (!(data.bandcampUrl == undefined || typeof data.bandcampUrl == 'string'))
-				resolve('Attribute \'bandcampUrl\' can be left out or has to be a string.');
+				return resolve('Attribute \'bandcampUrl\' can be left out or has to be a string.');
 
 			if (!(data.soundcloudUrl == undefined || typeof data.soundcloudUrl == 'string'))
-				resolve('Attribute \'soundcloudUrl\' can be left out or has to be a string.');
+				return resolve('Attribute \'soundcloudUrl\' can be left out or has to be a string.');
 
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
-				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
+				return resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
 			let res = await places.search({ query: data.origin.value ? data.origin.value : `${data.origin.city}, ${data.origin.country}`, language: data.countryCode, type: 'city' });
 
@@ -217,7 +217,7 @@ const validateBand = (data, type, options) => {
 				};
 				const object = await model[type].findById(id);
 				if (!object)
-					resolve('No band found with this ID');
+					return resolve('No band found with this ID');
 
 				if (imageList.length > 0)
 					await image.deleteImages(object.image);
@@ -251,7 +251,7 @@ const validateBand = (data, type, options) => {
 				};
 				if (type == 'put') newBand._id = id;
 				const updatedObject = await url.generateUrl(newBand, 'band');
-				resolve(updatedObject);
+				return resolve(updatedObject);
 			}
 			else {
 				let newBand = {
@@ -281,10 +281,10 @@ const validateBand = (data, type, options) => {
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
 					image: imageList
 				};
-				if (type == 'unvalidated') resolve(newBand);
+				if (type == 'unvalidated') return resolve(newBand);
 				else {
 					const updatedObject = await url.generateUrl(newBand, 'band', urlList);
-					resolve(updatedObject);
+					return resolve(updatedObject);
 				}
 			}
 		}

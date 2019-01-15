@@ -67,49 +67,49 @@ const validateLocation = (data, type, options) => {
 			const imagePath = optionsChecked.image || '';
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(typeof data.address.street == 'string' && data.address.street.length > 0))
-				resolve('Attribute \'address.street\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.street\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.administrative == undefined || typeof data.address.administrative == 'string'))
-				resolve('Attribute \'address.administrative\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.administrative\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.city == 'string' && data.address.city.length > 0))
-				resolve('Attribute \'address.city\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.city\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.county == undefined || typeof data.address.county == 'string'))
-				resolve('Attribute \'address.county\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.county\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.country == 'string' && data.address.country.length > 0))
-				resolve('Attribute \'address.country\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.country\' has to be a string with 1 or more characters.');
 
 			if (!(data.address.postcode == undefined || typeof data.address.postcode == 'string'))
-				resolve('Attribute \'address.postcode\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.postcode\' can be left out or has to be a string.');
 
 			if (typeof data.address.lat != 'number')
-				resolve('Attribute \'address.lat\' has to be a number.');
+				return resolve('Attribute \'address.lat\' has to be a number.');
 
 			if (typeof data.address.lng != 'number')
-				resolve('Attribute \'address.lng\' has to be a number.');
+				return resolve('Attribute \'address.lng\' has to be a number.');
 
 			if (!(data.address.value == undefined || typeof data.address.value == 'string'))
-				resolve('Attribute \'address.value\' can be left out or has to be a string.');
+				return resolve('Attribute \'address.value\' can be left out or has to be a string.');
 
 			if (!(typeof data.address.countryCode == 'string' && data.address.countryCode.length > 0))
-				resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'address.countryCode\' has to be a string with 1 or more characters.');
 
 			if (!(data.status == undefined || (typeof data.status == 'string' && (data.status == 'opened' || data.status == 'closed'))))
-				resolve('Attribute \'status\' can be left out or has to be either \'opened\' or \'closed\' as a string.');
+				return resolve('Attribute \'status\' can be left out or has to be either \'opened\' or \'closed\' as a string.');
 
 			if (!(data.information == undefined || typeof data.information == 'string'))
-				resolve('Attribute \'information\' can be left out or has to be a string.');
+				return resolve('Attribute \'information\' can be left out or has to be a string.');
 
 			if (!(data.website == undefined || typeof data.website == 'string'))
-				resolve('Attribute \'website\' can be left out or has to be a string.');
+				return resolve('Attribute \'website\' can be left out or has to be a string.');
 
 			if (!(data.facebookUrl == undefined || typeof data.facebookUrl == 'string'))
-				resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
+				return resolve('Attribute \'facebookUrl\' can be left out or has to be a string.');
 
 
 			let res = await places.search({ query: data.address.value ? data.address.value : `${data.address.street}, ${data.address.city}`, language: data.countryCode, type: 'address' });
@@ -169,7 +169,7 @@ const validateLocation = (data, type, options) => {
 				};
 				const object = await model[type].findById(id);
 				if (!object)
-					resolve('No location found with this ID');
+					return resolve('No location found with this ID');
 
 				if (imageList.length > 0)
 					await image.deleteImages(object.image);
@@ -200,7 +200,7 @@ const validateLocation = (data, type, options) => {
 				};
 				if (type == 'put') newLocation._id = id;
 				const updatedObject = await url.generateUrl(newLocation, 'location');
-				resolve(updatedObject);
+				return resolve(updatedObject);
 			}
 			else {
 				let newLocation = {
@@ -227,10 +227,10 @@ const validateLocation = (data, type, options) => {
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
 					image: imageList
 				};
-				if (type == 'unvalidated') resolve(newLocation);
+				if (type == 'unvalidated') return resolve(newLocation);
 				else {
 					const updatedObject = await url.generateUrl(newLocation, 'location', urlList);
-					resolve(updatedObject);
+					return resolve(updatedObject);
 				}
 			}
 		}

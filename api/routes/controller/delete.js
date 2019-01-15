@@ -68,14 +68,14 @@ function deleteObject(id, collection) {
 		try {
 			const item = await categories[collection].model.findById(id);
 			if (!item)
-				resolve({ status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
+				return resolve({ status: 400, message: 'No ' + categories[collection].string.toLowerCase() + ' found with this ID' });
 			await categories[collection].model.remove({ _id: id });
 			if (item.image != undefined)
 				await image.deleteImages(item.image);
 			switch (collection) {
 				case 'event':
 					await Report.remove({ category: 'event', item: id });
-					resolve({ status: 200, message: 'Event deleted' });
+					return resolve({ status: 200, message: 'Event deleted' });
 					break;
 
 				case 'band':
@@ -88,7 +88,7 @@ function deleteObject(id, collection) {
 						deleteBandFromEventCollection(UnvalidatedFestivalEvent, id),
 						Report.remove({ category: 'band', item: id })
 					]);
-					resolve({ status: 200, message: 'Band deleted' });
+					return resolve({ status: 200, message: 'Band deleted' });
 					break;
 
 				case 'location':
@@ -98,12 +98,12 @@ function deleteObject(id, collection) {
 						UnvalidatedEvent.remove({ location: id }),
 						Report.remove({ category: 'location', item: id })
 					]);
-					resolve({ status: 200, message: 'Location deleted' });
+					return resolve({ status: 200, message: 'Location deleted' });
 					break;
 				
 				case 'unvalidatedLocation':
 					await deleteLocationFromEventCollection(UnvalidatedEvent, id);
-					resolve({ status: 200, message: 'Location deleted' });
+					return resolve({ status: 200, message: 'Location deleted' });
 					break;
 
 				case 'festival':
@@ -112,34 +112,34 @@ function deleteObject(id, collection) {
 						UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } }),
 						Report.remove({ category: 'festival', item: id })
 					]);
-					resolve({ status: 200, message: 'Festival deleted' });
+					return resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
 				case 'unvalidatedFestival':
 					await UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } });
-					resolve({ status: 200, message: 'Festival deleted' });
+					return resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
 				case 'festivalEvent':
 					const festival = await Festival.findOne({ events: id });
 					if (!festival)
-						resolve({ status: 200, message: 'Festival event deleted' });
+						return resolve({ status: 200, message: 'Festival event deleted' });
 
 					festival.events.splice(festival.events.indexOf(id), 1);
 					const festivalEvents = await FestivalEvent.find({ _id: { $in: festival.events } });
 					if (festivalEvents.length == 0) {
 						await UnvalidatedFestivalEvent.remove({ _id: { $in: festival.events } });
 						await Festival.remove({ _id: festival._id });
-						resolve({ status: 200, message: 'Festival event deleted' });
+						return resolve({ status: 200, message: 'Festival event deleted' });
 					}
 					else {
 						await Festival.findOneAndUpdate({ _id: festival._id }, festival);
-						resolve({ status: 200, message: 'Festival event deleted' });
+						return resolve({ status: 200, message: 'Festival event deleted' });
 					}
 					break;
 
 				default:
-					resolve({ status: 200, message: categories[collection].string + ' deleted' });
+					return resolve({ status: 200, message: categories[collection].string + ' deleted' });
 			}
 		}
 		catch (err) {
@@ -152,7 +152,7 @@ function deleteBandFromEventCollection(collection, id, newId) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const events = await collection.find({ bands: id });
-			if (events.length == 0) resolve();
+			if (events.length == 0) return resolve();
 
 			const promises = events.map(async (event) => {
 				if (newId != undefined) event.bands[event.bands.indexOf(id)] = newId;
@@ -162,7 +162,7 @@ function deleteBandFromEventCollection(collection, id, newId) {
 				return result;
 			});
 			await Promise.all(promises);
-			resolve();
+			return resolve();
 		}
 		catch (err) {
 			reject(err);
@@ -174,7 +174,7 @@ function deleteLocationFromEventCollection(collection, id, newId) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const events = await collection.find({ location: id });
-			if (events.length == 0) resolve();
+			if (events.length == 0) return resolve();
 
 			const promises = events.map(async (event) => {
 				if (newId != undefined) event.location = newId;
@@ -184,7 +184,7 @@ function deleteLocationFromEventCollection(collection, id, newId) {
 				return result;
 			});
 			await Promise.all(promises);
-			resolve();
+			return resolve();
 		}
 		catch (err) {
 			reject(err);
@@ -195,11 +195,11 @@ function deleteLocationFromEventCollection(collection, id, newId) {
 function checkVerifiable(location, bands) {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (location == 'Location was deleted') resolve(false);
+			if (location == 'Location was deleted') return resolve(false);
 			const foundLocation = await UnvalidatedLocation.findById(location);
 			const foundBand = await UnvalidatedBand.findOne({ _id: { $in: bands } });
-			if (foundLocation == undefined && foundBand == undefined) resolve(true);
-			else resolve(false);
+			if (foundLocation == undefined && foundBand == undefined) return resolve(true);
+			else return resolve(false);
 		}
 		catch (err) {
 			reject(err);

@@ -30,7 +30,7 @@ const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
 function objectArray(objects, model, sortBy, order) {
 	return new Promise(async (resolve, reject) => {
-		if (objects.length === 0) resolve([]);
+		if (objects.length === 0) return resolve([]);
 
 		const functions = {
 			band: bandObject,
@@ -60,7 +60,7 @@ function objectArray(objects, model, sortBy, order) {
 			if (sortBy != false)
 				objectList = sort[model](objectList, sortBy, order);
 
-			resolve(objectList);
+			return resolve(objectList);
 		}
 		catch (err) {
 			reject(err);
@@ -70,7 +70,7 @@ function objectArray(objects, model, sortBy, order) {
 
 function bandObject(band) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof band == 'string') resolve(band);
+		if (typeof band == 'string') return resolve(band);
 
 		try {
 			const promises = band.genre.map(async (genreID) => {
@@ -100,7 +100,7 @@ function bandObject(band) {
 				facebookUrl: band.facebookUrl,
 				image: band.image
 			};
-			resolve(responseBand);
+			return resolve(responseBand);
 		}
 		catch (err) {
 			reject(err);
@@ -110,7 +110,7 @@ function bandObject(band) {
 
 function eventObject(event) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof event == 'string') resolve(event);
+		if (typeof event == 'string') return resolve(event);
 
 		try {
 			let location;
@@ -169,7 +169,7 @@ function eventObject(event) {
 				verifiable: event.verifiable,
 				image: event.image
 			};
-			resolve(responseEvent);
+			return resolve(responseEvent);
 		}
 		catch (err) {
 			reject(err);
@@ -179,7 +179,7 @@ function eventObject(event) {
 
 function festivalEventObject(festivalEvent) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof festivalEvent == 'string') resolve(festivalEvent);
+		if (typeof festivalEvent == 'string') return resolve(festivalEvent);
 
 		try {
 			const promises = festivalEvent.bands.map(async (bandID, index) => {
@@ -214,7 +214,7 @@ function festivalEventObject(festivalEvent) {
 				canceled: festivalEvent.canceled,
 				verifiable: festivalEvent.verifiable
 			};
-			resolve(responseFestivalEvent);
+			return resolve(responseFestivalEvent);
 		}
 		catch (err) {
 			reject(err);
@@ -224,7 +224,7 @@ function festivalEventObject(festivalEvent) {
 
 function festivalObject(festival) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof festival == 'string') resolve(festival);
+		if (typeof festival == 'string') return resolve(festival);
 
 		try {
 			const genrePromises = festival.genre.map(async (genreID) => {
@@ -262,7 +262,7 @@ function festivalObject(festival) {
 				website: festival.website,
 				facebookUrl: festival.facebookUrl
 			};
-			resolve(responseFestival);
+			return resolve(responseFestival);
 		}
 		catch (err) {
 			reject(err);
@@ -272,7 +272,7 @@ function festivalObject(festival) {
 
 function locationObject(location) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof location == 'string') resolve(location);
+		if (typeof location == 'string') return resolve(location);
 
 		try {
 			const responseLocation = {
@@ -286,7 +286,7 @@ function locationObject(location) {
 				facebookUrl: location.facebookUrl,
 				image: location.image
 			};
-			resolve(responseLocation);
+			return resolve(responseLocation);
 		}
 		catch (err) {
 			reject(err);
@@ -296,7 +296,7 @@ function locationObject(location) {
 
 function reportObject(report) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof report == 'string') resolve(report);
+		if (typeof report == 'string') return resolve(report);
 
 		const model = {
 			band: Band,
@@ -321,7 +321,7 @@ function reportObject(report) {
 				item: dereferenced,
 				description: report.description
 			}
-			resolve(responseReport);
+			return resolve(responseReport);
 		}
 		catch (err) {
 			reject(err);
@@ -331,7 +331,7 @@ function reportObject(report) {
 
 function unvalidatedFestivalObject(unvalidatedFestival) {
 	return new Promise(async (resolve, reject) => {
-		if (typeof unvalidatedFestival == 'string') resolve(unvalidatedFestival);
+		if (typeof unvalidatedFestival == 'string') return resolve(unvalidatedFestival);
 
 		try {
 			const promises = unvalidatedFestival.genre.map(async (genreID) => {
@@ -357,7 +357,7 @@ function unvalidatedFestivalObject(unvalidatedFestival) {
 				website: unvalidatedFestival.website,
 				facebookUrl: unvalidatedFestival.facebookUrl
 			};
-			resolve(responseFestival);
+			return resolve(responseFestival);
 		}
 		catch (err) {
 			reject(err);

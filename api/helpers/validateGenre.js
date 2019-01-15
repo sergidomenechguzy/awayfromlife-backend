@@ -53,13 +53,13 @@ const validateGenre = (data, type, options) => {
 
 		try {
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			const genres = await Genre.find();
 			const genreNames = genres.map(genre => genre.name.toLowerCase());
 			if (type == 'put') {
 				const object = await Genre.findById(id);
-				if (!object) resolve('No genre found with this ID');
+				if (!object) return resolve('No genre found with this ID');
 
 				let index = genreNames.indexOf(data.name.toLowerCase());
 				if (index < 0 || genres[index]._id.toString() == id) {
@@ -67,20 +67,20 @@ const validateGenre = (data, type, options) => {
 						_id: id,
 						name: data.name.trim()
 					};
-					resolve(newGenre);
+					return resolve(newGenre);
 				}
-				else resolve('A genre with this name already exists.');
+				else return resolve('A genre with this name already exists.');
 			}
 			else {
 				if (genreNames.includes(data.name.toLowerCase())) 
-					resolve(type == 'multiple' ? 'At least one genre already exists.' : 'A genre with this name already exists.');
+					return resolve(type == 'multiple' ? 'At least one genre already exists.' : 'A genre with this name already exists.');
 				else if (nameList.includes(data.name.toLowerCase()))
-					resolve('All the names of the genres have to be different.');
+					return resolve('All the names of the genres have to be different.');
 
 				let newGenre = {
 					name: data.name.trim()
 				};
-				resolve(newGenre);
+				return resolve(newGenre);
 			}
 		}
 		catch (err) {

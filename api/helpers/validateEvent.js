@@ -78,15 +78,15 @@ const validateEvent = (data, type, collection, options) => {
 			let verifiable = true;
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
-				resolve('Attribute \'name\' has to be a string with 1 or more characters.');
+				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
 			if (!(data.description == undefined || typeof data.description == 'string'))
-				resolve('Attribute \'description\' can be left out or has to be a string.');
+				return resolve('Attribute \'description\' can be left out or has to be a string.');
 
 			let locationId;
 			if (!(typeof data.location == 'string' && data.location.length > 0)) {
 				if (!(typeof data.location == 'object' && data.location._id != undefined))
-					resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+					return resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
 				else locationId = data.location._id;
 			}
 			else locationId = data.location;
@@ -97,28 +97,28 @@ const validateEvent = (data, type, collection, options) => {
 					const unvalidatedLocations = await UnvalidatedLocation.find();
 					const unvalidatedLocationIds = unvalidatedLocations.map(location => location._id.toString());
 					if (!unvalidatedLocationIds.includes(locationId))
-						resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+						return resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
 					else if (type == 'validate')
-						resolve({ verifiable: false });
+						return resolve({ verifiable: false });
 					verifiable = false;
 				}
 				else {
-					resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
+					return resolve('Attribute \'location\' has to be either the ID of a location from the database or a location object with an _id attribute containing the ID of a location from the database.');
 				}
 			}
 
 			let finalDate;
 			if (!(typeof data.date == 'string' && data.date.length > 0 && moment(data.date, 'YYYY-MM-DD', true).isValid()))
-				resolve('Attribute \'date\' has to be a string in the \'YYYY-MM-DD\' date format.');
+				return resolve('Attribute \'date\' has to be a string in the \'YYYY-MM-DD\' date format.');
 			else
 				finalDate = new Date(data.date);
 
 			if (!(data.time == undefined || typeof data.time == 'string'))
-				resolve('Attribute \'time\' can be left out or has to be a string.');
+				return resolve('Attribute \'time\' can be left out or has to be a string.');
 
 			let bandList = [];
 			if (!(Array.isArray(data.bands) && data.bands.length > 0))
-				resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+				return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 			else {
 				if (
 					data.bands.some(band => {
@@ -136,7 +136,7 @@ const validateEvent = (data, type, collection, options) => {
 						}
 					})
 				)
-					resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+					return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
 			}
 			const bands = await Band.find();
 			const bandIds = bands.map(band => band._id.toString());
@@ -155,14 +155,14 @@ const validateEvent = (data, type, collection, options) => {
 					}
 					return false;
 				})
-			) resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
-			if ((type == 'put' || type == 'post') && unvalidCount == bandList.length) resolve('Attribute \'bands\' has to include at least one validated band from the database.');
+			) return resolve('Attribute \'bands\' has to be either an array of IDs of bands from the database or an array of band objects with an _id attribute containing the ID of a band from the database and must not be empty.');
+			if ((type == 'put' || type == 'post') && unvalidCount == bandList.length) return resolve('Attribute \'bands\' has to include at least one validated band from the database.');
 
 			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && data.canceled >= 0 && data.canceled <= 2)))
-				resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
+				return resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
 
 			if (!(data.ticketLink == undefined || typeof data.ticketLink == 'string'))
-				resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
+				return resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
 
 			let imageList = [];
 			if (imagePath.length > 0)
@@ -179,7 +179,7 @@ const validateEvent = (data, type, collection, options) => {
 				};
 				const object = await model[collection].findById(id);
 				if (!object)
-					resolve('No event found with this ID');
+					return resolve('No event found with this ID');
 
 				if (imageList.length > 0)
 					await image.deleteImages(object.image);
@@ -189,8 +189,7 @@ const validateEvent = (data, type, collection, options) => {
 					url: '',
 					description: data.description != undefined ? data.description : object.description,
 					location: locationId,
-					date: data.date,
-					dateObject: finalDate,
+					date: finalDate,
 					time: data.time != undefined ? data.time : object.time,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
@@ -201,7 +200,7 @@ const validateEvent = (data, type, collection, options) => {
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);
-				resolve(updatedObject);
+				return resolve(updatedObject);
 			}
 			else {
 				let newEvent = {
@@ -209,8 +208,7 @@ const validateEvent = (data, type, collection, options) => {
 					url: '',
 					description: data.description != undefined ? data.description : '',
 					location: locationId,
-					date: data.date,
-					dateObject: finalDate,
+					date: finalDate,
 					time: data.time != undefined ? data.time : '',
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
@@ -218,10 +216,10 @@ const validateEvent = (data, type, collection, options) => {
 					verifiable: verifiable,
 					image: imageList
 				};
-				if (type == 'unvalidated') resolve(newEvent);
+				if (type == 'unvalidated') return resolve(newEvent);
 				else {
 					const updatedObject = await url.generateEventUrl(newEvent, collection, urlList);
-					resolve(updatedObject);
+					return resolve(updatedObject);
 				}
 			}
 		}
