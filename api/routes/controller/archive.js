@@ -9,15 +9,10 @@ const ArchivedEvent = mongoose.model('archived_events');
 function events() {
 	return new Promise(async (resolve, reject) => {
 		try {
-			let archiveEvents = [];
-			const events = await Event.find();
-			events.forEach(event => {
-				if (Math.floor(moment(event.date).valueOf() / 86400000) <= Math.floor((Date.now() / 86400000) - 1))
-					archiveEvents.push(event);
-			});
-			if (archiveEvents.length === 0) resolve(archiveEvents);
+			const events = await Event.find( { date: { $lt: new Date(moment().format('YYYY-MM-DD')) } });
+			if (events.length == 0) return resolve(events);
 
-			const promises = archiveEvents.map(async (object) => {
+			const promises = events.map(async (object) => {
 				await Event.remove({ _id: object._id });
 				const newEvent = {
 					name: object.name,
@@ -35,7 +30,7 @@ function events() {
 				return saved;
 			});
 			const objectList = await Promise.all(promises);
-			resolve(objectList);
+			return resolve(objectList);
 		}
 		catch (err) {
 			reject(err);

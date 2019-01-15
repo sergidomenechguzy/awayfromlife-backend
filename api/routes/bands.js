@@ -191,48 +191,6 @@ router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get all bands events
-router.get('/events/:_id', token.checkToken(false), async (req, res) => {
-	try {
-		const events = await Event.find({ bands: req.params._id });
-		if (events.length == 0 && req.query.includeFestivals != 'true')
-			return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
-
-		let festivalEventList = [];
-		if (req.query.includeFestivals == 'true') {
-			const festivalEvents = await FestivalEvent.find({ bands: req.params._id });
-
-			if (events.length == 0 && festivalEvents.length == 0)
-				return res.status(200).json({ message: 'No events found for this band.', token: res.locals.token });
-
-			const promises = festivalEvents.map(async (festivalEvent) => {
-				let finalFestivalEvent = await dereference.festivalEventObject(festivalEvent);
-				const festival = await Festival.findOne({ events: festivalEvent._id });
-
-				finalFestivalEvent.url = festival.url;
-				finalFestivalEvent.date = festivalEvent.startDate;
-				finalFestivalEvent.isFestival = true;
-				return finalFestivalEvent;
-			});
-			festivalEventList = await Promise.all(promises);
-		}
-
-		let dereferenced = await dereference.objectArray(events, 'event', false);
-		dereferenced = dereferenced.map(event => {
-			event.isFestival = false;
-			return event;
-		});
-		dereferenced = dereferenced.concat(festivalEventList);
-
-		dereferenced = dereference.eventSort(dereferenced, 'date', 1);
-		return res.status(200).json({ data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
 // get all bands upcoming events
 router.get('/:_id/upcomingEvents', token.checkToken(false), async (req, res) => {
 	try {
