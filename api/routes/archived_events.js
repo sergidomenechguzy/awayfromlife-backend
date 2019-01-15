@@ -319,8 +319,6 @@ router.get('/month/:month', token.checkToken(false), async (req, res) => {
 // get similar events
 router.get('/similar', token.checkToken(false), async (req, res) => {
 	try {
-		console.log(new Date(moment().format('YYYY-MM-DD')));
-		
 		if (!req.query.location || !req.query.date)
 			return res.status(400).json({ message: 'Parameter(s) missing: location and date are required.' });
 		if (!moment(req.query.date, 'YYYY-MM-DD', true).isValid())
