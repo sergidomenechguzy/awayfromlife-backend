@@ -8,6 +8,9 @@
   * [Events](events/#events)
   * [Unvalidated Events](unvalidated-events/#unvalidated-events)
 * [Feedback](feedback/#feedback)
+    * [api/feedback](#apifeedback)
+    * [api/feedback/latest](#apifeedbacklatest)
+    * [api/feedback/{_id}](#apifeedback_id)
 * Festivals
   * [Festivals](festivals/#festivals)
   * [Unvalidated Festivals](unvalidated-festivals/#unvalidated-festivals)
