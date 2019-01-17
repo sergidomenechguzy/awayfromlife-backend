@@ -5,10 +5,12 @@ const Schema = mongoose.Schema;
 const BandSchema = new Schema({
 	name: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	url: {
-		type: String
+		type: String,
+		trim: true
 	},
 	genre: {
 		type: [String],
@@ -18,17 +20,21 @@ const BandSchema = new Schema({
 		default: {
 			city: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			},
 			administrative: {
-				type: String
+				type: String,
+				trim: true
 			},
 			country: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			},
 			postcode: {
-				type: String
+				type: String,
+				trim: true
 			},
 			lat: {
 				type: Number,
@@ -40,10 +46,12 @@ const BandSchema = new Schema({
 			},
 			value: {
 				type: String,
+				trim: true
 			},
 			countryCode: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			}
 		},
 		international: {
@@ -56,33 +64,42 @@ const BandSchema = new Schema({
 		}
 	},
 	history: {
-		type: String
+		type: String,
+		trim: true
 	},
 	recordLabel: {
-		type: String
+		type: String,
+		trim: true
 	},
 	releases: [{
 		releaseName: {
-			type: String
+			type: String,
+			trim: true
 		},
 		releaseYear: {
-			type: String
+			type: String,
+			trim: true
 		}
 	}],
 	foundingDate: {
-		type: String
+		type: String,
+		trim: true
 	},
 	website: {
-		type: String
+		type: String,
+		trim: true
 	},
 	bandcampUrl: {
-		type: String
+		type: String,
+		trim: true
 	},
 	soundcloudUrl: {
-		type: String
+		type: String,
+		trim: true
 	},
 	facebookUrl: {
-		type: String
+		type: String,
+		trim: true
 	},
 	image: {
 		type: [String]

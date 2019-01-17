@@ -5,19 +5,25 @@ const Schema = mongoose.Schema;
 const BugSchema = new Schema({
 	error: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	description: {
-		type: String
+		type: String,
+		trim: true
 	},
 	loggedIn: {
-		type: Number
+		type: Number,
+		min: 0,
+		max: 2
 	},
 	component: {
-		type: String
+		type: String,
+		trim: true
 	},
 	email: {
-		type: String
+		type: String,
+		trim: true
 	}
 });
 

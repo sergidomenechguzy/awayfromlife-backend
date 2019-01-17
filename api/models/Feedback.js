@@ -5,10 +5,12 @@ const Schema = mongoose.Schema;
 const FeedbackSchema = new Schema({
 	text: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	email: {
-		type: String
+		type: String,
+		trim: true
 	}
 });
 

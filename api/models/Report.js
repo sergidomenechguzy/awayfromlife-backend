@@ -5,14 +5,17 @@ const Schema = mongoose.Schema;
 const ReportSchema = new Schema({
 	category: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	item: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	description: {
-		type: String
+		type: String,
+		trim: true
 	}
 });
 

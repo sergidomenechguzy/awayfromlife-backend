@@ -5,33 +5,41 @@ const Schema = mongoose.Schema;
 const LocationSchema = new Schema({
 	name: {
 		type: String,
-		required: true
+		required: true,
+		trim: true
 	},
 	url: {
-		type: String
+		type: String,
+		trim: true
 	},
 	address: {
 		default: {
 			street: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			},
 			administrative: {
-				type: String
+				type: String,
+				trim: true
 			},
 			city: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			},
 			county: {
-				type: String
+				type: String,
+				trim: true
 			},
 			country: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			},
 			postcode: {
-				type: String
+				type: String,
+				trim: true
 			},
 			lat: {
 				type: Number,
@@ -42,16 +50,19 @@ const LocationSchema = new Schema({
 				required: true
 			},
 			value: {
-				type: String
+				type: String,
+				trim: true
 			},
 			countryCode: {
 				type: String,
-				required: true
+				required: true,
+				trim: true
 			}
 		},
 		international: {
 			street: {
-				type: String
+				type: String,
+				trim: true
 			},
 			city: {
 				type: [String]
@@ -63,16 +74,20 @@ const LocationSchema = new Schema({
 	},
 	status: {
 		type: String,
-		default: 'opened'
+		default: 'opened',
+		trim: true
 	},
 	information: {
-		type: String
+		type: String,
+		trim: true
 	},
 	website: {
-		type: String
+		type: String,
+		trim: true
 	},
 	facebookUrl: {
-		type: String
+		type: String,
+		trim: true
 	},
 	image: {
 		type: [String]

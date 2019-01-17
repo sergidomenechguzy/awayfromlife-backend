@@ -9,7 +9,8 @@ const FestivalEventSchema = new Schema({
 		trim: true
 	},
 	description: {
-		type: String
+		type: String,
+		trim: true
 	},
 	startDate: {
 		type: Date,
@@ -32,6 +33,9 @@ const FestivalEventSchema = new Schema({
 	verifiable: {
 		type: Boolean,
 		default: false
+	},
+	image: {
+		type: [String]
 	}
 });
 
