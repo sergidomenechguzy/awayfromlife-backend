@@ -61,6 +61,9 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
 				return resolve('Attribute \'name\' has to be a string with 1 or more characters.');
 
+			if (!(data.description == undefined || typeof data.description == 'string'))
+				return resolve('Attribute \'description\' can be left out or has to be a string.');
+
 			let finalStartDate;
 			if (!(typeof data.startDate == 'string' && data.startDate.length > 0 && moment(data.startDate, 'YYYY-MM-DD', true).isValid()))
 				return resolve('Attribute \'startDate\' has to be a string in the \'YYYY-MM-DD\' date format.');
@@ -128,6 +131,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 
 				let newFestivalEvent = {
 					name: data.name.trim(),
+					description: data.description != undefined ? data.description : object.description,
 					startDate: finalStartDate,
 					endDate: finalEndDate,
 					bands: bandList,
@@ -140,6 +144,7 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			else {
 				let newFestivalEvent = {
 					name: data.name.trim(),
+					description: data.description != undefined ? data.description : '',
 					startDate: finalStartDate,
 					endDate: finalEndDate,
 					bands: bandList,

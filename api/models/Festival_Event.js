@@ -8,6 +8,9 @@ const FestivalEventSchema = new Schema({
 		required: true,
 		trim: true
 	},
+	description: {
+		type: String
+	},
 	startDate: {
 		type: Date,
 		required: true

@@ -208,6 +208,7 @@ function festivalEventObject(festivalEvent) {
 			const responseFestivalEvent = {
 				_id: festivalEvent._id,
 				name: festivalEvent.name,
+				description: festivalEvent.description,
 				startDate: moment(festivalEvent.startDate).format('YYYY-MM-DD'),
 				endDate: moment(festivalEvent.endDate).format('YYYY-MM-DD'),
 				bands: bandListSorted,
