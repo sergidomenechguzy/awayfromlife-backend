@@ -11,13 +11,20 @@ require(dirPath + '/api/models/Festival_Event');
 const FestivalEvent = mongoose.model('festival_events');
 const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
+
 // validate all attributes for one band object in the request body
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
-			let response;
-			if (type == 'put' || type == 'validate') response = await validateFestivalEvent(req.body, type, { id: req.params._id });
-			else response = await validateFestivalEvent(req.body, type);
+			let options = {};
+			if (type == 'put' || type == 'validate')
+				options.id = req.params._id;
+			if (req.file != undefined)
+				options.image = req.file.path;
+
+			const response = await validateFestivalEvent(JSON.parse(req.body.data), type, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
 			return next();
@@ -52,10 +59,11 @@ module.exports.validateList = () => {
 // check all attributes and build the finished object
 const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type, options) => {
 	return new Promise(async (resolve, reject) => {
-		const optionsChecked = options || {};
-		const id = optionsChecked.id || '';
-
 		try {
+			const optionsChecked = options || {};
+			const id = optionsChecked.id || '';
+			const imagePath = optionsChecked.image || '';
+
 			let verifiable = true;
 
 			if (!(typeof data.name == 'string' && data.name.trim().length > 0))
@@ -118,6 +126,12 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			if (!(data.canceled == undefined || (typeof data.canceled == 'number' && (data.canceled == 0 || data.canceled == 1 || data.canceled == 2))))
 				return resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
 
+			let imageList = [];
+			if (imagePath.length > 0)
+				imageList = await image.saveImages(imagePath, 'festival-events');
+			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
+				imageList = image.randomPlaceholder();
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -129,6 +143,9 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 				if (!object)
 					return resolve('No festival event found with this ID');
 
+				if (imageList.length > 0)
+					await image.deleteImages(object.image);
+
 				let newFestivalEvent = {
 					name: data.name.trim(),
 					description: data.description != undefined ? data.description : object.description,
@@ -136,7 +153,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					endDate: finalEndDate,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
-					verifiable: verifiable
+					verifiable: verifiable,
+					image: imageList.length > 0 ? imageList : object.image
 				};
 				if (type == 'put') newFestivalEvent._id = id;
 				return resolve(newFestivalEvent);
@@ -149,7 +167,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					endDate: finalEndDate,
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
-					verifiable: verifiable
+					verifiable: verifiable,
+					image: imageList
 				};
 				return resolve(newFestivalEvent);
 			}

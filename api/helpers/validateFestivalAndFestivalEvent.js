@@ -6,17 +6,27 @@ const validateFestivalEvent = require(dirPath + '/api/helpers/validateFestivalEv
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
-			let responseFestival;
-			if (type == 'validate') responseFestival = await validateFestival.validateFestival(req.body.festival, type, { id: req.params.festivalId, festivalEventId: req.params.eventId });
-			else responseFestival = await validateFestival.validateFestival(req.body.festival, type);
+			let festivalOptions = {};
+			if (type == 'validate') {
+				festivalOptions.id = req.params.festivalId;
+				festivalOptions.festivalEventId = req.params.eventId;
+			}
+			if (req.files['festivalImage'] != undefined && req.files['festivalImage'].length > 0)
+				festivalOptions.image = req.files['festivalImage'][0].path;
+
+			const responseFestival = await validateFestival.validateFestival(JSON.parse(req.body.data).festival, type, festivalOptions);
 			if (typeof responseFestival == 'string') return res.status(400).json({ message: responseFestival, token: res.locals.token });
 
-			let responseFestivalEvent;
-			if (type == 'validate') responseFestivalEvent = await validateFestivalEvent.validateFestivalEvent(req.body.event, type, { id: req.params.eventId });
-			else responseFestivalEvent = await validateFestivalEvent.validateFestivalEvent(req.body.event, type);
-			if (typeof responseFestivalEvent == 'string') return res.status(400).json({ message: responseFestivalEvent, token: res.locals.token });
+			let eventOptions = {};
+			if (type == 'validate')
+				eventOptions.id = req.params.eventId;
+			if (req.files['eventImage'] != undefined && req.files['eventImage'].length > 0)
+				eventOptions.image = req.files['eventImage'][0].path;
 
-			res.locals.validated = { festival: responseFestival, event: responseFestivalEvent };
+			const responseEvent = await validateFestivalEvent.validateFestivalEvent(JSON.parse(req.body.data).event, type, eventOptions);
+			if (typeof responseEvent == 'string') return res.status(400).json({ message: responseEvent, token: res.locals.token });
+
+			res.locals.validated = { festival: responseFestival, event: responseEvent };
 			return next();
 		}
 		catch (err) {

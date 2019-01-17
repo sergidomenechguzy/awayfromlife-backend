@@ -213,7 +213,8 @@ function festivalEventObject(festivalEvent) {
 				endDate: moment(festivalEvent.endDate).format('YYYY-MM-DD'),
 				bands: bandListSorted,
 				canceled: festivalEvent.canceled,
-				verifiable: festivalEvent.verifiable
+				verifiable: festivalEvent.verifiable,
+				image: festivalEvent.image
 			};
 			return resolve(responseFestivalEvent);
 		}
@@ -261,7 +262,8 @@ function festivalObject(festival) {
 				address: festival.address.default,
 				ticketLink: festival.ticketLink,
 				website: festival.website,
-				facebookUrl: festival.facebookUrl
+				facebookUrl: festival.facebookUrl,
+				image: festival.image
 			};
 			return resolve(responseFestival);
 		}
@@ -356,7 +358,8 @@ function unvalidatedFestivalObject(unvalidatedFestival) {
 				address: unvalidatedFestival.address,
 				ticketLink: unvalidatedFestival.ticketLink,
 				website: unvalidatedFestival.website,
-				facebookUrl: unvalidatedFestival.facebookUrl
+				facebookUrl: unvalidatedFestival.facebookUrl,
+				image: unvalidatedFestival.image
 			};
 			return resolve(responseFestival);
 		}

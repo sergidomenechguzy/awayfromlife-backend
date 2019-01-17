@@ -307,4 +307,75 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
+
+// post festival to database
+router.post('/withImage', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
+	try {
+		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
+		let newFestival = res.locals.validated.festival;
+		newFestival.events = [newFestivalEvent._id];
+		newFestival = await new Festival(newFestival).save();
+		const dereferenced = await dereference.festivalObject(newFestival);
+		return res.status(200).json({ message: 'Festival and festival event saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// update festival by id
+router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestival.validateObject(), async (req, res) => {
+	try {
+		const updated = await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.festivalObject(updated);
+		return res.status(200).json({ message: 'Festival updated', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+
+
+
+
+// const UnvalidatedFestival = mongoose.model('unvalidated_festivals');
+// const image = require(dirPath + '/api/helpers/image');
+
+// router.get('/updatePlaceholder', async (req, res) => {
+// 	try {
+// 		const events = await Festival.find();
+// 		const promises = events.map(async (event) => {
+// 			if (event.image.length != 3) {
+// 				event.image = image.randomPlaceholder();
+// 				const updated = await Festival.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const eventList = await Promise.all(promises);
+
+// 		const unevents = await UnvalidatedFestival.find();
+// 		const unpromises = unevents.map(async (event) => {
+// 			if (event.image.length != 3) {
+// 				event.image = image.randomPlaceholder();
+// 				const updated = await UnvalidatedFestival.findOneAndUpdate({ _id: event._id }, event, { new: true });
+// 				return { message: 'image updated with placeholder', data: updated };
+// 			}
+// 			return { message: 'no update needed', data: event };
+// 		});
+// 		const uneventList = await Promise.all(unpromises);
+
+// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+// 	}
+// 	catch (err) {
+// 		console.log(err);
+// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+// 	}
+// });
+
 module.exports = router;
