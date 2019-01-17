@@ -9,51 +9,17 @@ const fileFilter = (req, file, cb) => {
 		cb(new Error('Only jpg and png allowed as filetype.'), false);
 }
 
-const bandStorage = multer.diskStorage({
+const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, './images/bands/');
+		cb(null, './images/uploads/');
 	},
 	filename: (req, file, cb) => {
 		cb(null, Date.now() + '_' + file.originalname);
 	}
 });
 
-const bandUpload = multer({
-	storage: bandStorage,
-	limits: {
-		fileSize: fileSize
-	},
-	fileFilter: fileFilter
-});
-
-const eventStorage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		cb(null, './images/events/');
-	},
-	filename: (req, file, cb) => {
-		cb(null, Date.now() + '_' + file.originalname);
-	}
-});
-
-const eventUpload = multer({
-	storage: eventStorage,
-	limits: {
-		fileSize: fileSize
-	},
-	fileFilter: fileFilter
-});
-
-const locationStorage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		cb(null, './images/locations/');
-	},
-	filename: (req, file, cb) => {
-		cb(null, Date.now() + '_' + file.originalname);
-	}
-});
-
-const locationUpload = multer({
-	storage: locationStorage,
+const upload = multer({
+	storage: storage,
 	limits: {
 		fileSize: fileSize
 	},
@@ -61,7 +27,5 @@ const locationUpload = multer({
 });
 
 module.exports = {
-	bandUpload: bandUpload,
-	eventUpload: eventUpload,
-	locationUpload: locationUpload
+	upload: upload
 };

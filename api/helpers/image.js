@@ -16,23 +16,23 @@ function randomPlaceholder() {
 	return pathArray;
 }
 
-function saveImages(path) {
+function saveImages(path, outputFolder) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const imageBuffer = await readFileAsync(path);
 			const originalMetadata = await sharp(imageBuffer).metadata();
 			let newPath;
 
-			let promises = [crop(imageBuffer, modifyPath(path, 'S'), 70, 70)];
+			let promises = [crop(imageBuffer, modifyPath(path, outputFolder, 'S'), 70, 70)];
 			if (originalMetadata.width > 600) {
-				promises.push(scale(imageBuffer, modifyPath(path, 'M'), 600));
+				promises.push(scale(imageBuffer, modifyPath(path, outputFolder, 'M'), 600));
 				if (originalMetadata.width > 1500)
-					promises.push(scale(imageBuffer, modifyPath(path, 'L'), 1500));
+					promises.push(scale(imageBuffer, modifyPath(path, outputFolder, 'L'), 1500));
 				else
-					newPath = modifyPath(path, 'L');
+					newPath = modifyPath(path, outputFolder, 'L');
 			}
 			else
-				newPath = modifyPath(path, 'M');
+				newPath = modifyPath(path, outputFolder, 'M');
 
 			const imageList = await Promise.all(promises);
 			if (newPath != undefined) {
@@ -95,10 +95,16 @@ function crop(imageBuffer, outputPath, size, crop) {
 	});
 }
 
-function modifyPath(path, letter) {
+function modifyPath(path, outputFolder, letter) {
 	let pathArray = path.split('.');
 	pathArray[pathArray.length - 2] += `_${letter}`;
 	let outputPath = pathArray.join('.');
+
+	outputPath = outputPath.replace(/\\/g, '/');
+
+	pathArray = outputPath.split('/');
+	pathArray[1] = outputFolder;
+	outputPath = pathArray.join('/');
 	return outputPath;
 }
 

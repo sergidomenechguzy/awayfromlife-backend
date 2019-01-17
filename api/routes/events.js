@@ -597,7 +597,7 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // post event to database
-router.post('/withImage', token.checkToken(true), multerConfig.eventUpload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
+router.post('/withImage', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('post'), async (req, res) => {
 	try {
 		const newEvent = await new Event(res.locals.validated).save();
 		return res.status(200).json({ message: 'Event saved', data: newEvent, token: res.locals.token });
@@ -609,7 +609,7 @@ router.post('/withImage', token.checkToken(true), multerConfig.eventUpload.singl
 });
 
 // update event by id
-router.put('/withImage/:_id', token.checkToken(true), multerConfig.eventUpload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
+router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
 	try {
 		const updated = await Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.eventObject(updated);
