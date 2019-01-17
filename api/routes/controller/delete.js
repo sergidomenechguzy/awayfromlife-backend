@@ -92,26 +92,17 @@ function deleteObject(id, collection) {
 					break;
 
 				case 'location':
-					await Promise.all([
-						Event.remove({ location: id }),
-						ArchivedEvent.remove({ location: id }),
-						UnvalidatedEvent.remove({ location: id }),
-						Report.remove({ category: 'location', item: id })
-					]);
+					await deleteLocationData(id);
 					return resolve({ status: 200, message: 'Location deleted' });
 					break;
-				
+
 				case 'unvalidatedLocation':
 					await deleteLocationFromEventCollection(UnvalidatedEvent, id);
 					return resolve({ status: 200, message: 'Location deleted' });
 					break;
 
 				case 'festival':
-					await Promise.all([
-						FestivalEvent.remove({ _id: { $in: item.events } }),
-						UnvalidatedFestivalEvent.remove({ _id: { $in: item.events } }),
-						Report.remove({ category: 'festival', item: id })
-					]);
+					await deleteFestivalData(id, item.events);
 					return resolve({ status: 200, message: 'Festival deleted' });
 					break;
 
@@ -128,8 +119,7 @@ function deleteObject(id, collection) {
 					festival.events.splice(festival.events.indexOf(id), 1);
 					const festivalEvents = await FestivalEvent.find({ _id: { $in: festival.events } });
 					if (festivalEvents.length == 0) {
-						await UnvalidatedFestivalEvent.remove({ _id: { $in: festival.events } });
-						await Festival.remove({ _id: festival._id });
+						await deleteObject(festival._id, 'festival');
 						return resolve({ status: 200, message: 'Festival event deleted' });
 					}
 					else {
@@ -200,6 +190,55 @@ function checkVerifiable(location, bands) {
 			const foundBand = await UnvalidatedBand.findOne({ _id: { $in: bands } });
 			if (foundLocation == undefined && foundBand == undefined) return resolve(true);
 			else return resolve(false);
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+function deleteLocationData(id) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			let promises = [Report.remove({ category: 'location', item: id })];
+			const events = await Event.find({ location: id });
+			promises = promises.concat(events.map(async (event) => {
+				const response = await deleteObject(event._id, 'event');
+				return response;
+			}));
+			const archivedEvents = await ArchivedEvent.find({ location: id });
+			promises = promises.concat(archivedEvents.map(async (event) => {
+				const response = await deleteObject(event._id, 'archivedEvent');
+				return response;
+			}));
+			const unvalidatedEvents = await UnvalidatedEvent.find({ location: id });
+			promises = promises.concat(unvalidatedEvents.map(async (event) => {
+				const response = await deleteObject(event._id, 'unvalidatedEvent');
+				return response;
+			}));
+			await Promise.all(promises);
+			return resolve();
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
+function deleteFestivalData(id, events) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			let promises = [
+				Report.remove({ category: 'festival', item: id }),
+				UnvalidatedFestivalEvent.remove({ _id: { $in: events } })
+			];
+			const festivalEvents = await FestivalEvent.find({ _id: { $in: events } });
+			promises = promises.concat(festivalEvents.map(async (event) => {
+				const response = await deleteObject(event._id, 'festivalEvent');
+				return response;
+			}));
+			await Promise.all(promises);
+			return resolve();
 		}
 		catch (err) {
 			reject(err);

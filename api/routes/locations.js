@@ -420,7 +420,7 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // post location to database
-router.post('/withImage', token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
+router.post('/withImage', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
 	try {
 		const newLocation = await new Location(res.locals.validated).save();
 		return res.status(200).json({ message: 'Location saved', data: newLocation, token: res.locals.token });
@@ -432,7 +432,7 @@ router.post('/withImage', token.checkToken(false), multerConfig.upload.single('i
 });
 
 // update location by id
-router.put('/withImage/:_id', token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
+router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
