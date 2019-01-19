@@ -48,11 +48,16 @@ module.exports.validateObject = (type, model) => {
 module.exports.validateList = (type, model) => {
 	return async (req, res, next) => {
 		try {
+			let options = {};
+			if (req.file != undefined)
+				options.image = await image.saveImages(req.file.path, 'events');
+			
 			let responseList = [];
 			let urlList = [];
 			const data = JSON.parse(req.body.data);
 			for (const current of data.list) {
-				const response = await validateEvent(current, type, model, { urlList: urlList });
+				options.urlList = urlList;
+				const response = await validateEvent(current, type, model, options);
 				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 				responseList.push(response);
 				urlList.push(response.url);
@@ -165,8 +170,10 @@ const validateEvent = (data, type, collection, options) => {
 				return resolve('Attribute \'ticketLink\' can be left out or has to be a string.');
 
 			let imageList = [];
-			if (imagePath.length > 0)
-				imageList = await image.saveImages(imagePath, 'events');
+			if (imagePath.length > 0) {
+				if (Array.isArray(imagePath)) imageList = imagePath;
+				else imageList = await image.saveImages(imagePath, 'events');
+			}
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
