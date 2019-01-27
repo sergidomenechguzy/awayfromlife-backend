@@ -605,106 +605,106 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 
 
 
-// router.get('/updateDate', async (req, res) => {
-// 	try {
-// 		const events = await Event.find();
-// 		const promises = events.map(async (event) => {
-// 			event.date = new Date(event.date);
-// 			const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 			return updated;
-// 		});
-// 		const eventList = await Promise.all(promises);
+router.get('/updateDate', async (req, res) => {
+	try {
+		const events = await Event.find();
+		const promises = events.map(async (event) => {
+			event.date = new Date(moment(event.date).format('YYYY-MM-DD'));
+			const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
+			return updated;
+		});
+		const eventList = await Promise.all(promises);
 
-// 		const unevents = await UnvalidatedEvent.find();
-// 		const unpromises = unevents.map(async (event) => {
-// 			event.date = new Date(event.date);
-// 			const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 			return updated;
-// 		});
-// 		const uneventList = await Promise.all(unpromises);
+		const unevents = await UnvalidatedEvent.find();
+		const unpromises = unevents.map(async (event) => {
+			event.date = new Date(moment(event.date).format('YYYY-MM-DD'));
+			const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+			return updated;
+		});
+		const uneventList = await Promise.all(unpromises);
 
-// 		const arevents = await ArchivedEvent.find();
-// 		const arpromises = arevents.map(async (event) => {
-// 			event.date = new Date(event.date);
-// 			const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 			return updated;
-// 		});
-// 		const areventList = await Promise.all(arpromises);
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		const arevents = await ArchivedEvent.find();
+		const arpromises = arevents.map(async (event) => {
+			event.date = new Date(moment(event.date).format('YYYY-MM-DD'));
+			const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+			return updated;
+		});
+		const areventList = await Promise.all(arpromises);
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-// const image = require(dirPath + '/api/helpers/image');
+const image = require(dirPath + '/api/helpers/image');
 
-// router.get('/updatePlaceholder', async (req, res) => {
-// 	try {
-// 		const events = await Event.find();
-// 		const promises = events.map(async (event) => {
-// 			if (event.image.length != 3) {
-// 				event.image = image.randomPlaceholder();
-// 				const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const eventList = await Promise.all(promises);
+router.get('/updatePlaceholder', async (req, res) => {
+	try {
+		const events = await Event.find();
+		const promises = events.map(async (event) => {
+			if (event.image.length != 3) {
+				event.image = image.randomPlaceholder();
+				const updated = await Event.findOneAndUpdate({ _id: event._id }, event, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const eventList = await Promise.all(promises);
 
-// 		const unevents = await UnvalidatedEvent.find();
-// 		const unpromises = unevents.map(async (event) => {
-// 			if (event.image.length != 3) {
-// 				event.image = image.randomPlaceholder();
-// 				const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const uneventList = await Promise.all(unpromises);
+		const unevents = await UnvalidatedEvent.find();
+		const unpromises = unevents.map(async (event) => {
+			if (event.image.length != 3) {
+				event.image = image.randomPlaceholder();
+				const updated = await UnvalidatedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const uneventList = await Promise.all(unpromises);
 
-// 		const arevents = await ArchivedEvent.find();
-// 		const arpromises = arevents.map(async (event) => {
-// 			if (event.image.length != 3) {
-// 				event.image = image.randomPlaceholder();
-// 				const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const areventList = await Promise.all(arpromises);
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		const arevents = await ArchivedEvent.find();
+		const arpromises = arevents.map(async (event) => {
+			if (event.image.length != 3) {
+				event.image = image.randomPlaceholder();
+				const updated = await ArchivedEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const areventList = await Promise.all(arpromises);
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-// router.get('/testImage', async (req, res) => {
-// 	try {
-// 		const events = await Event.find();
-// 		const eventList = events.filter(event => {
-// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
-// 			return false;
-// 		});
-// 		const unevents = await UnvalidatedEvent.find();
-// 		const uneventList = unevents.filter(event => {
-// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
-// 			return false;
-// 		});
-// 		const arevents = await ArchivedEvent.find();
-// 		const areventList = arevents.filter(event => {
-// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
-// 			return false;
-// 		});
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+router.get('/testImage', async (req, res) => {
+	try {
+		const events = await Event.find();
+		const eventList = events.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		const unevents = await UnvalidatedEvent.find();
+		const uneventList = unevents.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		const arevents = await ArchivedEvent.find();
+		const areventList = arevents.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList, archivedEvents: areventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
 module.exports = router;

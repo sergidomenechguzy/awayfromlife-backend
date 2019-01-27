@@ -189,69 +189,89 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 
 
 
-// const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
+const UnvalidatedFestivalEvent = mongoose.model('unvalidated_festival_events');
 
-// router.get('/updateDate', async (req, res) => {
-// 	try {
-// 		const events = await FestivalEvent.find();
-// 		const promises = events.map(async (event) => {
-// 			event.startDate = new Date(event.startDate);
-// 			event.endDate = new Date(event.endDate);
-// 			const updated = await FestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 			return updated;
-// 		});
-// 		const eventList = await Promise.all(promises);
+router.get('/updateDate', async (req, res) => {
+	try {
+		const events = await FestivalEvent.find();
+		const promises = events.map(async (event) => {
+			event.startDate = new Date(moment(event.startDate).format('YYYY-MM-DD'));
+			event.endDate = new Date(moment(event.endDate).format('YYYY-MM-DD'));
+			const updated = await FestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+			return updated;
+		});
+		const eventList = await Promise.all(promises);
 
-// 		const unevents = await UnvalidatedFestivalEvent.find();
-// 		const unpromises = unevents.map(async (event) => {
-// 			event.startDate = new Date(event.startDate);
-// 			event.endDate = new Date(event.endDate);
-// 			const updated = await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 			return updated;
-// 		});
-// 		const uneventList = await Promise.all(unpromises);
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		const unevents = await UnvalidatedFestivalEvent.find();
+		const unpromises = unevents.map(async (event) => {
+			event.startDate = new Date(moment(event.startDate).format('YYYY-MM-DD'));
+			event.endDate = new Date(moment(event.endDate).format('YYYY-MM-DD'));
+			const updated = await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+			return updated;
+		});
+		const uneventList = await Promise.all(unpromises);
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-// const image = require(dirPath + '/api/helpers/image');
+const image = require(dirPath + '/api/helpers/image');
 
-// router.get('/updatePlaceholder', async (req, res) => {
-// 	try {
-// 		const events = await FestivalEvent.find();
-// 		const promises = events.map(async (event) => {
-// 			if (event.image.length != 3) {
-// 				event.image = image.randomPlaceholder();
-// 				event.description = '';
-// 				const updated = await FestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const eventList = await Promise.all(promises);
+router.get('/updatePlaceholder', async (req, res) => {
+	try {
+		const events = await FestivalEvent.find();
+		const promises = events.map(async (event) => {
+			if (event.image.length != 3) {
+				event.image = image.randomPlaceholder();
+				event.description = '';
+				const updated = await FestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const eventList = await Promise.all(promises);
 
-// 		const unevents = await UnvalidatedFestivalEvent.find();
-// 		const unpromises = unevents.map(async (event) => {
-// 			if (event.image.length != 3) {
-// 				event.image = image.randomPlaceholder();
-// 				event.description = '';
-// 				const updated = await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const uneventList = await Promise.all(unpromises);
+		const unevents = await UnvalidatedFestivalEvent.find();
+		const unpromises = unevents.map(async (event) => {
+			if (event.image.length != 3) {
+				event.image = image.randomPlaceholder();
+				event.description = '';
+				const updated = await UnvalidatedFestivalEvent.findOneAndUpdate({ _id: event._id }, event, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const uneventList = await Promise.all(unpromises);
 
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+router.get('/testImage', async (req, res) => {
+	try {
+		const events = await FestivalEvent.find();
+		const eventList = events.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		const unevents = await UnvalidatedFestivalEvent.find();
+		const uneventList = unevents.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
 module.exports = router;

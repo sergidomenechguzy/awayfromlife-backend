@@ -478,58 +478,58 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 
 
 
-// const image = require(dirPath + '/api/helpers/image');
+const image = require(dirPath + '/api/helpers/image');
 
-// router.get('/updatePlaceholder', async (req, res) => {
-// 	try {
-// 		const bands = await Band.find();
-// 		const promises = bands.map(async (band) => {
-// 			if (band.image.length != 3) {
-// 				band.image = image.randomPlaceholder();
-// 				const updated = await Band.findOneAndUpdate({ _id: band._id }, band, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const bandList = await Promise.all(promises);
+router.get('/updatePlaceholder', async (req, res) => {
+	try {
+		const bands = await Band.find();
+		const promises = bands.map(async (band) => {
+			if (band.image.length != 3) {
+				band.image = image.randomPlaceholder();
+				const updated = await Band.findOneAndUpdate({ _id: band._id }, band, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const bandList = await Promise.all(promises);
 
-// 		const unbands = await UnvalidatedBand.find();
-// 		const unpromises = unbands.map(async (band) => {
-// 			if (band.image.length != 3) {
-// 				band.image = image.randomPlaceholder();
-// 				const updated = await UnvalidatedBand.findOneAndUpdate({ _id: band._id }, band, { new: true });
-// 				return { message: 'image updated with placeholder', data: updated };
-// 			}
-// 			return { message: 'no update needed', data: event };
-// 		});
-// 		const unbandList = await Promise.all(unpromises);
+		const unbands = await UnvalidatedBand.find();
+		const unpromises = unbands.map(async (band) => {
+			if (band.image.length != 3) {
+				band.image = image.randomPlaceholder();
+				const updated = await UnvalidatedBand.findOneAndUpdate({ _id: band._id }, band, { new: true });
+				return { message: 'image updated with placeholder', data: updated };
+			}
+			return { message: 'no update needed', data: event };
+		});
+		const unbandList = await Promise.all(unpromises);
 
-// 		return res.status(200).json({ bands: bandList, unvalidatedBands: unbandList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+		return res.status(200).json({ bands: bandList, unvalidatedBands: unbandList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
-// router.get('/testImage', async (req, res) => {
-// 	try {
-// 		const events = await Band.find();
-// 		const eventList = events.filter(event => {
-// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
-// 			return false;
-// 		});
-// 		const unevents = await UnvalidatedBand.find();
-// 		const uneventList = unevents.filter(event => {
-// 			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
-// 			return false;
-// 		});
-// 		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
-// 	}
-// 	catch (err) {
-// 		console.log(err);
-// 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-// 	}
-// });
+router.get('/testImage', async (req, res) => {
+	try {
+		const events = await Band.find();
+		const eventList = events.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		const unevents = await UnvalidatedBand.find();
+		const uneventList = unevents.filter(event => {
+			if (!Array.isArray(event.image) || event.image.length <= 1) return true;
+			return false;
+		});
+		return res.status(200).json({ events: eventList, unvalidatedEvents: uneventList });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
 
 module.exports = router;
