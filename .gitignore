@@ -3,5 +3,20 @@ secrets.js
 npm-debug.log
 package-lock.json
 
-logs/*
-!logs/.gitkeep
+api/logs/*
+!api/logs/.gitkeep
+
+images/bands/*
+!images/bands/.gitkeep
+images/events/*
+!images/events/.gitkeep
+images/festival-events/*
+!images/festival-events/.gitkeep
+images/festivals/*
+!images/festivals/.gitkeep
+images/locations/*
+!images/locations/.gitkeep
+images/placeholders/*
+!images/placeholders/.gitkeep
+images/uploads/*
+!images/uploads/.gitkeep
