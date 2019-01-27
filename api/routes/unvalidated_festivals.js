@@ -24,6 +24,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateFestivalAndFestivalEvent.js
 const validateFestivalAndFestivalEvent = require(dirPath + '/api/helpers/validateFestivalAndFestivalEvent');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // festivals routes
 // get all festivals
@@ -116,13 +118,15 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(false), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('unvalidated'), async (req, res) => {
+router.post('/', token.checkToken(false), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('unvalidated'), async (req, res) => {
 	try {
-		const newUnvalidatedFestivalEvent = await new UnvalidatedFestivalEvent(res.locals.validated.event).save();
-		let newUnvalidatedFestival = res.locals.validated.festival;
-		newUnvalidatedFestival.events = [newUnvalidatedFestivalEvent._id];
-		await new UnvalidatedFestival(newUnvalidatedFestival).save();
-		return res.status(200).json({ message: 'Festival and festival event saved', token: res.locals.token });
+		const newFestivalEvent = await new UnvalidatedFestivalEvent(res.locals.validated.event).save();
+		let newFestival = res.locals.validated.festival;
+		newFestival.events = [newFestivalEvent._id];
+		newFestival = await new UnvalidatedFestival(newFestival).save();
+		let dereferenced = await dereference.unvalidatedFestivalObject(newFestival);
+		dereferenced.events = [await dereference.festivalEventObject(newFestivalEvent)];
+		return res.status(200).json({ message: 'Festival and festival event saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -131,17 +135,18 @@ router.post('/', token.checkToken(false), params.checkParameters(['festival.name
 });
 
 // validate unvalidated festival and festival event
-router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('validate'), async (req, res) => {
+router.post('/validate/:festivalId/:eventId', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('validate'), async (req, res) => {
 	try {
 		if (!res.locals.validated.event.verifiable)
 			return res.status(400).json({ message: 'Festival event cannot be validated. All bands have to validated before.', token: res.locals.token });
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
 		let newFestival = res.locals.validated.festival;
 		newFestival.events = [newFestivalEvent._id];
-		await new Festival(newFestival).save();
+		newFestival = await new Festival(newFestival).save();
 		await UnvalidatedFestival.remove({ _id: req.params.festivalId });
 		await UnvalidatedFestivalEvent.remove({ _id: req.params.eventId });
-		return res.status(200).json({ message: 'Festival and festival event validated', token: res.locals.token });
+		const dereferenced = await dereference.festivalObject(newFestival);
+		return res.status(200).json({ message: 'Festival and festival event validated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -150,7 +155,7 @@ router.post('/validate/:festivalId/:eventId', token.checkToken(true), params.che
 });
 
 // delete festival by id
-router.delete('/:_id/:eventId', token.checkToken(true), async (req, res) => {
+router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
 		const response = await deleteRoute.deleteObject(req.params._id, 'unvalidatedFestival');
 		return res.status(response.status).json({ message: response.message, token: res.locals.token });

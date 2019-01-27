@@ -21,9 +21,11 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateFestivalEvent.js
 const validateFestivalEvent = require(dirPath + '/api/helpers/validateFestivalEvent');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // festival_events routes
-// get all events
+// get all festival events
 router.get('/', token.checkToken(true), async (req, res) => {
 	try {
 		const festivalEvents = await UnvalidatedFestivalEvent.find();
@@ -39,7 +41,7 @@ router.get('/', token.checkToken(true), async (req, res) => {
 	}
 });
 
-// get event by id
+// get festival event by id
 router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 	try {
 		const object = await UnvalidatedFestivalEvent.findById(req.params._id);
@@ -55,7 +57,7 @@ router.get('/byid/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
-// get latest added event
+// get latest added festival events
 router.get('/latest', token.checkToken(false), async (req, res) => {
 	try {
 		let count = 5;
@@ -70,8 +72,8 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// post event to database
-router.post('/:_id', token.checkToken(false), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('unvalidated'), async (req, res) => {
+// post festival event to database
+router.post('/:_id', token.checkToken(false), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('unvalidated'), async (req, res) => {
 	try {
 		const festival = await Festival.findById(req.params._id);
 		if (!festival)
@@ -80,7 +82,8 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['name', 's
 		const newUnvalidatedFestivalEvent = await new UnvalidatedFestivalEvent(res.locals.validated).save();
 		festival.events.push(newUnvalidatedFestivalEvent._id);
 		await Festival.findOneAndUpdate({ _id: req.params._id }, festival);
-		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
+		const dereferenced = await dereference.festivalEventObject(newUnvalidatedFestivalEvent);
+		return res.status(200).json({ message: 'Festival event saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -89,7 +92,7 @@ router.post('/:_id', token.checkToken(false), params.checkParameters(['name', 's
 });
 
 // validate unvalidated festival event
-router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('validate'), async (req, res) => {
+router.post('/validate/:festivalId/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('validate'), async (req, res) => {
 	try {
 		if (!res.locals.validated.verifiable)
 			return res.status(400).json({ message: 'Festival event cannot be validated. All bands have to validated before.', token: res.locals.token });
@@ -99,13 +102,13 @@ router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkPa
 		if (!festival.events.includes(req.params._id))
 			return res.status(400).json({ message: 'Festival event ID not found in the festival\'s festival events list', token: res.locals.token });
 
-		festival.events.splice(festival.events.indexOf(req.params._id), 1);
-
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated).save();
+		festival.events.splice(festival.events.indexOf(req.params._id), 1);
 		festival.events.push(newFestivalEvent._id);
 		await Festival.findOneAndUpdate({ _id: req.params.festivalId }, festival);
 		await UnvalidatedFestivalEvent.remove({ _id: req.params._id });
-		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
+		const dereferenced = await dereference.festivalEventObject(newFestivalEvent);
+		return res.status(200).json({ message: 'Event validated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -113,7 +116,7 @@ router.post('/validate/:festivalId/:_id', token.checkToken(true), params.checkPa
 	}
 });
 
-// delete event by id
+// delete festival event by id
 router.delete('/:festivalId/:_id', token.checkToken(true), async (req, res) => {
 	try {
 		const unvalidatedFestivalEvent = await UnvalidatedFestivalEvent.findById(req.params._id);

@@ -24,6 +24,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateFestival = require(dirPath + '/api/helpers/validateFestival');
 // load validateFestivalAndFestivalEvent.js
 const validateFestivalAndFestivalEvent = require(dirPath + '/api/helpers/validateFestivalAndFestivalEvent');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // festivals routes
 // get all festivals
@@ -268,13 +270,14 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(true), params.checkParameters(['festival.name', 'festival.genre', 'festival.address.street', 'festival.address.city', 'festival.address.country', 'festival.address.lat', 'festival.address.lng', 'festival.address.countryCode', 'event.name', 'event.startDate', 'event.endDate', 'event.bands']), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
 	try {
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
 		let newFestival = res.locals.validated.festival;
 		newFestival.events = [newFestivalEvent._id];
-		await new Festival(newFestival).save();
-		return res.status(200).json({ message: 'Festival and festival event saved', token: res.locals.token });
+		newFestival = await new Festival(newFestival).save();
+		const dereferenced = await dereference.festivalObject(newFestival);
+		return res.status(200).json({ message: 'Festival and festival event saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -283,7 +286,7 @@ router.post('/', token.checkToken(true), params.checkParameters(['festival.name'
 });
 
 // update festival by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateFestival.validateObject(), async (req, res) => {
+router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestival.validateObject(), async (req, res) => {
 	try {
 		const updated = await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.festivalObject(updated);
@@ -307,37 +310,6 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
-// load multerConfig.js
-const multerConfig = require(dirPath + '/api/config/multerConfig');
-
-// post festival to database
-router.post('/withImage', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('post'), async (req, res) => {
-	try {
-		const newFestivalEvent = await new FestivalEvent(res.locals.validated.event).save();
-		let newFestival = res.locals.validated.festival;
-		newFestival.events = [newFestivalEvent._id];
-		newFestival = await new Festival(newFestival).save();
-		const dereferenced = await dereference.festivalObject(newFestival);
-		return res.status(200).json({ message: 'Festival and festival event saved', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// update festival by id
-router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestival.validateObject(), async (req, res) => {
-	try {
-		const updated = await Festival.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		const dereferenced = await dereference.festivalObject(updated);
-		return res.status(200).json({ message: 'Festival updated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
 
 
 

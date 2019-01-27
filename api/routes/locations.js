@@ -25,6 +25,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateLocation.js
 const validateLocation = require(dirPath + '/api/helpers/validateLocation');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // locations routes
 // get all locations
@@ -362,10 +364,11 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
 	try {
-		await new Location(res.locals.validated).save();
-		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
+		const newLocation = await new Location(res.locals.validated).save();
+		const dereferenced = await dereference.locationObject(newLocation);
+		return res.status(200).json({ message: 'Location saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -391,10 +394,11 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 });
 
 // update location by id
-router.put('/:_id', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('put'), async (req, res) => {
+router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
+		const dereferenced = await dereference.locationObject(updated);
+		return res.status(200).json({ message: 'Location updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -413,40 +417,6 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
-
-
-
-// load multerConfig.js
-const multerConfig = require(dirPath + '/api/config/multerConfig');
-
-// post location to database
-router.post('/withImage', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('post'), async (req, res) => {
-	try {
-		const newLocation = await new Location(res.locals.validated).save();
-		return res.status(200).json({ message: 'Location saved', data: newLocation, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// update location by id
-router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('put'), async (req, res) => {
-	try {
-		const updated = await Location.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		return res.status(200).json({ message: 'Location updated', data: updated, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-
-
-
-
 
 
 

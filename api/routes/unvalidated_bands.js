@@ -30,6 +30,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateBand.js
 const validateBand = require(dirPath + '/api/helpers/validateBand');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // unvalidated_bands routes
 // get all bands
@@ -215,10 +217,11 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('unvalidated'), async (req, res) => {
+router.post('/', token.checkToken(false), multerConfig.upload.single('image'), validateBand.validateObject('unvalidated'), async (req, res) => {
 	try {
-		await new UnvalidatedBand(res.locals.validated).save();
-		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+		const newBand = await new UnvalidatedBand(res.locals.validated).save();
+		const dereferenced = await dereference.bandObject(newBand);
+		return res.status(200).json({ message: 'Band saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -227,7 +230,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'genre
 });
 
 // validate unvalidated band
-router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('validate'), async (req, res) => {
+router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('validate'), async (req, res) => {
 	try {
 		const newBand = await new Band(res.locals.validated).save();
 		await Promise.all([
@@ -238,7 +241,8 @@ router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['n
 			deleteRoute.deleteBandFromEventCollection(UnvalidatedFestivalEvent, req.params._id, newBand._id)
 		]);
 		await UnvalidatedBand.remove({ _id: req.params._id });
-		return res.status(200).json({ message: 'Band validated', token: res.locals.token });
+		const dereferenced = await dereference.bandObject(newBand);
+		return res.status(200).json({ message: 'Band validated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -246,7 +250,7 @@ router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['n
 	}
 });
 
-// post band to database
+// post multiple bands to database
 router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('unvalidated'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;

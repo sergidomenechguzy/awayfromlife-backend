@@ -37,6 +37,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateBand.js
 const validateBand = require(dirPath + '/api/helpers/validateBand');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // bands routes
 // get all bands
@@ -417,10 +419,11 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('post'), async (req, res) => {
+router.post('/', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('post'), async (req, res) => {
 	try {
-		await new Band(res.locals.validated).save();
-		return res.status(200).json({ message: 'Band saved', token: res.locals.token });
+		const newBand = await new Band(res.locals.validated).save();
+		const dereferenced = await dereference.bandObject(newBand);
+		return res.status(200).json({ message: 'Band saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -446,7 +449,7 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 });
 
 // update band by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateObject('put'), async (req, res) => {
+router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.bandObject(updated);
@@ -469,39 +472,6 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
 	}
 });
-
-
-
-// load multerConfig.js
-const multerConfig = require(dirPath + '/api/config/multerConfig');
-
-// post band to database
-router.post('/withImage', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('post'), async (req, res) => {
-	try {
-		const newBand = await new Band(res.locals.validated).save();
-		return res.status(200).json({ message: 'Band saved', data: newBand, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// update band by id
-router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('put'), async (req, res) => {
-	try {
-		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		const dereferenced = await dereference.bandObject(updated);
-		return res.status(200).json({ message: 'Band updated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-
-
 
 
 

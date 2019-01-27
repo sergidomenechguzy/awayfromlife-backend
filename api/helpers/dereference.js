@@ -458,7 +458,7 @@ module.exports = {
 	festivalObject: festivalObject,
 	locationObject: locationObject,
 	reportObject: reportObject,
-	unvalidatedFestival: unvalidatedFestivalObject,
+	unvalidatedFestivalObject: unvalidatedFestivalObject,
 	bandSort: bandSort,
 	eventSort: eventSort,
 	locationSort: locationSort

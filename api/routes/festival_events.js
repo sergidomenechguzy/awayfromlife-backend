@@ -22,9 +22,11 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateFestivalEvent.js
 const validateFestivalEvent = require(dirPath + '/api/helpers/validateFestivalEvent');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // festival_events routes
-// get all events
+// get all festival events
 router.get('/', token.checkToken(false), async (req, res) => {
 	try {
 		const festivalEvents = await FestivalEvent.find();
@@ -40,7 +42,7 @@ router.get('/', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get event by id
+// get festival event by id
 router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 	try {
 		const object = await FestivalEvent.findById(req.params._id);
@@ -56,7 +58,7 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get latest added events
+// get latest added festival events
 router.get('/latest', token.checkToken(false), async (req, res) => {
 	try {
 		let count = 5;
@@ -71,7 +73,7 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get canceled events
+// get canceled festival events
 router.get('/canceled', token.checkToken(false), async (req, res) => {
 	try {
 		const festivalEvents = await FestivalEvent.find({ canceled: 1 });
@@ -87,7 +89,7 @@ router.get('/canceled', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get similar events
+// get similar festival events
 router.get('/similar', token.checkToken(false), async (req, res) => {
 	try {
 		if (!req.query.festival || !req.query.startDate || !req.query.endDate)
@@ -117,8 +119,8 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// post event to database
-router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('post'), async (req, res) => {
+// post festival event to database
+router.post('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('post'), async (req, res) => {
 	try {
 		const festival = await Festival.findById(req.params._id);
 		if (!festival)
@@ -127,7 +129,8 @@ router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'st
 		const newFestivalEvent = await new FestivalEvent(res.locals.validated).save();
 		festival.events.push(newFestivalEvent._id);
 		await Festival.findOneAndUpdate({ _id: req.params._id }, festival);
-		return res.status(200).json({ message: 'Festival event saved', token: res.locals.token });
+		const dereferenced = await dereference.festivalEventObject(newFestivalEvent);
+		return res.status(200).json({ message: 'Festival event saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -135,8 +138,8 @@ router.post('/:_id', token.checkToken(true), params.checkParameters(['name', 'st
 	}
 });
 
-// update event by id
-router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'startDate', 'endDate', 'bands']), validateFestivalEvent.validateObject('put'), async (req, res) => {
+// update festival event by id
+router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('put'), async (req, res) => {
 	try {
 		const updated = await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
 		const dereferenced = await dereference.festivalEventObject(updated);
@@ -148,7 +151,7 @@ router.put('/:_id', token.checkToken(true), params.checkParameters(['name', 'sta
 	}
 });
 
-// cancel event by id
+// cancel festival event by id
 router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
 	try {
 		const event = await FestivalEvent.findById(req.params._id);
@@ -167,7 +170,7 @@ router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// delete event by id
+// delete festival event by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
 		const response = await deleteRoute.deleteObject(req.params._id, 'festivalEvent');
@@ -179,42 +182,6 @@ router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	}
 });
 
-
-
-
-// load multerConfig.js
-const multerConfig = require(dirPath + '/api/config/multerConfig');
-
-// post event to database
-router.post('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('post'), async (req, res) => {
-	try {
-		const festival = await Festival.findById(req.params._id);
-		if (!festival)
-			return res.status(400).json({ message: 'No festival found with this ID', token: res.locals.token });
-
-		const newFestivalEvent = await new FestivalEvent(res.locals.validated).save();
-		festival.events.push(newFestivalEvent._id);
-		await Festival.findOneAndUpdate({ _id: req.params._id }, festival);
-		return res.status(200).json({ message: 'Festival event saved', data: newFestivalEvent, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// update event by id
-router.put('/withImage/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateFestivalEvent.validateObject('put'), async (req, res) => {
-	try {
-		const updated = await FestivalEvent.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		const dereferenced = await dereference.festivalEventObject(updated);
-		return res.status(200).json({ message: 'Festival event updated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
 
 
 

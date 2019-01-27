@@ -237,7 +237,7 @@ router.post('/', token.checkToken(false), multerConfig.upload.single('image'), v
 });
 
 // post event to database
-router.post('/validate/:_id', token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
+router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
 	try {
 		if (!res.locals.validated.verifiable)
 			return res.status(400).json({ message: 'Event cannot be validated. The location and all bands have to validated before.', token: res.locals.token });

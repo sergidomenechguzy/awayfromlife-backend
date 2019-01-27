@@ -25,6 +25,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateLocation.js
 const validateLocation = require(dirPath + '/api/helpers/validateLocation');
+// load multerConfig.js
+const multerConfig = require(dirPath + '/api/config/multerConfig');
 
 // unvalidated_locations routes
 // get all locations
@@ -180,10 +182,11 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('unvalidated'), async (req, res) => {
+router.post('/', token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateObject('unvalidated'), async (req, res) => {
 	try {
-		await new UnvalidatedLocation(res.locals.validated).save();
-		return res.status(200).json({ message: 'Location saved', token: res.locals.token });
+		const newLocation = await new UnvalidatedLocation(res.locals.validated).save();
+		const dereferenced = await dereference.locationObject(newLocation);
+		return res.status(200).json({ message: 'Location saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -192,7 +195,7 @@ router.post('/', token.checkToken(false), params.checkParameters(['name', 'addre
 });
 
 // validate unvalidated location
-router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateObject('validate'), async (req, res) => {
+router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateLocation.validateObject('validate'), async (req, res) => {
 	try {
 		const newLocation = await new Location(res.locals.validated).save();
 		await Promise.all([
@@ -201,7 +204,8 @@ router.post('/validate/:_id', token.checkToken(true), params.checkParameters(['n
 			deleteRoute.deleteLocationFromEventCollection(UnvalidatedEvent, req.params._id, newLocation._id)
 		]);
 		await UnvalidatedLocation.remove({ _id: req.params._id });
-		return res.status(200).json({ message: 'Location validated', token: res.locals.token });
+		const dereferenced = await dereference.locationObject(newLocation);
+		return res.status(200).json({ message: 'Location validated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
