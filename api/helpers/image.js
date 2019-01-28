@@ -66,7 +66,7 @@ function deleteImages(array) {
 			const promises = array.map(async (path) => {
 				if (path.includes('images/placeholders/'))
 					return;
-				const result = await unlinkAsync(secrets.imagePath + path);
+				const result = await unlinkAsync(`${secrets.imagePath}${path}`);
 				return result;
 			});
 			await Promise.all(promises);
