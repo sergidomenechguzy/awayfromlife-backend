@@ -34,7 +34,7 @@ function saveImages(path, outputFolder) {
 			else
 				newPath = modifyPath(path, outputFolder, 'M');
 
-			const imageList = await Promise.all(promises);
+			let imageList = await Promise.all(promises);
 			if (newPath != undefined) {
 				await renameAsync(path, newPath);
 				imageList.push(newPath);
