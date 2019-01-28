@@ -6,6 +6,9 @@ const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
 const renameAsync = promisify(fs.rename);
 
+// load secrets
+const secrets = require(dirPath + '/api/config/secrets');
+
 function randomPlaceholder() {
 	const randomNumber = Math.floor(Math.random() * Math.floor(17)) + 1;
 	const pathArray = [
@@ -63,7 +66,7 @@ function deleteImages(array) {
 			const promises = array.map(async (path) => {
 				if (path.includes('images/placeholders/'))
 					return;
-				const result = await unlinkAsync(path);
+				const result = await unlinkAsync(secrets.imagePath + path);
 				return result;
 			});
 			await Promise.all(promises);
