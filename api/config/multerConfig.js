@@ -1,5 +1,8 @@
 const multer = require('multer');
 
+// load secrets
+const secrets = require(dirPath + '/api/config/secrets');
+
 const fileSize = 1024 * 1024 * 3;
 
 const fileFilter = (req, file, cb) => {
@@ -11,7 +14,7 @@ const fileFilter = (req, file, cb) => {
 
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, './images/uploads/');
+		cb(null, secrets.imagePath);
 	},
 	filename: (req, file, cb) => {
 		cb(null, Date.now() + '_' + file.originalname);
