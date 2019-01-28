@@ -13,8 +13,6 @@ const Festival = mongoose.model('festivals');
 
 // load delete.js
 const latest = require(dirPath + '/api/routes/controller/latest');
-// load params.js
-const params = require(dirPath + '/api/helpers/params');
 // load token.js
 const token = require(dirPath + '/api/helpers/token');
 // load dereference.js

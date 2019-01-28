@@ -11,8 +11,6 @@ const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const deleteRoute = require(dirPath + '/api/routes/controller/delete');
 // load latest.js
 const latest = require(dirPath + '/api/routes/controller/latest');
-// load params.js
-const params = require(dirPath + '/api/helpers/params');
 // load token.js
 const token = require(dirPath + '/api/helpers/token');
 // load dereference.js
