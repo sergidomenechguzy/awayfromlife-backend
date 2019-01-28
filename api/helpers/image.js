@@ -41,6 +41,14 @@ function saveImages(path, outputFolder) {
 			}
 			else
 				await unlinkAsync(path);
+
+			imageList = imageList.map(path => {
+				let pathArray = path.split('/');
+				if (pathArray.length <= 3)
+					return path;
+				else 
+					return pathArray.slice(4).join('/');
+			});
 			return resolve(imageList);
 		}
 		catch (err) {
@@ -103,7 +111,7 @@ function modifyPath(path, outputFolder, letter) {
 	outputPath = outputPath.replace(/\\/g, '/');
 
 	pathArray = outputPath.split('/');
-	pathArray[1] = outputFolder;
+	pathArray[pathArray.length - 2] = outputFolder;
 	outputPath = pathArray.join('/');
 	return outputPath;
 }
