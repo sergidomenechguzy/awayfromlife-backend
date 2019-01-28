@@ -21,8 +21,6 @@ const deleteRoute = require(dirPath + '/api/routes/controller/delete');
 const latest = require(dirPath + '/api/routes/controller/latest');
 // load archive.js
 const archive = require(dirPath + '/api/routes/controller/archive');
-// load params.js
-const params = require(dirPath + '/api/helpers/params');
 // load token.js
 const token = require(dirPath + '/api/helpers/token');
 // load dereference.js
