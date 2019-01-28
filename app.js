@@ -7,36 +7,40 @@ const path = require('path');
 
 const app = express();
 
+global.dirPath = __dirname;
+
 // load routes
-const events = require('./routes/events');
-const unvalidated_events = require('./routes/unvalidated_events');
-const archived_events = require('./routes/archived_events');
+const general = require(dirPath + '/api/routes/general');
 
-const festivals = require('./routes/festivals');
-const unvalidated_festivals = require('./routes/unvalidated_festivals');
-const festival_events = require('./routes/festival_events');
-const unvalidated_festival_events = require('./routes/unvalidated_festival_events');
+const events = require(dirPath + '/api/routes/events');
+const unvalidated_events = require(dirPath + '/api/routes/unvalidated_events');
+const archived_events = require(dirPath + '/api/routes/archived_events');
 
-const locations = require('./routes/locations');
-const unvalidated_locations = require('./routes/unvalidated_locations');
+const festivals = require(dirPath + '/api/routes/festivals');
+const unvalidated_festivals = require(dirPath + '/api/routes/unvalidated_festivals');
+const festival_events = require(dirPath + '/api/routes/festival_events');
+const unvalidated_festival_events = require(dirPath + '/api/routes/unvalidated_festival_events');
 
-const bands = require('./routes/bands');
-const unvalidated_bands = require('./routes/unvalidated_bands');
+const locations = require(dirPath + '/api/routes/locations');
+const unvalidated_locations = require(dirPath + '/api/routes/unvalidated_locations');
 
-const genres = require('./routes/genres');
+const bands = require(dirPath + '/api/routes/bands');
+const unvalidated_bands = require(dirPath + '/api/routes/unvalidated_bands');
 
-const search = require('./routes/search');
+const genres = require(dirPath + '/api/routes/genres');
 
-const bugs = require('./routes/bugs');
-const feedback = require('./routes/feedback');
-const reports = require('./routes/reports');
+const search = require(dirPath + '/api/routes/search');
 
-const users = require('./routes/users');
+const bugs = require(dirPath + '/api/routes/bugs');
+const feedback = require(dirPath + '/api/routes/feedback');
+const reports = require(dirPath + '/api/routes/reports');
 
-// load secrets
-const secrets = require('./config/secrets');
+const users = require(dirPath + '/api/routes/users');
+
+// load secrets.js
+const secrets = require(dirPath + '/api/config/secrets');
 // load archive.js
-const archive = require('./config/archive');
+const archive = require(dirPath + '/api/routes/controller/archive');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
@@ -44,17 +48,20 @@ mongoose.connect(secrets.dbURL, { useMongoClient: true })
 	.then(() => console.log('> MongoDB connected'))
 	.catch(err => console.log(err));
 
+// make images folder publicly available
+app.use('/images', express.static('images'));
+
 // body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // morgan logger setup
 app.use(morgan('combined', {
-	stream: fs.createWriteStream(path.join(__dirname, '/logs/access.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/access.log'), { flags: 'a' })
 }));
 app.use(morgan('combined', {
 	skip: (req, res) => { return res.statusCode < 400 },
-	stream: fs.createWriteStream(path.join(__dirname, '/logs/error.log'), {flags: 'a'})
+	stream: fs.createWriteStream(path.join(__dirname, '/api/logs/error.log'), { flags: 'a' })
 }));
 
 app.use(function (req, res, next) {
@@ -70,6 +77,8 @@ app.get('/', (req, res) => {
 });
 
 // use routes
+app.use('/api/general', general);
+
 app.use('/api/events', events);
 app.use('/api/unvalidated-events', unvalidated_events);
 app.use('/api/archived-events', archived_events);
@@ -99,6 +108,10 @@ const port = secrets.port;
 
 app.listen(port, () => {
 	console.log(`> Server startet on port ${port}`);
+});
+
+app.use((req, res) => {
+	res.status(404).json({ error: "404 - Not found" });
 });
 
 if (process.env.NODE_ENV === 'production') {
