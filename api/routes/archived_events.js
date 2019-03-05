@@ -480,7 +480,7 @@ router.post('/', token.checkToken(true), multerConfig.upload.single('image'), va
 });
 
 // post multiple events to database
-router.post('/multiple', token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateList('post', 'archive'), async (req, res) => {
+router.post('/multiple', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateList('post', 'archive'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {

@@ -22,6 +22,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateFestivalEvent = require(dirPath + '/api/helpers/validateFestivalEvent');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // festival_events routes
 // get all festival events
@@ -150,7 +152,7 @@ router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'),
 });
 
 // cancel festival event by id
-router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
+router.put('/cancel/:_id', rateLimit.dataLimiter, token.checkToken(false), async (req, res) => {
 	try {
 		const event = await FestivalEvent.findById(req.params._id);
 		if (!event)

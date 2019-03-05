@@ -16,6 +16,8 @@ const params = require(dirPath + '/api/helpers/params');
 const token = require(dirPath + '/api/helpers/token');
 // load validateFeedback.js
 const validateFeedback = require(dirPath + '/api/helpers/validateFeedback');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // feedback routes
 // get all feedback
@@ -49,7 +51,7 @@ router.get('/latest', token.checkToken(true), async (req, res) => {
 });
 
 // post feedback to database
-router.post('/', token.checkToken(false), params.checkParameters(['text']), validateFeedback.validateObject(), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), params.checkParameters(['text']), validateFeedback.validateObject(), async (req, res) => {
 	try {
 		await new Feedback(res.locals.validated).save();
 		return res.status(200).json({ message: 'Feedback saved', token: res.locals.token });

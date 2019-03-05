@@ -10,6 +10,8 @@ const User = mongoose.model('users');
 
 // load secrets.js
 const secrets = require(dirPath + '/api/config/secrets');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 // load token.js
 const token = require(dirPath + '/api/helpers/token');
 
@@ -76,7 +78,7 @@ router.post('/login', (req, res) => {
 });
 
 // register by register-token in body
-router.post('/register', token.checkToken(true), (req, res) => {
+router.post('/register', token.checkToken(true), rateLimit.userLimiter, (req, res) => {
 	if (req.body.token == undefined) return res.status(400).json({ message: 'Token missing' });
 
 	jwt.verify(req.body.token, secrets.frontEndSecret, async (err, decodedToken) => {
@@ -104,7 +106,7 @@ router.post('/register', token.checkToken(true), (req, res) => {
 });
 
 // reset password by password-token in body
-router.post('/reset-password', token.checkToken(true), async (req, res) => {
+router.post('/reset-password', token.checkToken(true), rateLimit.userLimiter, async (req, res) => {
 	try {
 		const decodedAuthToken = jwt.verify(res.locals.token, secrets.authSecret);
 		if (!req.body.token) return res.status(400).json({ message: 'Password-token missing' });

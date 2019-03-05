@@ -16,6 +16,8 @@ const params = require(dirPath + '/api/helpers/params');
 const token = require(dirPath + '/api/helpers/token');
 // load validateBug.js
 const validateBug = require(dirPath + '/api/helpers/validateBug');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // bugs routes
 // get all bugs
@@ -49,7 +51,7 @@ router.get('/latest', token.checkToken(true), async (req, res) => {
 });
 
 // post bug to database
-router.post('/', token.checkToken(false), params.checkParameters(['error']), validateBug.validateObject(), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), params.checkParameters(['error']), validateBug.validateObject(), async (req, res) => {
 	try {
 		await new Bug(res.locals.validated).save();
 		return res.status(200).json({ message: 'Bug saved', token: res.locals.token });
