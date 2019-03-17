@@ -1,5 +1,71 @@
 # Events
 
+## api/events
+
+### GET `api/events`
+Returns all event objects from the events collection in the database.
+<br>
+Authorization needed: **no**
+
+Responses:
+* **`200`**
+  * A list of event objects
+  * Returns: application/json
+```json
+	{
+		data: [<event-object>],
+		token: <authorization-token>
+	}
+```
+* **`500`**
+  * Error message
+  * Returns: application/json
+```json
+	{
+		message: 'Error, something went wrong. Please try again.',
+		error: '<error.name>: <error.message>'
+	}
+```
+
+### POST `api/events`
+Saves a new event object to the events collection in the database.
+<br>
+Authorization needed: **no**
+
+Required body attributes:
+* `name` **String**
+* `location` **String** - ObjectId from locations collection
+* `date` **String** - expected format: YYYY-MM-DD
+* `bands` **[String]** - Array of ObjectIds from bands collection
+
+Optional body attributes:
+* `description` **String**
+* `time` **String**
+* `canceled` **Number** - possible values: 0, 1, 2
+* `ticketLink` **String**
+* `image` **File**
+
+Responses:
+* **`200`**
+  * New event object saved
+  * Returns: application/json
+```json
+	{
+		message: 'Event saved',
+		token: <authorization-token>
+	}
+```
+* **`500`**
+  * Error message
+  * Returns: application/json
+```json
+	{
+		message: 'Error, something went wrong. Please try again.',
+		error: '<error.name>: <error.message>'
+	}
+```
+
+
 ## get
 **`api/events/`**
 <br>&nbsp;&nbsp;&nbsp;&nbsp;
