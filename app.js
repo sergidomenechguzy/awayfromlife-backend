@@ -44,7 +44,7 @@ const archive = require(dirPath + '/api/routes/controller/archive');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
-mongoose.connect(secrets.dbURL, { useMongoClient: true })
+mongoose.connect(secrets.dbURL, {  useNewUrlParser: true })
 	.then(() => console.log('> MongoDB connected'))
 	.catch(err => console.log(err));
 

@@ -27,6 +27,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateEvent.js
 const validateEvent = require(dirPath + '/api/helpers/validateEvent');
+// load csv.js
+const csv = require(dirPath + '/api/helpers/csv');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 // load rateLimit.js
@@ -543,6 +545,18 @@ router.post('/multiple', token.checkToken(true), multerConfig.upload.single('ima
 		const responseList = await Promise.all(promises);
 		const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
 		return res.status(200).json({ message: responseList.length + ' event(s) saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// convert incoming csv json data to matching json
+router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+	try {
+		const events = await csv.convertEventFile(req.file);
+		return res.status(200).json({data: events});
 	}
 	catch (err) {
 		console.log(err);
