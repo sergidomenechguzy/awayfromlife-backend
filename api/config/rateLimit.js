@@ -7,7 +7,7 @@ const userLimiter = rateLimit({
 
 const dataLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes window
-	max: 50 // start blocking after 50 requests
+	max: 20 // start blocking after 20 requests
 });
 
 module.exports = {
