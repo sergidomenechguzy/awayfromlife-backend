@@ -24,6 +24,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateFestivalAndFestivalEvent = require(dirPath + '/api/helpers/validateFestivalAndFestivalEvent');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // festivals routes
 // get all festivals
@@ -116,7 +118,7 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 });
 
 // post festival and event to database
-router.post('/', token.checkToken(false), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('unvalidated'), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('unvalidated'), async (req, res) => {
 	try {
 		const newFestivalEvent = await new UnvalidatedFestivalEvent(res.locals.validated.event).save();
 		let newFestival = res.locals.validated.festival;

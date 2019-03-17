@@ -83,6 +83,12 @@ function bandObject(band) {
 			genreList.sort((a, b) => {
 				return a.localeCompare(b);
 			});
+
+			const releaseList = band.releases;
+			releaseList.sort((a, b) => {
+				return a.releaseYear.localeCompare(b.releaseYear);
+			});
+
 			const responseBand = {
 				_id: band._id,
 				name: band.name,
@@ -91,7 +97,7 @@ function bandObject(band) {
 				origin: band.origin.default,
 				history: band.history,
 				recordLabel: band.recordLabel,
-				releases: band.releases,
+				releases: releaseList,
 				foundingDate: band.foundingDate,
 				website: band.website,
 				website: band.website,

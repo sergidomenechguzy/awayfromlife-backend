@@ -18,6 +18,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateReport.js
 const validateReport = require(dirPath + '/api/helpers/validateReport');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // reports routes
 // get all reports
@@ -52,7 +54,7 @@ router.get('/latest', token.checkToken(true), async (req, res) => {
 });
 
 // post report to database
-router.post('/', token.checkToken(false), params.checkParameters(['category', 'item']), validateReport.validateObject(), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), params.checkParameters(['category', 'item']), validateReport.validateObject(), async (req, res) => {
 	try {
 		await new Report(res.locals.validated).save();
 		return res.status(200).json({ message: 'Report saved', token: res.locals.token });

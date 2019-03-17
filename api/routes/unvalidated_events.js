@@ -19,6 +19,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateEvent = require(dirPath + '/api/helpers/validateEvent');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // unvalidated_events routes
 // get all events
@@ -222,11 +224,29 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post event to database
-router.post('/', token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateObject('unvalidated', 'unvalidated'), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateObject('unvalidated', 'unvalidated'), async (req, res) => {
 	try {
 		const newEvent = await new UnvalidatedEvent(res.locals.validated).save();
 		const dereferenced = await dereference.eventObject(newEvent);
 		return res.status(200).json({ message: 'Event saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// post multiple events to database
+router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateList('unvalidated', 'unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedEvent(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
+		return res.status(200).json({ message: responseList.length + ' event(s) saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -243,24 +263,6 @@ router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single
 		await UnvalidatedEvent.remove({ _id: req.params._id });
 		const dereferenced = await dereference.eventObject(newEvent);
 		return res.status(200).json({ message: 'Event validated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// post multiple events to database
-router.post('/multiple', token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateList('unvalidated', 'unvalidated'), async (req, res) => {
-	try {
-		const objectList = res.locals.validated;
-		const promises = objectList.map(async (object) => {
-			const result = await new UnvalidatedEvent(object).save();
-			return result;
-		});
-		const responseList = await Promise.all(promises);
-		const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
-		return res.status(200).json({ message: responseList.length + ' event(s) saved', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

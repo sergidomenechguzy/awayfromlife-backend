@@ -27,6 +27,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateLocation = require(dirPath + '/api/helpers/validateLocation');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // unvalidated_locations routes
 // get all locations
@@ -182,11 +184,28 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post location to database
-router.post('/', token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateObject('unvalidated'), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateObject('unvalidated'), async (req, res) => {
 	try {
 		const newLocation = await new UnvalidatedLocation(res.locals.validated).save();
 		const dereferenced = await dereference.locationObject(newLocation);
 		return res.status(200).json({ message: 'Location saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// post multiple locations to database
+router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateList('unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedLocation(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' location(s) saved', token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -206,23 +225,6 @@ router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single
 		await UnvalidatedLocation.remove({ _id: req.params._id });
 		const dereferenced = await dereference.locationObject(newLocation);
 		return res.status(200).json({ message: 'Location validated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// post multiple locations to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateList('unvalidated'), async (req, res) => {
-	try {
-		const objectList = res.locals.validated;
-		const promises = objectList.map(async (object) => {
-			const result = await new UnvalidatedLocation(object).save();
-			return result;
-		});
-		const responseList = await Promise.all(promises);
-		return res.status(200).json({ message: responseList.length + ' location(s) saved', token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

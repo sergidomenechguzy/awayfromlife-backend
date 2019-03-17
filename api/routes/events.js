@@ -29,6 +29,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateEvent = require(dirPath + '/api/helpers/validateEvent');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // events routes
 // get all events
@@ -531,7 +533,7 @@ router.post('/', token.checkToken(true), multerConfig.upload.single('image'), va
 });
 
 // post multiple events to database
-router.post('/multiple', token.checkToken(false), multerConfig.upload.single('image'), validateEvent.validateList('post', 'event'), async (req, res) => {
+router.post('/multiple', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateList('post', 'event'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
@@ -562,7 +564,7 @@ router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'),
 });
 
 // cancel event by id
-router.put('/cancel/:_id', token.checkToken(false), async (req, res) => {
+router.put('/cancel/:_id', rateLimit.dataLimiter, token.checkToken(false), async (req, res) => {
 	try {
 		const event = await Event.findById(req.params._id);
 		if (!event)

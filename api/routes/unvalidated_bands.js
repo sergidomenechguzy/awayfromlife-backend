@@ -32,6 +32,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateBand = require(dirPath + '/api/helpers/validateBand');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
+// load rateLimit.js
+const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // unvalidated_bands routes
 // get all bands
@@ -217,11 +219,28 @@ router.get('/filters', token.checkToken(true), async (req, res) => {
 });
 
 // post band to database
-router.post('/', token.checkToken(false), multerConfig.upload.single('image'), validateBand.validateObject('unvalidated'), async (req, res) => {
+router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.single('image'), validateBand.validateObject('unvalidated'), async (req, res) => {
 	try {
 		const newBand = await new UnvalidatedBand(res.locals.validated).save();
 		const dereferenced = await dereference.bandObject(newBand);
 		return res.status(200).json({ message: 'Band saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// post multiple bands to database
+router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedBand(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -243,23 +262,6 @@ router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single
 		await UnvalidatedBand.remove({ _id: req.params._id });
 		const dereferenced = await dereference.bandObject(newBand);
 		return res.status(200).json({ message: 'Band validated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-// post multiple bands to database
-router.post('/multiple', token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('unvalidated'), async (req, res) => {
-	try {
-		const objectList = res.locals.validated;
-		const promises = objectList.map(async (object) => {
-			const result = await new UnvalidatedBand(object).save();
-			return result;
-		});
-		const responseList = await Promise.all(promises);
-		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
