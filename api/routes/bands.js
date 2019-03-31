@@ -25,6 +25,8 @@ const token = require(dirPath + '/api/helpers/token');
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateBand.js
 const validateBand = require(dirPath + '/api/helpers/validateBand');
+// load csv.js
+const csv = require(dirPath + '/api/helpers/csv');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
@@ -420,7 +422,7 @@ router.post('/', token.checkToken(true), multerConfig.upload.single('image'), va
 });
 
 // post multiple bands to database
-router.post('/multiple', token.checkToken(true), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('post'), async (req, res) => {
+router.post('/multiple', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateList('post'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
@@ -429,6 +431,18 @@ router.post('/multiple', token.checkToken(true), params.checkListParameters(['na
 		});
 		const responseList = await Promise.all(promises);
 		return res.status(200).json({ message: responseList.length + ' band(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// convert incoming csv json data to matching json
+router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+	try {
+		const bands = await csv.convertFile(req.file, 'bands');
+		return res.status(200).json({data: bands});
 	}
 	catch (err) {
 		console.log(err);

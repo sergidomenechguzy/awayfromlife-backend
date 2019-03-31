@@ -40,7 +40,9 @@ function saveImages(path, outputFolder) {
 			let imageList = await Promise.all(promises);
 			if (newPath != undefined) {
 				await renameAsync(path, newPath);
-				imageList.push(newPath);
+				while (imageList.length < 3) {
+					imageList.push(newPath);
+				}
 			}
 			else
 				await unlinkAsync(path);

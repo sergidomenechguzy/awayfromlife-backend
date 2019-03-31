@@ -232,7 +232,7 @@ router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.up
 });
 
 // post multiple bands to database
-router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), params.checkListParameters(['name', 'genre', 'origin.city', 'origin.country', 'origin.lat', 'origin.lng', 'origin.countryCode']), validateBand.validateList('unvalidated'), async (req, res) => {
+router.post('/multiple', token.checkToken(false), multerConfig.upload.single('image'), validateBand.validateList('post'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
