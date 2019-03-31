@@ -361,7 +361,7 @@ function unvalidatedFestivalObject(unvalidatedFestival) {
 				description: unvalidatedFestival.description,
 				genre: genreList,
 				events: unvalidatedFestival.events,
-				address: unvalidatedFestival.address,
+				address: unvalidatedFestival.address.default,
 				ticketLink: unvalidatedFestival.ticketLink,
 				website: unvalidatedFestival.website,
 				facebookUrl: unvalidatedFestival.facebookUrl,

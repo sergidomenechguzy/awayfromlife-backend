@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const csv = require('csv-parser');
 const fs = require('fs');
 const moment = require('moment');
+const { promisify } = require('util');
+
+const unlinkAsync = promisify(fs.unlink);
 
 // load band model
 require(dirPath + '/api/models/Band');
@@ -10,6 +13,11 @@ const Band = mongoose.model('bands');
 // load location model
 require(dirPath + '/api/models/Location');
 const Location = mongoose.model('locations');
+
+// load dereference.js
+const dereference = require(dirPath + '/api/helpers/dereference');
+// load regex.js
+const regex = require(dirPath + '/api/helpers/regex');
 
 function convertEventFile(file) {
 	return new Promise((resolve, reject) => {
@@ -26,6 +34,7 @@ function convertEventFile(file) {
 						return response;
 					});
 					const eventList = await Promise.all(promises);
+					await unlinkAsync(file.path);
 					return resolve(eventList);
 				});
 		}
@@ -40,30 +49,40 @@ function convertEvent(object) {
 		try {
 			const locationStrings = object.location.split(',');
 			const locationQuery = {
-				name: locationStrings[0].trim(),
+				name: regex.generate(locationStrings[0].trim()),
 				$or: [
-					{ 'address.default.city': locationStrings[1].trim() },
-					{ 'address.international.city': locationStrings[1].trim() }
+					{ 'address.default.city': regex.generate(locationStrings[1].trim()) },
+					{ 'address.international.city': regex.generate(locationStrings[1].trim()) }
 				]
 			}
-			const location = await Location.findOne(locationQuery);
+			let location = await Location.findOne(locationQuery);
+			if (!location) {
+				location = `Location "${object.location.trim()}" not found`
+			} else {
+				location = await dereference.locationObject(location);
+			}
 
 			const date = moment(object.date, "DD-MM-YYYY").format('YYYY-MM-DD');
 
 			const bandsStrings = object.bands.split(',');
 			const promises = bandsStrings.map(async (bandString) => {
-				const band = await Band.find({ name: bandString.trim() });
+				let band = await Band.findOne({ name: regex.generate(bandString.trim()) });
+				if (!band) {
+					band = `Band "${bandString.trim()}" not found`
+				} else {
+					band = await dereference.bandObject(band);
+				}
 				return band;
 			});
 			const bands = await Promise.all(promises);
 
 			const event = {
-				name: object.name,
+				name: object.name.trim(),
 				location: location,
 				date: date,
 				bands: bands,
-				ticketLink: object.ticketLink,
-				description: object.description
+				ticketLink: object.ticketLink.trim(),
+				description: object.description.trim()
 			}
 			return resolve(event);
 		}
