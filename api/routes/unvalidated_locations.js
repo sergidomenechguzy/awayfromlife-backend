@@ -198,7 +198,7 @@ router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.up
 });
 
 // post multiple locations to database
-router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), params.checkListParameters(['name', 'address.street', 'address.city', 'address.country', 'address.lat', 'address.lng', 'address.countryCode']), validateLocation.validateList('unvalidated'), async (req, res) => {
+router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.single('image'), validateLocation.validateList('unvalidated'), async (req, res) => {
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {

@@ -97,7 +97,6 @@ function convertBand(object) {
 				index = index4;
 			}
 
-			// origin.city, origin.country, origin.lat, origin.lng, origin.countryCode
 			let res = await places.search({ query: object.origin, type: 'city' });
 			const origin = {
 				city: res.hits[0].locale_names.default[0],
