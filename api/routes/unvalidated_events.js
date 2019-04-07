@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load event model
 require(dirPath + '/api/models/Event');
@@ -54,12 +55,12 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		if (parseInt(req.query.order) === -1) order = -1;
 
 		let query = {};
-		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		if (req.query.startWith && /^[a-z#]$/i.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = /^[^a-zäÄöÖüÜ]/i;
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = /^[aäÄ]/i;
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = /^[oöÖ]/i;
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = /^[uüÜ]/i;
+			else query.name = new RegExp(`^${escapeStringRegexp(req.query.startWith.trim())}`, 'i');
 		}
 
 		const events = await UnvalidatedEvent.find(query);
@@ -76,16 +77,16 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				let locationQuery = { _id: event.location };
 				if (req.query.city) {
 					locationQuery.$or = [
-						{ 'address.default.city': new RegExp(req.query.city, 'i') },
-						{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
-						{ 'address.default.county': new RegExp(req.query.city, 'i') },
-						{ 'address.international.city': new RegExp(req.query.city, 'i') }
+						{ 'address.default.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+						{ 'address.default.administrative': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+						{ 'address.default.county': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+						{ 'address.international.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') }
 					];
 				}
 				else {
 					locationQuery.$or = [
-						{ 'address.default.country': RegExp(req.query.country, 'i') },
-						{ 'address.international.country': new RegExp(req.query.country, 'i') }
+						{ 'address.default.country': RegExp(escapeStringRegexp(req.query.country.trim()), 'i') },
+						{ 'address.international.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') }
 					];
 				}
 				const location = await Location.findOne(locationQuery);
@@ -95,7 +96,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 
 			let dereferenced = await dereference.eventObject(event);
 			if (req.query.genre) {
-				const genreRegex = RegExp(req.query.genre, 'i');
+				const genreRegex = RegExp(`^${escapeStringRegexp(req.query.genre.trim())}$`, 'i');
 
 				if (
 					!dereferenced.bands.some(band => {

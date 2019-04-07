@@ -5,6 +5,7 @@ const moment = require('moment');
 const { promisify } = require('util');
 const algoliasearch = require('algoliasearch');
 const places = algoliasearch.initPlaces('plV0531XU62R', '664efea28c2e61a6b5d7640f76856143');
+const escapeStringRegexp = require('escape-string-regexp');
 
 const unlinkAsync = promisify(fs.unlink);
 
@@ -22,8 +23,6 @@ const Genre = mongoose.model('genres');
 
 // load dereference.js
 const dereference = require(dirPath + '/api/helpers/dereference');
-// load regex.js
-const regex = require(dirPath + '/api/helpers/regex');
 
 const types = {
 	bands: convertBand,
@@ -61,7 +60,7 @@ function convertBand(object) {
 		try {
 			const genreStrings = object.genres.split(',');
 			const promises = genreStrings.map(async (genreString) => {
-				let genre = await Genre.findOne({ name: regex.generate(genreString.trim()) });
+				let genre = await Genre.findOne({ name: new RegExp(`^${escapeStringRegexp(genreString.trim())}$`, 'i') });
 				if (!genre) {
 					genre = `Genre "${genreString.trim()}" not found`
 				} else {
@@ -135,10 +134,10 @@ function convertEvent(object) {
 		try {
 			const locationStrings = object.location.split(',');
 			const locationQuery = {
-				name: regex.generate(locationStrings[0].trim()),
+				name: new RegExp(escapeStringRegexp(locationStrings[0].trim()), 'i'),
 				$or: [
-					{ 'address.default.city': regex.generate(locationStrings[1].trim()) },
-					{ 'address.international.city': regex.generate(locationStrings[1].trim()) }
+					{ 'address.default.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') },
+					{ 'address.international.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') }
 				]
 			}
 			let location = await Location.findOne(locationQuery);
@@ -152,7 +151,7 @@ function convertEvent(object) {
 
 			const bandsStrings = object.bands.split(',');
 			const promises = bandsStrings.map(async (bandString) => {
-				let band = await Band.findOne({ name: regex.generate(bandString.trim()) });
+				let band = await Band.findOne({ name: new RegExp(escapeStringRegexp(bandString.trim()), 'i') });
 				if (!band) {
 					band = `Band "${bandString.trim()}" not found`
 				} else {

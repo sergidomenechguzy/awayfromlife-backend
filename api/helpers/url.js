@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const moment = require('moment');
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load event model
 require(dirPath + '/api/models/Event');
@@ -20,8 +21,6 @@ const Festival = mongoose.model('festivals');
 
 // load dereference.js
 const dereference = require(dirPath + '/api/helpers/dereference');
-// load regex.js
-const regex = require(dirPath + '/api/helpers/regex');
 
 function generateUrl(object, model, urlList) {
 	return new Promise(async (resolve, reject) => {
@@ -56,7 +55,7 @@ function checkUrl(object, model, url, urlList, counter) {
 				return resolve(response);
 			}
 
-			const savedObject = await collection[model].findOne({ url: regex.generate(`^${url}$`) });
+			const savedObject = await collection[model].findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
 			if (!savedObject) {
 				object.url = url;
 				return resolve(object);
@@ -107,7 +106,7 @@ function checkEventUrl(object, model, url, urlList, counter) {
 				return resolve(response);
 			}
 
-			const savedEvent = await Event.findOne({ url: regex.generate(`^${url}$`) });
+			const savedEvent = await Event.findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
 			if (savedEvent != undefined) {
 				if (object._id && model == 'event' && object._id.toString() == savedEvent._id.toString()) {
 					object.url = url;
@@ -121,7 +120,7 @@ function checkEventUrl(object, model, url, urlList, counter) {
 				}
 			}
 			else {
-				const savedArchivedEvent = await ArchivedEvent.findOne({ url: regex.generate(`^${url}$`) });
+				const savedArchivedEvent = await ArchivedEvent.findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
 				if (savedArchivedEvent != undefined) {
 					if (object._id && model == 'archive' && object._id.toString() == savedArchivedEvent._id.toString()) {
 						object.url = url;

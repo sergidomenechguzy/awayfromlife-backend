@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load band model
 require(dirPath + '/api/models/Band');
@@ -95,28 +96,28 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		if (parseInt(req.query.order) === -1) order = -1;
 
 		let query = {};
-		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		if (req.query.startWith && /^[a-z#]$/i.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = /^[^a-zäÄöÖüÜ]/i;
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = /^[aäÄ]/i;
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = /^[oöÖ]/i;
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = /^[uüÜ]/i;
+			else query.name = new RegExp(`^${escapeStringRegexp(req.query.startWith.trim())}`, 'i');
 		}
 		if (req.query.city) {
 			query.$or = [
-				{ 'origin.default.city': new RegExp(req.query.city, 'i') },
-				{ 'origin.default.administrative': new RegExp(req.query.city, 'i') },
-				{ 'origin.default.county': new RegExp(req.query.city, 'i') },
-				{ 'origin.international.city': new RegExp(req.query.city, 'i') }
+				{ 'origin.default.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'origin.default.administrative': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'origin.default.county': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'origin.international.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') }
 			];
 		}
 		else if (req.query.country) {
 			query.$or = [
-				{ 'origin.default.country': RegExp(req.query.country, 'i') },
-				{ 'origin.international.country': new RegExp(req.query.country, 'i') }
+				{ 'origin.default.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') },
+				{ 'origin.international.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') }
 			];
 		}
-		if (req.query.label) query.recordLabel = RegExp(req.query.label, 'i');
+		if (req.query.label) query.recordLabel = new RegExp(escapeStringRegexp(req.query.label.trim()), 'i');
 
 		const bands = await Band.find(query);
 		if (bands.length === 0)
@@ -126,7 +127,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 
 		let finalBands = [];
 		if (req.query.genre) {
-			const genreRegex = RegExp('^' + req.query.genre + '$', 'i');
+			const genreRegex = new RegExp(`^${escapeStringRegexp(req.query.genre.trim())}$`, 'i');
 			dereferenced.forEach(band => {
 				band.genre.some(genre => {
 					if (genreRegex.test(genre)) {
@@ -170,7 +171,7 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get band by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Band.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		const object = await Band.findOne({ url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i') });
 		if (!object)
 			return res.status(400).json({ message: 'No band found with this URL', token: res.locals.token });
 
@@ -214,7 +215,7 @@ router.get('/:_id/pastEvents', token.checkToken(false), async (req, res) => {
 // get bands by name
 router.get('/name/:name', token.checkToken(false), async (req, res) => {
 	try {
-		const bands = await Band.find({ name: new RegExp(req.params.name, 'i') });
+		const bands = await Band.find({ name: new RegExp(escapeStringRegexp(req.params.name.trim()), 'i') });
 		if (bands.length === 0)
 			return res.status(200).json({ message: 'No band found with this name.', token: res.locals.token });
 
@@ -230,7 +231,7 @@ router.get('/name/:name', token.checkToken(false), async (req, res) => {
 // get bands by genre
 router.get('/genre/:genre', token.checkToken(false), async (req, res) => {
 	try {
-		let regex = new RegExp('^' + req.params.genre + '$', 'i');
+		let regex = new RegExp(`^${escapeStringRegexp(req.params.genre.trim())}$`, 'i');
 		const bands = await Band.find();
 		if (bands.length === 0)
 			return res.status(200).json({ message: 'No band found.', token: res.locals.token });
@@ -324,10 +325,10 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 		if (!req.query.name || !req.query.country)
 			return res.status(400).json({ message: 'Parameter(s) missing: name and country are required.' });
 		let query = {
-			name: new RegExp('^' + req.query.name + '$', 'i'),
+			name: new RegExp(escapeStringRegexp(req.query.name.trim()), 'i'),
 			$or: [
-				{ 'address.default.country': new RegExp('^' + req.query.country + '$', 'i') },
-				{ 'address.international.country': new RegExp('^' + req.query.country + '$', 'i') }
+				{ 'origin.default.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') },
+				{ 'origin.international.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') }
 			]
 		};
 

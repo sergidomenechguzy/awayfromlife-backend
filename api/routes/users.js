@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load user model
 require(dirPath + '/api/models/User');
@@ -54,7 +55,7 @@ router.post('/login', (req, res) => {
 		if (err) return res.status(400).json({ message: 'Invalid token' });
 
 		try {
-			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
+			const user = await User.findOne({ email: new RegExp(`^${escapeStringRegexp(decodedToken.email.trim())}$`, 'i') });
 			if (!user) return res.status(400).json({ message: 'Wrong email or password' });
 
 			const isMatch = await bcrypt.compare(decodedToken.password, user.password);
@@ -86,7 +87,7 @@ router.post('/register', token.checkToken(true), rateLimit.userLimiter, (req, re
 
 		try {
 			if (decodedToken.password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
-			const user = await User.findOne({ email: new RegExp(`^${decodedToken.email}$`, 'i') });
+			const user = await User.findOne({ email: new RegExp(`^${escapeStringRegexp(decodedToken.email.trim())}$`, 'i') });
 			if (user) return res.status(400).json({ message: 'Email address already registered.' });
 
 			const hash = await bcrypt.hash(decodedToken.password, 10);

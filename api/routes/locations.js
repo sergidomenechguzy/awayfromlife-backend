@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load location model
 require(dirPath + '/api/models/Location');
@@ -93,25 +94,25 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 		if (parseInt(req.query.order) === -1) order = -1;
 
 		let query = {};
-		if (req.query.startWith && /^[a-zA-Z#]$/.test(req.query.startWith)) {
-			if (req.query.startWith === '#') query.name = new RegExp('^[^a-zäÄöÖüÜ]', 'i');
-			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = new RegExp('^[' + req.query.startWith + 'äÄ]', 'i');
-			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = new RegExp('^[' + req.query.startWith + 'öÖ]', 'i');
-			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = new RegExp('^[' + req.query.startWith + 'üÜ]', 'i');
-			else query.name = new RegExp('^' + req.query.startWith, 'i');
+		if (req.query.startWith && /^[a-z#]$/i.test(req.query.startWith)) {
+			if (req.query.startWith === '#') query.name = /^[^a-zäÄöÖüÜ]/i;
+			else if (req.query.startWith === 'a' || req.query.startWith === 'A') query.name = /^[aäÄ]/i;
+			else if (req.query.startWith === 'o' || req.query.startWith === 'O') query.name = /^[oöÖ]/i;
+			else if (req.query.startWith === 'u' || req.query.startWith === 'U') query.name = /^[uüÜ]/i;
+			else query.name = new RegExp(`^${escapeStringRegexp(req.query.startWith.trim())}`, 'i');
 		}
 		if (req.query.city) {
 			query.$or = [
-				{ 'address.default.city': new RegExp(req.query.city, 'i') },
-				{ 'address.default.administrative': new RegExp(req.query.city, 'i') },
-				{ 'address.default.county': new RegExp(req.query.city, 'i') },
-				{ 'address.international.city': new RegExp(req.query.city, 'i') }
+				{ 'address.default.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.default.administrative': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.default.county': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.international.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') }
 			];
 		}
 		else if (req.query.country) {
 			query.$or = [
-				{ 'address.default.country': RegExp(req.query.country, 'i') },
-				{ 'address.international.country': new RegExp(req.query.country, 'i') }
+				{ 'address.default.country': RegExp(escapeStringRegexp(req.query.country.trim()), 'i') },
+				{ 'address.international.country': new RegExp(escapeStringRegexp(req.query.country.trim()), 'i') }
 			];
 		}
 
@@ -152,7 +153,7 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get location by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
 	try {
-		const object = await Location.findOne({ url: new RegExp('^' + req.params.url + '$', 'i') });
+		const object = await Location.findOne({ url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i') });
 		if (!object)
 			return res.status(400).json({ message: 'No location with this URL', token: res.locals.token });
 
@@ -211,7 +212,7 @@ router.get('/:_id/pastEvents', token.checkToken(false), async (req, res) => {
 // get locations by name
 router.get('/name/:name', token.checkToken(false), async (req, res) => {
 	try {
-		const locations = await Location.find({ name: new RegExp(req.params.name, 'i') });
+		const locations = await Location.find({ name: new RegExp(`^${escapeStringRegexp(req.params.name.trim())}$`, 'i') });
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No location found with this name', token: res.locals.token });
 
@@ -229,10 +230,10 @@ router.get('/city/:city', token.checkToken(false), async (req, res) => {
 	try {
 		const query = {
 			$or: [
-				{ 'address.default.city': new RegExp(req.params.city, 'i') },
-				{ 'address.default.administrative': new RegExp(req.params.city, 'i') },
-				{ 'address.default.county': new RegExp(req.params.city, 'i') },
-				{ 'address.international.city': new RegExp(req.params.city, 'i') }
+				{ 'address.default.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.default.administrative': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.default.county': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') },
+				{ 'address.international.city': new RegExp(escapeStringRegexp(req.query.city.trim()), 'i') }
 			]
 		};
 		const locations = await Location.find(query);
@@ -278,23 +279,21 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 				query = {
 					$or: [
 						{
-							name: new RegExp('^' + req.query.name + '$', 'i'),
-							'address.default.city': new RegExp('^' + req.query.city + '$', 'i')
+							name: new RegExp(`^${escapeStringRegexp(req.query.name.trim())}$`, 'i'),
+							'address.default.city': new RegExp(`^${escapeStringRegexp(req.query.city.trim())}$`, 'i')
 						},
-						{ 'address.default.street': new RegExp(req.query.address, 'i') }
+						{ 'address.default.street': new RegExp(`^${escapeStringRegexp(req.query.address.trim())}$`, 'i') }
 					]
 				};
 			}
 			else {
-				query.name = new RegExp('^' + req.query.name + '$', 'i');
-				const cityString = 'address.default.city';
-				query[cityString] = new RegExp('^' + req.query.city + '$', 'i');
+				query.name = new RegExp(`^${escapeStringRegexp(req.query.name.trim())}$`, 'i');
+				query['address.default.city'] = new RegExp(`^${escapeStringRegexp(req.query.city.trim())}$`, 'i');
 			}
 		}
 		else {
 			if (req.query.address) {
-				const addressString = 'address.default.street';
-				query[addressString] = new RegExp(req.query.address, 'i');
+				query['address.default.street'] = new RegExp(`^${escapeStringRegexp(req.query.address.trim())}$`, 'i');
 			}
 			else {
 				return res.status(400).json({ message: 'Parameter(s) missing: address or name and city are required.' });
@@ -305,7 +304,8 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
 		if (locations.length === 0)
 			return res.status(200).json({ message: 'No similar locations found.', token: res.locals.token });
 
-		return res.status(200).json({ data: locations, token: res.locals.token });
+		const dereferenced = await dereference.objectArray(locations, 'location', 'name', 1);
+		return res.status(200).json({ data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

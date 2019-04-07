@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const escapeStringRegexp = require('escape-string-regexp');
 
 // load event model
 require(dirPath + '/api/models/Event');
@@ -57,7 +58,7 @@ router.get('/:query', token.checkToken(false), async (req, res) => {
 
 		const queries = createQueries(req.query);
 		const promises = categories.map(async (category) => {
-			let result = await categoryFunction[category](queries[category], new RegExp(req.params.query.trim(), 'i'));
+			let result = await categoryFunction[category](queries[category], new RegExp(escapeStringRegexp(req.params.query.trim()), 'i'));
 			results[category] = result;
 			return result;
 		});
@@ -84,7 +85,7 @@ router.get('/simple/:query', token.checkToken(false), async (req, res) => {
 
 		const queries = createQueries({});
 		const promises = categories.map(async (category) => {
-			let result = await categoryFunction[category](queries[category], RegExp(req.params.query.trim(), 'i'));
+			let result = await categoryFunction[category](queries[category], new RegExp(escapeStringRegexp(req.params.query.trim()), 'i'));
 			return result;
 		});
 		const resultLists = await Promise.all(promises);
@@ -467,16 +468,16 @@ const createQueries = (queries) => {
 
 	if (queries.city != undefined) {
 		eventQuery.attributes.push('location.address.city');
-		eventQuery.values.push(new RegExp(queries.city, 'i'));
+		eventQuery.values.push(new RegExp(escapeStringRegexp(queries.city.trim()), 'i'));
 		eventQuery.attributes.push('location.address.county');
-		eventQuery.values.push(new RegExp(queries.city, 'i'));
+		eventQuery.values.push(new RegExp(escapeStringRegexp(queries.city.trim()), 'i'));
 
 		const cityQuery = {
 			$or: [
-				{ 'address.default.city': new RegExp(queries.city, 'i') },
-				{ 'address.default.administrative': new RegExp(queries.city, 'i') },
-				{ 'address.default.county': new RegExp(queries.city, 'i') },
-				{ 'address.international.city': new RegExp(queries.city, 'i') }
+				{ 'address.default.city': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'address.default.administrative': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'address.default.county': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'address.international.city': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') }
 			]
 		};
 
@@ -485,21 +486,21 @@ const createQueries = (queries) => {
 
 		bandQuery.query = {
 			$or: [
-				{ 'origin.default.city': new RegExp(queries.city, 'i') },
-				{ 'origin.default.administrative': new RegExp(queries.city, 'i') },
-				{ 'origin.default.county': new RegExp(queries.city, 'i') },
-				{ 'origin.international.city': new RegExp(queries.city, 'i') }
+				{ 'origin.default.city': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'origin.default.administrative': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'origin.default.county': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') },
+				{ 'origin.international.city': new RegExp(escapeStringRegexp(queries.city.trim()), 'i') }
 			]
 		};
 	}
 	else if (queries.country != undefined) {
 		eventQuery.attributes.push('location.address.country');
-		eventQuery.values.push(new RegExp(queries.country, 'i'));
+		eventQuery.values.push(new RegExp(escapeStringRegexp(queries.country.trim()), 'i'));
 
 		const countryQuery = {
 			$or: [
-				{ 'address.default.country': RegExp(queries.country, 'i') },
-				{ 'address.international.country': new RegExp(queries.country, 'i') }
+				{ 'address.default.country': RegExp(escapeStringRegexp(queries.country.trim()), 'i') },
+				{ 'address.international.country': new RegExp(escapeStringRegexp(queries.country.trim()), 'i') }
 			]
 		};
 
@@ -508,8 +509,8 @@ const createQueries = (queries) => {
 
 		bandQuery.query = {
 			$or: [
-				{ 'origin.default.country': RegExp(queries.country, 'i') },
-				{ 'origin.international.country': new RegExp(queries.country, 'i') }
+				{ 'origin.default.country': RegExp(escapeStringRegexp(queries.country.trim()), 'i') },
+				{ 'origin.international.country': new RegExp(escapeStringRegexp(queries.country.trim()), 'i') }
 			]
 		};
 	}
@@ -517,7 +518,7 @@ const createQueries = (queries) => {
 	if (queries.genre != undefined) {
 		const genres = queries.genre.split(',');
 		genres.forEach(genre => {
-			const genreRegex = new RegExp('^' + genre + '$', 'i');
+			const genreRegex = new RegExp(`${escapeStringRegexp(genre.trim())}$`, 'i');
 			eventQuery.genres.push(genreRegex);
 			festivalQuery.genres.push(genreRegex);
 			bandQuery.genres.push(genreRegex);
