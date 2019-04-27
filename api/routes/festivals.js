@@ -101,7 +101,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 				if (req.query.startDate || req.query.endDate) {
 					result.push(festival.events.some(event => {
 						const matchedStartDate = req.query.startDate ? (new Date(event.startDate) >= new Date(req.query.startDate)) : true;
-						const matchedEndDate = req.query.startDate ? (new Date(event.startDate) <= new Date(req.query.endDate)) : true;
+						const matchedEndDate = req.query.endDate ? (new Date(event.startDate) <= new Date(req.query.endDate)) : true;
 						return matchedStartDate && matchedEndDate;
 					}));
 				}
