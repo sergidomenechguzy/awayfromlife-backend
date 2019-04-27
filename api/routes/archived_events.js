@@ -76,8 +76,8 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 			return res.status(200).json({ message: 'No events found', token: res.locals.token });
 
 		const eventPromises = events.map(async (event) => {
-			const matchedStartDate = req.query.startDate ? (event.date.localeCompare(req.query.startDate) >= 0) : true;
-			const matchedEndDate = req.query.endDate ? (event.date.localeCompare(req.query.endDate) <= 0) : true;
+			const matchedStartDate = req.query.startDate ? (new Date(event.date) >= new Date(req.query.startDate)) : true;
+			const matchedEndDate = req.query.endDate ? (new Date(event.date) <= new Date(req.query.endDate)) : true;
 			if (!(matchedStartDate && matchedEndDate))
 				return null;
 
@@ -159,8 +159,8 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 						return;
 
 					if (req.query.startDate || req.query.endDate) {
-						const matchedStartDate = req.query.startDate ? (event.startDate.localeCompare(req.query.startDate) >= 0) : true;
-						const matchedEndDate = req.query.startDate ? (event.startDate.localeCompare(req.query.endDate) <= 0) : true;
+						const matchedStartDate = req.query.startDate ? (new Date(event.startDate) >= new Date(req.query.startDate)) : true;
+						const matchedEndDate = req.query.endDate ? (new Date(event.startDate) <= new Date(req.query.endDate)) : true;
 						if (!(matchedStartDate && matchedEndDate))
 							return;
 					}
@@ -401,7 +401,8 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 			dereferenced.forEach(festival => {
 				let valid = false;
 				festival.events.forEach(event => {
-					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0) {
+					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0) {
+						console.log(event.name);
 						valid = true;
 						if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
 							if (event.name.charAt(0).toUpperCase() === 'Ä') {
