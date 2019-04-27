@@ -358,8 +358,10 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 
 		const dereferenced = await dereference.objectArray(archivedEvents, 'event', 'date', 1);
 
-		filters.firstDate = dereferenced[0].date;
-		filters.lastDate = dereferenced[dereferenced.length - 1].date;
+		if (dereferenced.length > 0) {
+			filters.firstDate = dereferenced[0].date;
+			filters.lastDate = dereferenced[dereferenced.length - 1].date;
+		}
 
 		dereferenced.forEach(event => {
 			if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {

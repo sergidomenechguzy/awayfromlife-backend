@@ -62,7 +62,7 @@ function convertBand(object) {
 			const promises = genreStrings.map(async (genreString) => {
 				let genre = await Genre.findOne({ name: new RegExp(`^${escapeStringRegexp(genreString.trim())}$`, 'i') });
 				if (!genre) {
-					genre = `Genre "${genreString.trim()}" not found`
+					genre = `ERROR: Genre "${genreString.trim()}" not found`
 				} else {
 					genre = genre.name;
 				}
@@ -134,7 +134,7 @@ function convertEvent(object) {
 			let location;
 			const locationStrings = object.location.split(',');
 			if (locationStrings.length != 2) {
-				location =  `Location "${object.location.trim()}" did not match format, has to be in the format "<name>, <city>"`;
+				location =  `ERROR: Location "${object.location.trim()}" did not match format, has to be in the format "<name>, <city>"`;
 			} else {
 				const locationQuery = {
 					name: new RegExp(escapeStringRegexp(locationStrings[0].trim()), 'i'),
@@ -145,7 +145,7 @@ function convertEvent(object) {
 				}
 				location = await Location.findOne(locationQuery);
 				if (!location) {
-					location = `Location "${object.location.trim()}" not found`;
+					location = `ERROR: Location "${object.location.trim()}" not found`;
 				} else {
 					location = await dereference.locationObject(location);
 				}
@@ -157,7 +157,7 @@ function convertEvent(object) {
 			const promises = bandsStrings.map(async (bandString) => {
 				let band = await Band.findOne({ name: new RegExp(escapeStringRegexp(bandString.trim()), 'i') });
 				if (!band) {
-					band = `Band "${bandString.trim()}" not found`
+					band = `ERROR: Band "${bandString.trim()}" not found`
 				} else {
 					band = await dereference.bandObject(band);
 				}
