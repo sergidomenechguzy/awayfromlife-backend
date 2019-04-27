@@ -131,19 +131,24 @@ function convertBand(object) {
 function convertEvent(object) {
 	return new Promise(async (resolve, reject) => {
 		try {
+			let location;
 			const locationStrings = object.location.split(',');
-			const locationQuery = {
-				name: new RegExp(escapeStringRegexp(locationStrings[0].trim()), 'i'),
-				$or: [
-					{ 'address.default.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') },
-					{ 'address.international.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') }
-				]
-			}
-			let location = await Location.findOne(locationQuery);
-			if (!location) {
-				location = `Location "${object.location.trim()}" not found`
+			if (locationStrings.length != 2) {
+				location =  `Location "${object.location.trim()}" did not match format, has to be in the format "<name>, <city>"`;
 			} else {
-				location = await dereference.locationObject(location);
+				const locationQuery = {
+					name: new RegExp(escapeStringRegexp(locationStrings[0].trim()), 'i'),
+					$or: [
+						{ 'address.default.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') },
+						{ 'address.international.city': new RegExp(escapeStringRegexp(locationStrings[1].trim()), 'i') }
+					]
+				}
+				location = await Location.findOne(locationQuery);
+				if (!location) {
+					location = `Location "${object.location.trim()}" not found`;
+				} else {
+					location = await dereference.locationObject(location);
+				}
 			}
 
 			const date = moment(object.date, "DD-MM-YYYY").format('YYYY-MM-DD');

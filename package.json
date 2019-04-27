@@ -1,11 +1,11 @@
 {
   "name": "backend-api",
   "version": "1.0.0",
-  "description": "Backend Api Application for the Awayfromlife event map and calendar",
+  "description": "Backend Api Application for Awayfromlife Streets",
   "main": "app.js",
   "scripts": {
     "start": "NODE_ENV=production node app.js",
-    "dev": "node app.js"
+    "dev": "npx nodemon app.js"
   },
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
