@@ -402,7 +402,6 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 				let valid = false;
 				festival.events.forEach(event => {
 					if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0) {
-						console.log(event.name);
 						valid = true;
 						if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
 							if (event.name.charAt(0).toUpperCase() === 'Ä') {
