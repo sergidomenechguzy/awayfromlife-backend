@@ -29,7 +29,7 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 		}
 
 		let count = 5;
-		if (parseInt(req.query.count) === 10 || parseInt(req.query.count) === 20) count = parseInt(req.query.count);
+		if (parseInt(req.query.count)) count = parseInt(req.query.count);
 
 		const latestObjects = await latest.getMultiple(categories, count);
 		return res.status(200).json({ data: latestObjects, token: res.locals.token });

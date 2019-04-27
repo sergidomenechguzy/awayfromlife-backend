@@ -69,15 +69,17 @@ function getMultiple(categoryList, count) {
 			const promises = categoryList.map(async (category) => {
 				let result = await get(category, count);
 				result = result.map(object => {
-					object.collection = category;
-					return object;
+					return {
+						category,
+						data: object,
+					};
 				});
 				return result;
 			});
 			let results = await Promise.all(promises);
 			results = results.reduce((acc, val) => acc.concat(val), []);
 			results.sort((a, b) => {
-				if (a._id.getTimestamp() < b._id.getTimestamp()) return 1;
+				if (a.data._id.getTimestamp() < b.data._id.getTimestamp()) return 1;
 				else return -1;
 			});
 			results = results.slice(0, count);
