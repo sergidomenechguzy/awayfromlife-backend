@@ -27,7 +27,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const types = {
 	bands: convertBand,
 	events: convertEvent,
-	locations: convertLocation
+	locations: convertLocation,
+	festivals: convertFestival
 }
 
 function convertFile(file, type) {
@@ -98,14 +99,17 @@ function convertBand(object) {
 			}
 
 			let res = await places.search({ query: object.origin, type: 'city' });
-			const origin = {
-				city: res.hits[0].locale_names.default[0],
-				country: res.hits[0].country.default,
-				lat: res.hits[0]._geoloc.lat,
-				lng: res.hits[0]._geoloc.lng,
-				countryCode: res.hits[0].country_code,
-				value: object.origin
-			}
+			const origin =
+				res.hits.length === 0
+				? `ERROR: Origin "${object.origin}" not found`
+				: {
+					city: res.hits[0].locale_names.default[0],
+					country: res.hits[0].country.default,
+					lat: res.hits[0]._geoloc.lat,
+					lng: res.hits[0]._geoloc.lng,
+					countryCode: res.hits[0].country_code,
+					value: object.origin
+				}
 
 			const band = {
 				name: object.name.trim(),
@@ -134,7 +138,7 @@ function convertEvent(object) {
 			let location;
 			const locationStrings = object.location.split(',');
 			if (locationStrings.length != 2) {
-				location =  `ERROR: Location "${object.location.trim()}" did not match format, has to be in the format "<name>, <city>"`;
+				location = `ERROR: Location "${object.location.trim()}" did not match format, has to be in the format "<name>, <city>"`;
 			} else {
 				const locationQuery = {
 					name: new RegExp(escapeStringRegexp(locationStrings[0].trim()), 'i'),
@@ -181,10 +185,103 @@ function convertEvent(object) {
 	});
 }
 
+function convertFestival(object) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const genreStrings = object.genres.split(',');
+			const genrePromises = genreStrings.map(async (genreString) => {
+				let genre = await Genre.findOne({ name: new RegExp(`^${escapeStringRegexp(genreString.trim())}$`, 'i') });
+				if (!genre) {
+					genre = `ERROR: Genre "${genreString.trim()}" not found`
+				} else {
+					genre = genre.name;
+				}
+				return genre;
+			});
+			const genres = await Promise.all(genrePromises);
+			genres.sort((a, b) => {
+				return a.localeCompare(b);
+			});
+
+			let res = await places.search({ query: object.address, type: 'address' });
+			const address = 
+				res.hits.length === 0
+				? `ERROR: Address "${object.address}" not found`
+				: {
+					street: res.hits[0].locale_names.default[0],
+					city: res.hits[0].city.default[0],
+					country: res.hits[0].country.default,
+					lat: res.hits[0]._geoloc.lat,
+					lng: res.hits[0]._geoloc.lng,
+					countryCode: res.hits[0].country_code,
+					value: object.address
+				}
+
+			const startDate = moment(object.eventStartDate, "DD-MM-YYYY").format('YYYY-MM-DD');
+			const endDate = moment(object.eventEndDate, "DD-MM-YYYY").format('YYYY-MM-DD');
+
+			const bandsStrings = object.eventBands.split(',');
+			const bandPromises = bandsStrings.map(async (bandString) => {
+				let band = await Band.findOne({ name: new RegExp(escapeStringRegexp(bandString.trim()), 'i') });
+				if (!band) {
+					band = `ERROR: Band "${bandString.trim()}" not found`
+				} else {
+					band = await dereference.bandObject(band);
+				}
+				return band;
+			});
+			const bands = await Promise.all(bandPromises);
+
+			const festival = {
+				name: object.name.trim(),
+				description: object.description.trim(),
+				genre: genres,
+				address: address,
+				ticketLink: object.ticketLink.trim(),
+				website: object.website.trim(),
+				facebookUrl: object.facebook.trim(),
+			}
+			const event = {
+				name: object.eventName.trim(),
+				description: object.eventDescription.trim(),
+				startDate: startDate,
+				endDate: endDate,
+				bands: bands
+			}
+			return resolve({festival, event});
+		}
+		catch (err) {
+			reject(err);
+		}
+	});
+}
+
 function convertLocation(object) {
 	return new Promise(async (resolve, reject) => {
 		try {
 
+			let res = await places.search({ query: object.address, type: 'address' });
+			const address = 
+				res.hits.length === 0
+				? `ERROR: Address "${object.address}" not found`
+				: {
+					street: res.hits[0].locale_names.default[0],
+					city: res.hits[0].city.default[0],
+					country: res.hits[0].country.default,
+					lat: res.hits[0]._geoloc.lat,
+					lng: res.hits[0]._geoloc.lng,
+					countryCode: res.hits[0].country_code,
+					value: object.address
+				}
+
+			const location = {
+				name: object.name.trim(),
+				address: address,
+				information: object.description.trim(),
+				website: object.website.trim(),
+				facebookUrl: object.facebook.trim(),
+			}
+			return resolve(location);
 		}
 		catch (err) {
 			reject(err);

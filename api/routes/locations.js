@@ -18,14 +18,14 @@ const deleteRoute = require(dirPath + '/api/routes/controller/delete');
 const latest = require(dirPath + '/api/routes/controller/latest');
 // load pastAndUpcomingEvents.js
 const pastAndUpcomingEventsRoute = require(dirPath + '/api/routes/controller/pastAndUpcomingEvents');
-// load params.js
-const params = require(dirPath + '/api/helpers/params');
 // load token.js
 const token = require(dirPath + '/api/helpers/token');
 // load dereference.js
 const dereference = require(dirPath + '/api/helpers/dereference');
 // load validateLocation.js
 const validateLocation = require(dirPath + '/api/helpers/validateLocation');
+// load csv.js
+const csv = require(dirPath + '/api/helpers/csv');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
@@ -386,6 +386,18 @@ router.post('/multiple', token.checkToken(true), multerConfig.upload.single('ima
 		});
 		const responseList = await Promise.all(promises);
 		return res.status(200).json({ message: responseList.length + ' location(s) saved', token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// convert incoming csv data to matching json
+router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+	try {
+		const locations = await csv.convertFile(req.file, 'locations');
+		return res.status(200).json({data: locations});
 	}
 	catch (err) {
 		console.log(err);

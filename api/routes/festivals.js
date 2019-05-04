@@ -23,6 +23,8 @@ const dereference = require(dirPath + '/api/helpers/dereference');
 const validateFestival = require(dirPath + '/api/helpers/validateFestival');
 // load validateFestivalAndFestivalEvent.js
 const validateFestivalAndFestivalEvent = require(dirPath + '/api/helpers/validateFestivalAndFestivalEvent');
+// load csv.js
+const csv = require(dirPath + '/api/helpers/csv');
 // load multerConfig.js
 const multerConfig = require(dirPath + '/api/config/multerConfig');
 
@@ -277,6 +279,18 @@ router.post('/', token.checkToken(true), multerConfig.upload.fields([{ name: 'fe
 		newFestival = await new Festival(newFestival).save();
 		const dereferenced = await dereference.festivalObject(newFestival);
 		return res.status(200).json({ message: 'Festival and festival event saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// convert incoming csv data to matching json
+router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+	try {
+		const festivals = await csv.convertFile(req.file, 'festivals');
+		return res.status(200).json({data: festivals});
 	}
 	catch (err) {
 		console.log(err);
