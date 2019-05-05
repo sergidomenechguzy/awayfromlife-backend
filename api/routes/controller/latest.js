@@ -129,13 +129,13 @@ function addFestivalUrl(objects, category) {
 			const promises = objects.map(async (object) => {
 				let festival = await Festival.findOne({ events: object._id });
 				if (festival == undefined) {
-					object.url = 'festival-not-found';
+					object.festival = 'festival-not-found';
 					if (category == 'unvalidatedFestivalEvent') {
 						festival = await UnvalidatedFestival.findOne({ events: object._id });
-						if (festival != undefined) object.url = festival.url;
+						if (festival != undefined) object.festival =  await dereference.unvalidatedFestivalObject(festival);
 					}
 				}
-				else object.url = festival.url;
+				else object.festival =  await dereference.unvalidatedFestivalObject(festival);
 				return object;
 			});
 			const objectList = Promise.all(promises);
