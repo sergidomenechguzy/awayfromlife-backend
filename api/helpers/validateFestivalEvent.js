@@ -127,8 +127,10 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 				return resolve('Attribute \'canceled\' can be left out or has to be either \'0\', \'1\' or \'2\' as a number.');
 
 			let imageList = [];
-			if (imagePath.length > 0)
-				imageList = await image.saveImages(imagePath, 'festival-events');
+			if (imagePath.length > 0) {
+				if (Array.isArray(imagePath)) imageList = imagePath;
+				else imageList = await image.saveImages(imagePath, 'festival-events');
+			}
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
