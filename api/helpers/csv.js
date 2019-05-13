@@ -42,8 +42,13 @@ function convertFile(file, type) {
 				})
 				.on('end', async () => {
 					const promises = objectList.map(async (object) => {
-						const response = await types[type](object);
-						return response;
+						try {
+							const response = await types[type](object);
+							return response;
+						}
+						catch (err) {
+							reject(err);
+						}
 					});
 					const jsonList = await Promise.all(promises);
 					await unlinkAsync(file.path);
