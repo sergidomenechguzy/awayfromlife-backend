@@ -134,6 +134,29 @@ router.post('/', rateLimit.dataLimiter, token.checkToken(false), multerConfig.up
 	}
 });
 
+// post multiple festivals and events to database
+router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateList('post'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const newFestivalEvent = await new UnvalidatedFestivalEvent(object.event).save();
+			const dereferencedEvent = await dereference.festivalEventObject(newFestivalEvent);
+			let newFestival = object.festival;
+			newFestival.events = [newFestivalEvent._id];
+			newFestival = await new UnvalidatedFestival(newFestival).save();
+			let dereferenced = await dereference.unvalidatedFestivalObject(newFestival);
+			dereferenced.events = [dereferencedEvent];
+			return dereferenced;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' festivals(s) and festival event(s) saved', data: responseList, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // validate unvalidated festival and festival event
 router.post('/validate/:festivalId/:eventId', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateObject('validate'), async (req, res) => {
 	try {

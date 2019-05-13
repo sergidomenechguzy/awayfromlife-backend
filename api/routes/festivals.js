@@ -286,6 +286,27 @@ router.post('/', token.checkToken(true), multerConfig.upload.fields([{ name: 'fe
 	}
 });
 
+// post multiple festivals and events to database
+router.post('/multiple', token.checkToken(true), multerConfig.upload.fields([{ name: 'festivalImage', maxCount: 1 }, { name: 'eventImage', maxCount: 1 }]), validateFestivalAndFestivalEvent.validateList('post'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const newFestivalEvent = await new FestivalEvent(object.event).save();
+			let newFestival = object.festival;
+			newFestival.events = [newFestivalEvent._id];
+			newFestival = await new Festival(newFestival).save();
+			const dereferenced = await dereference.festivalObject(newFestival);
+			return dereferenced;
+		});
+		const responseList = await Promise.all(promises);
+		return res.status(200).json({ message: responseList.length + ' festivals(s) and festival event(s) saved', data: responseList, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // convert incoming csv data to matching json
 router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
 	try {

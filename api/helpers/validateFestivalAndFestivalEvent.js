@@ -3,6 +3,9 @@ const validateFestival = require(dirPath + '/api/helpers/validateFestival');
 // load validateFestivalEvent.js
 const validateFestivalEvent = require(dirPath + '/api/helpers/validateFestivalEvent');
 
+// load image.js
+const image = require(dirPath + '/api/helpers/image');
+
 module.exports.validateObject = (type) => {
 	return async (req, res, next) => {
 		try {
@@ -40,16 +43,26 @@ module.exports.validateObject = (type) => {
 module.exports.validateList = (type) => {
 	return async (req, res, next) => {
 		try {
+			let festivalOptions = {};
+			if (req.files['festivalImage'] != undefined && req.files['festivalImage'].length > 0) {
+				festivalOptions.image = await image.saveImages(req.files['festivalImage'][0].path, 'festivals');
+			}
+			let eventOptions = {};
+			if (req.files['eventImage'] != undefined && req.files['eventImage'].length > 0) {
+				eventOptions.image = await image.saveImages(req.files['eventImage'][0].path, 'festival-events');
+			}
+
 			let responseList = [];
 			let urlList = [];
-			for (const current of req.body.list) {
-				const responseFestival = await validateFestival.validateFestival(current.festival, type, { urlList: urlList });
+			const data = JSON.parse(req.body.data);
+			for (const current of data.list) {
+				const responseFestival = await validateFestival.validateFestival(current.festival, type, festivalOptions);
 				if (typeof responseFestival == 'string') return res.status(400).json({ message: responseFestival, token: res.locals.token });
 
-				const responseFestivalEvent = await validateFestivalEvent.validateFestivalEvent(current.event, type);
-				if (typeof responseFestivalEvent == 'string') return res.status(400).json({ message: responseFestivalEvent, token: res.locals.token });
+				const responseEvent = await validateFestivalEvent.validateFestivalEvent(current.event, type, eventOptions);
+				if (typeof responseEvent == 'string') return res.status(400).json({ message: responseEvent, token: res.locals.token });
 
-				responseList.push({ festival: responseFestival, event: responseFestivalEvent });
+				responseList.push({ festival: responseFestival, event: responseEvent });
 				urlList.push(responseFestival.url);
 			}
 			res.locals.validated = responseList;

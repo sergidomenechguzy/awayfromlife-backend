@@ -173,8 +173,10 @@ const validateFestival = module.exports.validateFestival = (data, type, options)
 			}
 
 			let imageList = [];
-			if (imagePath.length > 0)
-				imageList = await image.saveImages(imagePath, 'festivals');
+			if (imagePath.length > 0) {
+				if (Array.isArray(imagePath)) imageList = imagePath;
+				else imageList = await image.saveImages(imagePath, 'festivals');
+			}
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
