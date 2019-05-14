@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 		cb(null, secrets.imagePath + 'images/uploads/');
 	},
 	filename: (req, file, cb) => {
-		const newName = `${Date.now()}_${file.originalname.replace(/ /g, '_')}`;
+		const newName = `${Date.now()}_${deSpecialCharacter(file.originalname)}`;
 		cb(null, newName);
 	}
 });
@@ -53,6 +53,21 @@ const uploadCSV = multer({
 	},
 	fileFilter: fileFilterCSV
 });
+
+function deSpecialCharacter(value) {
+	value = value.replace(/ /g, '_');
+	value = value.replace(/\./g, '');
+	value = value.replace(/,/g, '');
+	value = value.replace(/\(/g, '');
+	value = value.replace(/\)/g, '');
+	value = value.replace(/\[/g, '');
+	value = value.replace(/\]/g, '');
+	value = value.replace(/\{/g, '');
+	value = value.replace(/\}/g, '');
+	value = value.replace(/\//g, '-');
+	value = value.replace(/\\/g, '-');
+	return value;
+}
 
 module.exports = {
 	upload: upload,
