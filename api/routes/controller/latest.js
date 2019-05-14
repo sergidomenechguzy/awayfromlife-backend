@@ -151,7 +151,7 @@ function convertUrls(model) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const objects = await categories[model].model.find();
-			const promises = objects.map(object => {
+			const promises = objects.map(async object => {
 				try {
 					if (object.image[0].includes(' ')) {
 						object.image = object.image.map(url => {
