@@ -40,29 +40,4 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 	}
 });
 
-// get latest added events
-router.get('/convert', token.checkToken(false), async (req, res) => {
-	try {
-		const promises = [
-			latest.convertUrls('event'),
-			latest.convertUrls('archivedEvent'),
-			latest.convertUrls('unvalidatedEvent'),
-			latest.convertUrls('location'),
-			latest.convertUrls('unvalidatedLocation'),
-			latest.convertUrls('band'),
-			latest.convertUrls('unvalidatedBand'),
-			latest.convertUrls('festival'),
-			latest.convertUrls('unvalidatedFestival'),
-			latest.convertUrls('festivalEvent'),
-			latest.convertUrls('unvalidatedFestivalEvent')
-		]
-		const updated = await Promise.all(promises);
-		return res.status(200).json({ data: updated, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
 module.exports = router;

@@ -147,37 +147,7 @@ function addFestivalUrl(objects, category) {
 	});
 }
 
-function convertUrls(model) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const objects = await categories[model].model.find();
-			const promises = objects.map(async object => {
-				try {
-					if (object.image[0].includes(' ')) {
-						object.image = object.image.map(url => {
-							return url.replace(/ /g, '_');
-						});
-						const updatedObject = await categories[model].model.findOneAndUpdate({ _id: object._id }, object, { new: true });
-						console.log(updatedObject);
-						return updatedObject;
-					}
-					return;
-				}
-				catch (err) {
-					reject(err);
-				}
-			});
-			const updatedObjects = await Promise.all(promises);
-			return resolve(updatedObjects);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
-
 module.exports = {
 	getMultiple: getMultiple,
 	get: get,
-	convertUrls: convertUrls
 };
