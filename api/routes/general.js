@@ -44,17 +44,17 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 router.get('/convert', token.checkToken(false), async (req, res) => {
 	try {
 		const promises = [
-			latest.converUrls('event'),
-			latest.converUrls('archivedEvent'),
-			latest.converUrls('unvalidatedEvent'),
-			latest.converUrls('location'),
-			latest.converUrls('unvalidatedLocation'),
-			latest.converUrls('band'),
-			latest.converUrls('unvalidatedBand'),
-			latest.converUrls('festival'),
-			latest.converUrls('unvalidatedFestival'),
-			latest.converUrls('festivalEvent'),
-			latest.converUrls('unvalidatedFestivalEvent')
+			latest.convertUrls('event'),
+			latest.convertUrls('archivedEvent'),
+			latest.convertUrls('unvalidatedEvent'),
+			latest.convertUrls('location'),
+			latest.convertUrls('unvalidatedLocation'),
+			latest.convertUrls('band'),
+			latest.convertUrls('unvalidatedBand'),
+			latest.convertUrls('festival'),
+			latest.convertUrls('unvalidatedFestival'),
+			latest.convertUrls('festivalEvent'),
+			latest.convertUrls('unvalidatedFestivalEvent')
 		]
 		const updated = await Promise.all(promises);
 		return res.status(200).json({ data: updated, token: res.locals.token });
