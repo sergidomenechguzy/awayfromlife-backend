@@ -17,7 +17,8 @@ const storage = multer.diskStorage({
 		cb(null, secrets.imagePath + 'images/uploads/');
 	},
 	filename: (req, file, cb) => {
-		cb(null, Date.now() + '_' + file.originalname);
+		const newName = `${Date.now()}_${file.originalname.replace(/ /g, '_')}`;
+		cb(null, newName);
 	}
 });
 
