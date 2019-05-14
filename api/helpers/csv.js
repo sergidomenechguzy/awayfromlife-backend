@@ -160,7 +160,7 @@ function convertEvent(object) {
 				}
 			}
 
-			const date = moment(object.date, "DD-MM-YYYY").format('YYYY-MM-DD');
+			const date = moment(object.date, "YYYY-MM-DD", true).format('YYYY-MM-DD');
 
 			const bandsStrings = object.bands.split(',');
 			const promises = bandsStrings.map(async (bandString) => {
@@ -222,8 +222,8 @@ function convertFestival(object) {
 					value: object.address
 				}
 
-			const startDate = moment(object.eventStartDate, "DD-MM-YYYY").format('YYYY-MM-DD');
-			const endDate = moment(object.eventEndDate, "DD-MM-YYYY").format('YYYY-MM-DD');
+			const startDate = moment(object.eventStartDate, "YYYY-MM-DD", true).format('YYYY-MM-DD');
+			const endDate = moment(object.eventEndDate, "YYYY-MM-DD", true).format('YYYY-MM-DD');
 
 			const bandsStrings = object.eventBands.split(',');
 			const bandPromises = bandsStrings.map(async (bandString) => {
