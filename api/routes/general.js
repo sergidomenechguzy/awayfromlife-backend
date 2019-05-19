@@ -40,17 +40,4 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 	}
 });
 
-
-const update = require(dirPath + '/api/helpers/update');
-router.get('/update', async (req, res) => {
-	try {
-		const updated = await update.updateMultiple();
-		return res.status(200).json({ data: updated, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
 module.exports = router;
