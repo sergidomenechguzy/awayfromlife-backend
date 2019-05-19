@@ -209,6 +209,9 @@ const validateBand = (data, type, options) => {
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
+			if (!(data.imageSource == undefined || typeof data.imageSource == 'string'))
+				return resolve('Attribute \'imageSource\' can be left out or has to be a string.');
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -247,7 +250,9 @@ const validateBand = (data, type, options) => {
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : object.bandcampUrl,
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : object.soundcloudUrl,
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
-					image: imageList.length > 0 ? imageList : object.image
+					image: imageList.length > 0 ? imageList : object.image,
+					imageSource: data.imageSource != undefined ? data.imageSource : object.imageSource,
+					lastModified: Date.now(),
 				};
 				if (type == 'put') newBand._id = id;
 				const updatedObject = await url.generateUrl(newBand, 'band');
@@ -279,7 +284,8 @@ const validateBand = (data, type, options) => {
 					bandcampUrl: data.bandcampUrl != undefined ? data.bandcampUrl : '',
 					soundcloudUrl: data.soundcloudUrl != undefined ? data.soundcloudUrl : '',
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
-					image: imageList
+					image: imageList,
+					imageSource: data.imageSource != undefined ? data.imageSource : '',
 				};
 				if (type == 'unvalidated') return resolve(newBand);
 				else {

@@ -134,6 +134,9 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
+			if (!(data.imageSource == undefined || typeof data.imageSource == 'string'))
+				return resolve('Attribute \'imageSource\' can be left out or has to be a string.');
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -156,7 +159,9 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
 					verifiable: verifiable,
-					image: imageList.length > 0 ? imageList : object.image
+					image: imageList.length > 0 ? imageList : object.image,
+					imageSource: data.imageSource != undefined ? data.imageSource : object.imageSource,
+					lastModified: Date.now(),
 				};
 				if (type == 'put') newFestivalEvent._id = id;
 				return resolve(newFestivalEvent);
@@ -170,7 +175,8 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 					bands: bandList,
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					verifiable: verifiable,
-					image: imageList
+					image: imageList,
+					imageSource: data.imageSource != undefined ? data.imageSource : '',
 				};
 				return resolve(newFestivalEvent);
 			}

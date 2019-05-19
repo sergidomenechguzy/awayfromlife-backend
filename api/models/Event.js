@@ -46,12 +46,16 @@ const EventSchema = new Schema({
 		type: Boolean,
 		default: false
 	},
+	image: {
+		type: [String]
+	},
+	imageSource: {
+		type: String,
+		trim: true
+	},
 	lastModified: {
 		type: Number,
 		default: Date.now()
-	},
-	image: {
-		type: [String]
 	}
 });
 

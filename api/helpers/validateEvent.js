@@ -177,6 +177,9 @@ const validateEvent = (data, type, collection, options) => {
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
+			if (!(data.imageSource == undefined || typeof data.imageSource == 'string'))
+				return resolve('Attribute \'imageSource\' can be left out or has to be a string.');
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -202,8 +205,9 @@ const validateEvent = (data, type, collection, options) => {
 					canceled: data.canceled != undefined ? data.canceled : object.canceled,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : object.ticketLink,
 					verifiable: verifiable,
+					image: imageList.length > 0 ? imageList : object.image,
+					imageSource: data.imageSource != undefined ? data.imageSource : object.imageSource,
 					lastModified: Date.now(),
-					image: imageList.length > 0 ? imageList : object.image
 				};
 				if (type == 'put') newEvent._id = id;
 				const updatedObject = await url.generateEventUrl(newEvent, collection);
@@ -221,7 +225,8 @@ const validateEvent = (data, type, collection, options) => {
 					canceled: data.canceled != undefined ? data.canceled : 0,
 					ticketLink: data.ticketLink != undefined ? data.ticketLink : '',
 					verifiable: verifiable,
-					image: imageList
+					image: imageList,
+					imageSource: data.imageSource != undefined ? data.imageSource : '',
 				};
 				if (type == 'unvalidated') return resolve(newEvent);
 				else {

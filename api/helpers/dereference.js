@@ -104,7 +104,9 @@ function bandObject(band) {
 				bandcampUrl: band.bandcampUrl,
 				soundcloudUrl: band.soundcloudUrl,
 				facebookUrl: band.facebookUrl,
-				image: band.image
+				image: band.image,
+				imageSource: band.imageSource,
+				lastModified: band.lastModified,
 			};
 			return resolve(responseBand);
 		}
@@ -173,7 +175,9 @@ function eventObject(event) {
 				canceled: event.canceled,
 				ticketLink: event.ticketLink,
 				verifiable: event.verifiable,
-				image: event.image
+				image: event.image,
+				imageSource: event.imageSource,
+				lastModified: event.lastModified,
 			};
 			return resolve(responseEvent);
 		}
@@ -220,7 +224,9 @@ function festivalEventObject(festivalEvent) {
 				bands: bandListSorted,
 				canceled: festivalEvent.canceled,
 				verifiable: festivalEvent.verifiable,
-				image: festivalEvent.image
+				image: festivalEvent.image,
+				imageSource: festivalEvent.imageSource,
+				lastModified: festivalEvent.lastModified,
 			};
 			return resolve(responseFestivalEvent);
 		}
@@ -269,7 +275,9 @@ function festivalObject(festival) {
 				ticketLink: festival.ticketLink,
 				website: festival.website,
 				facebookUrl: festival.facebookUrl,
-				image: festival.image
+				image: festival.image,
+				imageSource: festival.imageSource,
+				lastModified: festival.lastModified,
 			};
 			return resolve(responseFestival);
 		}
@@ -293,7 +301,9 @@ function locationObject(location) {
 				information: location.information,
 				website: location.website,
 				facebookUrl: location.facebookUrl,
-				image: location.image
+				image: location.image,
+				imageSource: location.imageSource,
+				lastModified: location.lastModified,
 			};
 			return resolve(responseLocation);
 		}

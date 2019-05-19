@@ -25,8 +25,9 @@ function events() {
 					canceled: object.canceled,
 					ticketLink: object.ticketLink,
 					verifiable: object.verifiable,
+					image: object.image,
+					imageSource: object.imageSource,
 					lastModified: object.lastModified,
-					image: object.image
 				};
 				const saved = await new ArchivedEvent(newEvent).save();
 				return saved;

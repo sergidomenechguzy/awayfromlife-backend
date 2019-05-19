@@ -97,6 +97,14 @@ const FestivalSchema = new Schema({
 	},
 	image: {
 		type: [String]
+	},
+	imageSource: {
+		type: String,
+		trim: true
+	},
+	lastModified: {
+		type: Number,
+		default: Date.now()
 	}
 });
 

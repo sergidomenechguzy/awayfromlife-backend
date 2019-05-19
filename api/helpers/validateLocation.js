@@ -161,6 +161,9 @@ const validateLocation = (data, type, options) => {
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
+			if (!(data.imageSource == undefined || typeof data.imageSource == 'string'))
+				return resolve('Attribute \'imageSource\' can be left out or has to be a string.');
+
 
 			if (type == 'put' || type == 'validate') {
 				const model = {
@@ -196,7 +199,9 @@ const validateLocation = (data, type, options) => {
 					information: data.information != undefined ? data.information : object.information,
 					website: data.website != undefined ? data.website : object.website,
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
-					image: imageList.length > 0 ? imageList : object.image
+					image: imageList.length > 0 ? imageList : object.image,
+					imageSource: data.imageSource != undefined ? data.imageSource : object.imageSource,
+					lastModified: Date.now(),
 				};
 				if (type == 'put') newLocation._id = id;
 				const updatedObject = await url.generateUrl(newLocation, 'location');
@@ -225,7 +230,8 @@ const validateLocation = (data, type, options) => {
 					information: data.information != undefined ? data.information : '',
 					website: data.website != undefined ? data.website : '',
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
-					image: imageList
+					image: imageList,
+					imageSource: data.imageSource != undefined ? data.imageSource : '',
 				};
 				if (type == 'unvalidated') return resolve(newLocation);
 				else {
