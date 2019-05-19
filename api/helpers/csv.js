@@ -29,7 +29,7 @@ const types = {
 	events: convertEvent,
 	locations: convertLocation,
 	festivals: convertFestival
-}
+};
 
 function convertFile(file, type) {
 	return new Promise((resolve, reject) => {

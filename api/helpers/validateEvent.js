@@ -21,6 +21,8 @@ const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 const url = require(dirPath + '/api/helpers/url');
 // load image.js
 const image = require(dirPath + '/api/helpers/image');
+// load csv.js
+const convertJson = require(dirPath + '/api/helpers/convertJson');
 
 // validate all attributes for one event object in the request body
 module.exports.validateObject = (type, model) => {
@@ -35,6 +37,32 @@ module.exports.validateObject = (type, model) => {
 			const response = await validateEvent(JSON.parse(req.body.data), type, model, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
+			return next();
+		}
+		catch (err) {
+			console.log(err);
+			return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+		}
+	}
+}
+
+// validate all attributes for a list of event objects in the request body
+module.exports.validateFromJson = (type, model) => {
+	return async (req, res, next) => {
+		try {
+			let options = {};
+			
+			let responseList = [];
+			let urlList = [];
+			const data = await convertJson.convertFile(req.file.path);
+			for (const current of data.list) {
+				options.urlList = urlList;
+				const response = await validateEvent(current, type, model, options);
+				if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
+				responseList.push(response);
+				urlList.push(response.url);
+			}
+			res.locals.validated = responseList;
 			return next();
 		}
 		catch (err) {

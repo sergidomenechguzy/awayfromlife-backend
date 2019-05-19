@@ -257,6 +257,24 @@ router.post('/multiple', rateLimit.dataLimiter, token.checkToken(false), multerC
 	}
 });
 
+// post multiple events to database from json file
+router.post('/fromJSON', token.checkToken(false), multerConfig.uploadJSON.single('file'), validateEvent.validateFromJson('unvalidated', 'unvalidated'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new UnvalidatedEvent(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
+		return res.status(200).json({ message: responseList.length + ' event(s) saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // post event to database
 router.post('/validate/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('validate', 'unvalidated'), async (req, res) => {
 	try {

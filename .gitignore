@@ -20,3 +20,5 @@ images/placeholders/*
 !images/placeholders/.gitkeep
 images/uploads/*
 !images/uploads/.gitkeep
+images/static/*
+!images/static/.gitkeep

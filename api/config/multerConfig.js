@@ -39,7 +39,7 @@ const fileFilterCSV = (req, file, cb) => {
 
 const storageCSV = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, secrets.imagePath + 'images/');
+		cb(null, secrets.imagePath + 'images/static');
 	},
 	filename: (req, file, cb) => {
 		cb(null, Date.now() + '_csv.csv');
@@ -52,6 +52,30 @@ const uploadCSV = multer({
 		fileSize: fileSize
 	},
 	fileFilter: fileFilterCSV
+});
+
+const fileFilterJSON = (req, file, cb) => {
+	if (file.mimetype === 'application/json')
+		cb(null, true);
+	else
+		cb(new Error('Only json allowed as filetype.'), false);
+}
+
+const storageJSON = multer.diskStorage({
+	destination: (req, file, cb) => {
+		cb(null, secrets.imagePath + 'images/static');
+	},
+	filename: (req, file, cb) => {
+		cb(null, Date.now() + '_json.json');
+	}
+});
+
+const uploadJSON = multer({
+	storage: storageJSON,
+	limits: {
+		fileSize: fileSize
+	},
+	fileFilter: fileFilterJSON
 });
 
 function deSpecialCharacter(value) {
@@ -71,5 +95,6 @@ function deSpecialCharacter(value) {
 
 module.exports = {
 	upload: upload,
-	uploadCSV: uploadCSV
+	uploadCSV: uploadCSV,
+	uploadJSON: uploadJSON,
 };

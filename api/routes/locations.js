@@ -394,10 +394,10 @@ router.post('/multiple', token.checkToken(true), multerConfig.upload.single('ima
 });
 
 // convert incoming csv data to matching json
-router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+router.post('/convertCSV', token.checkToken(false), multerConfig.uploadCSV.single('file'), async (req, res) => {
 	try {
 		const locations = await csv.convertFile(req.file, 'locations');
-		return res.status(200).json({data: locations});
+		return res.status(200).json({ data: locations, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);

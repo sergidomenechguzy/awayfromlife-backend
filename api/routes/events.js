@@ -555,11 +555,29 @@ router.post('/multiple', token.checkToken(true), multerConfig.upload.single('ima
 	}
 });
 
+// post multiple events to database from json file
+router.post('/fromJSON', token.checkToken(true), multerConfig.uploadJSON.single('file'), validateEvent.validateFromJson('post', 'event'), async (req, res) => {
+	try {
+		const objectList = res.locals.validated;
+		const promises = objectList.map(async (object) => {
+			const result = await new Event(object).save();
+			return result;
+		});
+		const responseList = await Promise.all(promises);
+		const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
+		return res.status(200).json({ message: responseList.length + ' event(s) saved', data: dereferenced, token: res.locals.token });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // convert incoming csv data to matching json
-router.post('/convertCSV', multerConfig.uploadCSV.single('file'), async (req, res) => {
+router.post('/convertCSV', token.checkToken(false), multerConfig.uploadCSV.single('file'), async (req, res) => {
 	try {
 		const events = await csv.convertFile(req.file, 'events');
-		return res.status(200).json({data: events});
+		return res.status(200).json({ data: events, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
