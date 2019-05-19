@@ -44,15 +44,31 @@ function convertFile(file, type) {
 					const promises = objectList.map(async (object) => {
 						try {
 							const response = await types[type](object);
-							return response;
+							const resobj = {
+								response,
+								valid: true,
+							};
+							if (JSON.stringify(response).includes('ERROR')) {
+								resobj.valid = false;
+							}
+							return resobj;
 						}
 						catch (err) {
 							reject(err);
 						}
 					});
 					const jsonList = await Promise.all(promises);
+					const validList = [];
+					const invalidList = [];
+					jsonList.forEach(object => {
+						if (object.valid) {
+							validList.push(object.response);
+						} else {
+							invalidList.push(object.response);
+						}
+					});
 					await unlinkAsync(file.path);
-					return resolve(jsonList);
+					return resolve({valid: validList, invalid: invalidList});
 				});
 		}
 		catch (err) {
