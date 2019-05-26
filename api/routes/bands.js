@@ -464,6 +464,39 @@ router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'),
 	}
 });
 
+
+const convertJson = require(dirPath + '/api/helpers/convertJson');
+router.put('/', multerConfig.uploadJSON.single('file'), async (req, res) => {
+	try {
+		const jsonFile = await convertJson.convertFile(req.file.path);
+		const promises = jsonFile.map(async jsonObject => {
+			try {
+				let band = await Band.findById(jsonObject._id);
+				if (!band) {
+					return 'Band not found.';
+				}
+				let genre = await Genre.findOne({ name: jsonObject.genre });
+				if (!genre) {
+					return 'Genre not found.';
+				}
+				band.genre = [genre._id];
+				const updated = await Band.findOneAndUpdate({ _id: jsonObject._id }, band, { new: true });
+				const dereferenced = await dereference.bandObject(updated);
+				return dereferenced;
+			}
+			catch (err) {
+				return err;
+			}
+		});
+		const response = await Promise.all(promises);
+		return res.status(200).json({ data: response });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
 // delete band by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
 	try {
