@@ -451,37 +451,31 @@ router.post('/convertCSV', token.checkToken(false), multerConfig.uploadCSV.singl
 	}
 });
 
-// update band by id
-router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('put'), async (req, res) => {
-	try {
-		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		const dereferenced = await dereference.bandObject(updated);
-		return res.status(200).json({ message: 'Band updated', data: dereferenced, token: res.locals.token });
-	}
-	catch (err) {
-		console.log(err);
-		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
-	}
-});
-
-
 const convertJson = require(dirPath + '/api/helpers/convertJson');
 router.put('/', multerConfig.uploadJSON.single('file'), async (req, res) => {
 	try {
+		console.log('start');
 		const jsonFile = await convertJson.convertFile(req.file.path);
+		console.log('after json', jsonFile);
 		const promises = jsonFile.map(async jsonObject => {
 			try {
+				console.log('begin map');
 				let band = await Band.findById(jsonObject._id);
+				console.log('after band find', band);
 				if (!band) {
 					return 'Band not found.';
 				}
 				let genre = await Genre.findOne({ name: jsonObject.genre });
+				console.log('after genre find', genre);
 				if (!genre) {
 					return 'Genre not found.';
 				}
 				band.genre = [genre._id];
+				console.log('updated band', band);
 				const updated = await Band.findOneAndUpdate({ _id: jsonObject._id }, band, { new: true });
+				console.log('after update', updated);
 				const dereferenced = await dereference.bandObject(updated);
+				console.log('after dereference', dereferenced);
 				return dereferenced;
 			}
 			catch (err) {
@@ -490,6 +484,19 @@ router.put('/', multerConfig.uploadJSON.single('file'), async (req, res) => {
 		});
 		const response = await Promise.all(promises);
 		return res.status(200).json({ data: response });
+	}
+	catch (err) {
+		console.log(err);
+		return res.status(500).json({ message: 'Error, something went wrong. Please try again.', error: err.name + ': ' + err.message });
+	}
+});
+
+// update band by id
+router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateBand.validateObject('put'), async (req, res) => {
+	try {
+		const updated = await Band.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
+		const dereferenced = await dereference.bandObject(updated);
+		return res.status(200).json({ message: 'Band updated', data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
