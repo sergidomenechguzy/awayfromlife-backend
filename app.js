@@ -115,12 +115,14 @@ app.use((req, res) => {
 });
 
 if (process.env.NODE_ENV === 'production') {
-	setInterval(async () => {
+	const schedule = require('node-schedule');
+ 	schedule.scheduleJob('* 3 * * *', async () => {
 		try {
+			console('EXECUTED SCHEDULE JOB AT ', Date.now());
 			await archive.events();
 		}
 		catch (err) {
 			console.log(err);
 		}
-	}, 86400000);
+	});
 }
