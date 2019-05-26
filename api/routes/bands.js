@@ -452,7 +452,7 @@ router.post('/convertCSV', token.checkToken(false), multerConfig.uploadCSV.singl
 });
 
 const convertJson = require(dirPath + '/api/helpers/convertJson');
-router.put('/', multerConfig.uploadJSON.single('file'), async (req, res) => {
+router.put('/update/Tmp/Genre', multerConfig.uploadJSON.single('file'), async (req, res) => {
 	try {
 		console.log('start');
 		const jsonFile = await convertJson.convertFile(req.file.path);
