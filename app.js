@@ -105,10 +105,9 @@ app.use('/api/reports', reports);
 app.use('/api/users', users);
 
 const port = secrets.port;
-const ip = secrets.ip;
 
-app.listen(port, ip, () => {
-	console.log(`> Server startet on ${ip}:${port}`);
+app.listen(port, () => {
+	console.log(`> Server startet on port ${port}`);
 });
 
 app.use((req, res) => {
