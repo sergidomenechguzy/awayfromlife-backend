@@ -80,7 +80,6 @@ const uploadJSON = multer({
 
 function deSpecialCharacter(value) {
 	value = value.replace(/ /g, '_');
-	value = value.replace(/\./g, '');
 	value = value.replace(/,/g, '');
 	value = value.replace(/\(/g, '');
 	value = value.replace(/\)/g, '');
