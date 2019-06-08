@@ -105,9 +105,10 @@ app.use('/api/reports', reports);
 app.use('/api/users', users);
 
 const port = secrets.port;
+const ip = secrets.ip;
 
-app.listen(port, () => {
-	console.log(`> Server startet on port ${port}`);
+app.listen(port, ip, () => {
+	console.log(`> Server startet on ${ip}:${port}`);
 });
 
 app.use((req, res) => {
@@ -118,7 +119,7 @@ if (process.env.NODE_ENV === 'production') {
 	const schedule = require('node-schedule');
  	schedule.scheduleJob('* 3 * * *', async () => {
 		try {
-			console('EXECUTED SCHEDULE JOB AT ', Date.now());
+			console.log('EXECUTED SCHEDULE JOB AT ', Date.now());
 			await archive.events();
 		}
 		catch (err) {
