@@ -117,7 +117,7 @@ app.use((req, res) => {
 
 if (process.env.NODE_ENV === 'production') {
 	const schedule = require('node-schedule');
- 	schedule.scheduleJob('* 3 * * *', async () => {
+ 	schedule.scheduleJob('0 3 * * *', async () => {
 		try {
 			console.log('EXECUTED SCHEDULE JOB AT ', Date.now());
 			await archive.events();
