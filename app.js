@@ -107,7 +107,7 @@ app.use('/api/users', users);
 const port = secrets.port;
 
 app.listen(port, () => {
-	console.log(`> Server startet on ${ip}:${port}`);
+	console.log(`> Server startet on ${port}`);
 });
 
 app.use((req, res) => {
