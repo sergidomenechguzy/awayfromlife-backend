@@ -38,8 +38,14 @@ const FestivalEventSchema = new Schema({
 		type: [String]
 	},
 	imageSource: {
-		type: String,
-		trim: true
+		text: {
+			type: String,
+			trim: true
+		},
+		url: {
+			type: String,
+			trim: true
+		}
 	},
 	lastModified: {
 		type: Number,

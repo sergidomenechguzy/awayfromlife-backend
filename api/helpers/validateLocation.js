@@ -161,8 +161,11 @@ const validateLocation = (data, type, options) => {
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
-			if (!(data.imageSource == undefined || typeof data.imageSource == 'string'))
-				return resolve('Attribute \'imageSource\' can be left out or has to be a string.');
+			if (!(data.imageSource.text == undefined || typeof data.imageSource.text == 'string'))
+				return resolve('Attribute \'imageSource.text\' can be left out or has to be a string.');
+
+			if (!(data.imageSource.url == undefined || typeof data.imageSource.url == 'string'))
+				return resolve('Attribute \'imageSource.url\' can be left out or has to be a string.');
 
 
 			if (type == 'put' || type == 'validate') {
@@ -200,7 +203,10 @@ const validateLocation = (data, type, options) => {
 					website: data.website != undefined ? data.website : object.website,
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : object.facebookUrl,
 					image: imageList.length > 0 ? imageList : object.image,
-					imageSource: data.imageSource != undefined ? data.imageSource : object.imageSource,
+					imageSource: {
+						text: data.imageSource && data.imageSource.text != undefined ? data.imageSource.text : object.imageSource.text,
+						url: data.imageSource && data.imageSource.url != undefined ? data.imageSource.url : object.imageSource.url,
+					},
 					lastModified: Date.now(),
 				};
 				if (type == 'put') newLocation._id = id;
@@ -231,7 +237,10 @@ const validateLocation = (data, type, options) => {
 					website: data.website != undefined ? data.website : '',
 					facebookUrl: data.facebookUrl != undefined ? data.facebookUrl : '',
 					image: imageList,
-					imageSource: data.imageSource != undefined ? data.imageSource : '',
+					imageSource: {
+						text: data.imageSource && data.imageSource.text != undefined ? data.imageSource.text : '',
+						url: data.imageSource && data.imageSource.url != undefined ? data.imageSource.url : '',
+					},
 				};
 				if (type == 'unvalidated') return resolve(newLocation);
 				else {
