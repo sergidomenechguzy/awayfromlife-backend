@@ -115,11 +115,11 @@ app.use((req, res) => {
 	res.status(404).json({ error: "404 - Not found" });
 });
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && process.env.NODE_APP_INSTANCE === '0') {
 	const schedule = require('node-schedule');
- 	schedule.scheduleJob('* 3 * * *', async () => {
+ 	schedule.scheduleJob('0 3 * * *', async () => {
 		try {
-			console('EXECUTED SCHEDULE JOB AT ', Date.now());
+			console.log('EXECUTED SCHEDULE JOB AT ', Date.now());
 			await archive.events();
 		}
 		catch (err) {
