@@ -6,6 +6,7 @@ const escapeStringRegexp = require('escape-string-regexp');
 // load event model
 require(dirPath + '/api/models/Event');
 const Event = mongoose.model('events');
+const ArchivedEvent = mongoose.model('archived_events');
 
 // load festival model
 require(dirPath + '/api/models/Festival');
@@ -126,7 +127,9 @@ const eventFind = (queries, regex) => {
 			];
 			eventResults = [];
 
-			const events = await Event.find();
+			let events = await Event.find();
+			const archivedEvents = await ArchivedEvent.find();
+			events = [...events, ...archivedEvents];
 			const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
 
 			dereferenced.forEach(event => {
