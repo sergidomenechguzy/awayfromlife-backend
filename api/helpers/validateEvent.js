@@ -33,7 +33,7 @@ module.exports.validateObject = (type, model) => {
 				options.id = req.params._id;
 			if (req.file != undefined)
 				options.image = req.file.path;
-
+				
 			const response = await validateEvent(JSON.parse(req.body.data), type, model, options);
 			if (typeof response == 'string') return res.status(400).json({ message: response, token: res.locals.token });
 			res.locals.validated = response;
@@ -205,10 +205,10 @@ const validateEvent = (data, type, collection, options) => {
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
-			if (!(data.imageSource.text == undefined || typeof data.imageSource.text == 'string'))
+			if (data.imageSource && !(data.imageSource.text == undefined || typeof data.imageSource.text == 'string'))
 				return resolve('Attribute \'imageSource.text\' can be left out or has to be a string.');
 
-			if (!(data.imageSource.url == undefined || typeof data.imageSource.url == 'string'))
+			if (data.imageSource && !(data.imageSource.url == undefined || typeof data.imageSource.url == 'string'))
 				return resolve('Attribute \'imageSource.url\' can be left out or has to be a string.');
 
 

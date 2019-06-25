@@ -134,10 +134,10 @@ const validateFestivalEvent = module.exports.validateFestivalEvent = (data, type
 			else if (type == 'post' || type == 'unvalidated' || !data.image || data.image.length == 0)
 				imageList = image.randomPlaceholder();
 
-			if (!(data.imageSource.text == undefined || typeof data.imageSource.text == 'string'))
+			if (data.imageSource && !(data.imageSource.text == undefined || typeof data.imageSource.text == 'string'))
 				return resolve('Attribute \'imageSource.text\' can be left out or has to be a string.');
 
-			if (!(data.imageSource.url == undefined || typeof data.imageSource.url == 'string'))
+			if (data.imageSource && !(data.imageSource.url == undefined || typeof data.imageSource.url == 'string'))
 				return resolve('Attribute \'imageSource.url\' can be left out or has to be a string.');
 
 
