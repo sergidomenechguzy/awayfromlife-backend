@@ -527,9 +527,18 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 // post event to database
 router.post('/', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('post', 'event'), async (req, res) => {
 	try {
-		const newEvent = await new Event(res.locals.validated).save();
+		let newEvent = res.locals.validated;
+		let category;
+		if (new Date(newEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
+			newEvent = await new ArchivedEvent(newEvent).save();
+			category = 'events archive'
+		}
+		else {
+			newEvent = await new Event(newEvent).save();
+			category = 'events'
+		}
 		const dereferenced = await dereference.eventObject(newEvent);
-		return res.status(200).json({ message: 'Event saved', data: dereferenced, token: res.locals.token });
+		return res.status(200).json({ message: 'Event saved to ' + category, data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
@@ -542,7 +551,13 @@ router.post('/multiple', token.checkToken(true), multerConfig.upload.single('ima
 	try {
 		const objectList = res.locals.validated;
 		const promises = objectList.map(async (object) => {
-			const result = await new Event(object).save();
+			let result;
+			if (new Date(object.date) < new Date().setUTCHours(0, 0, 0, 0)) {
+				result = await new ArchivedEvent(object).save();
+			}
+			else {
+				result = await new Event(object).save();
+			}
 			return result;
 		});
 		const responseList = await Promise.all(promises);
@@ -588,9 +603,20 @@ router.post('/convertCSV', token.checkToken(false), multerConfig.uploadCSV.singl
 // update event by id
 router.put('/:_id', token.checkToken(true), multerConfig.upload.single('image'), validateEvent.validateObject('put', 'event'), async (req, res) => {
 	try {
-		const updated = await Event.findOneAndUpdate({ _id: req.params._id }, res.locals.validated, { new: true });
-		const dereferenced = await dereference.eventObject(updated);
-		return res.status(200).json({ message: 'Event updated', data: dereferenced, token: res.locals.token });
+		let updatedEvent = res.locals.validated;
+		let category = '';
+		if (new Date(updatedEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
+			await Event.remove({ _id: req.params._id });
+			updatedEvent = await new ArchivedEvent(updatedEvent).save();
+			category = ' and moved to events archive';
+		}
+		else {
+			await Event.updateOne({ _id: req.params._id }, updatedEvent);
+			updatedEvent = await Event.findById(req.params._id);
+		}
+
+		const dereferenced = await dereference.eventObject(updatedEvent);
+		return res.status(200).json({ message: 'Event updated' + category, data: dereferenced, token: res.locals.token });
 	}
 	catch (err) {
 		console.log(err);
