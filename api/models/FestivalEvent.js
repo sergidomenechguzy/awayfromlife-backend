@@ -2,32 +2,24 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
-// create event schema
-const EventSchema = new Schema({
+// create festival-event schema
+const FestivalEventSchema = new Schema({
   name: {
     type: String,
     required: true,
-    trim: true,
-  },
-  url: {
-    type: String,
     trim: true,
   },
   description: {
     type: String,
     trim: true,
   },
-  location: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  date: {
+  startDate: {
     type: Date,
     required: true,
   },
-  time: {
-    type: String,
+  endDate: {
+    type: Date,
+    required: true,
   },
   bands: {
     type: [String],
@@ -38,10 +30,6 @@ const EventSchema = new Schema({
     default: 0,
     min: 0,
     max: 2,
-  },
-  ticketLink: {
-    type: String,
-    trim: true,
   },
   verifiable: {
     type: Boolean,
@@ -66,6 +54,5 @@ const EventSchema = new Schema({
   },
 });
 
-mongoose.model('events', EventSchema);
-mongoose.model('unvalidated_events', EventSchema);
-mongoose.model('archived_events', EventSchema);
+mongoose.model('festival_events', FestivalEventSchema);
+mongoose.model('unvalidated_festival_events', FestivalEventSchema);
