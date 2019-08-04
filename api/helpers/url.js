@@ -2,190 +2,202 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const escapeStringRegexp = require('escape-string-regexp');
 
-// load event model
-require(dirPath + '/api/models/Event');
+const dereference = require('../helpers/dereference');
+require('../models/Event');
+require('../models/Band');
+require('../models/Location');
+require('../models/Festival');
+
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
-
-// load band model
-require(dirPath + '/api/models/Band');
 const Band = mongoose.model('bands');
-
-// load location model
-require(dirPath + '/api/models/Location');
 const Location = mongoose.model('locations');
-
-// load festival model
-require(dirPath + '/api/models/Festival');
 const Festival = mongoose.model('festivals');
 
-// load dereference.js
-const dereference = require(dirPath + '/api/helpers/dereference');
+const deUmlaut = value => {
+  let sanitized = value;
+  sanitized = sanitized.replace(/ä/g, 'ae');
+  sanitized = sanitized.replace(/ö/g, 'oe');
+  sanitized = sanitized.replace(/ü/g, 'ue');
+  sanitized = sanitized.replace(/Ä/g, 'Ae');
+  sanitized = sanitized.replace(/Ö/g, 'Oe');
+  sanitized = sanitized.replace(/Ü/g, 'Ue');
+  sanitized = sanitized.replace(/ß/g, 'ss');
+  sanitized = sanitized.replace(/ /g, '-');
+  sanitized = sanitized.replace(/\./g, '');
+  sanitized = sanitized.replace(/,/g, '');
+  sanitized = sanitized.replace(/\(/g, '');
+  sanitized = sanitized.replace(/\)/g, '');
+  sanitized = sanitized.replace(/\//g, '-');
+  sanitized = sanitized.replace(/\\/g, '-');
+  sanitized = sanitized.replace(/-+/g, '-');
+  sanitized = sanitized.replace(/-$/g, '');
+  sanitized = sanitized.replace(/^-/g, '');
+  sanitized = encodeURIComponent(sanitized);
+  return sanitized;
+};
 
-function generateUrl(object, model, urlList) {
-	return new Promise(async (resolve, reject) => {
-		const urlListChecked = urlList || [];
-		const copiedObject = JSON.parse(JSON.stringify(object));
-		copiedObject.url = generateUrlFromObject(object, model);
-		try {
-			const response = await checkUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
-			return resolve(response);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
+const generateUrlFromObject = (object, type) => {
+  let url = '';
 
-function checkUrl(object, model, url, urlList, counter) {
-	return new Promise(async (resolve, reject) => {
-		if (!object) return resolve(null);
+  switch (type) {
+    case 'location':
+      url = `${deUmlaut(object.name)}--${deUmlaut(object.address.default.city)}`;
+      break;
+    case 'event':
+    case 'archive':
+    case 'unvalidated':
+      url = `${deUmlaut(object.name)}--${moment(object.date).format('DD-MM-YYYY')}--${deUmlaut(
+        object.location.name
+      )}`;
+      break;
+    default:
+      url = deUmlaut(object.name);
+  }
+  return url.toLocaleLowerCase();
+};
 
-		const collection = {
-			band: Band,
-			location: Location,
-			festival: Festival
-		};
+const checkEventUrl = (inputObject, model, inputUrl, urlList, inputCounter) => {
+  return new Promise(async (resolve, reject) => {
+    const object = { ...inputObject };
+    let url = inputUrl;
+    let counter = inputCounter;
 
-		try {
-			if ((urlList.length > 0) && urlList.includes(url)) {
-				url = object.url + '--' + counter;
-				counter++;
-				const response = await checkUrl(object, model, url, urlList, counter);
-				return resolve(response);
-			}
+    if (!object) {
+      return resolve(null);
+    }
 
-			const savedObject = await collection[model].findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
-			if (!savedObject) {
-				object.url = url;
-				return resolve(object);
-			}
-			else if (object._id && object._id.toString() == savedObject._id.toString()) {
-				object.url = url;
-				return resolve(object);
-			}
-			else {
-				url = object.url + '--' + counter;
-				counter++;
-				const response = await checkUrl(object, model, url, urlList, counter);
-				return resolve(response);
-			}
+    try {
+      if (urlList.length > 0 && urlList.includes(url)) {
+        url = `${object.url}--${counter}`;
+        counter++;
+        const response = await checkEventUrl(object, model, url, urlList, counter);
+        return resolve(response);
+      }
 
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
+      const savedEvent = await Event.findOne({
+        url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i'),
+      });
+      if (savedEvent !== undefined) {
+        if (
+          object._id &&
+          model === 'event' &&
+          object._id.toString() === savedEvent._id.toString()
+        ) {
+          object.url = url;
+          return resolve(object);
+        }
+        url = `${object.url}--${counter}`;
+        counter++;
+        const response = await checkEventUrl(object, model, url, urlList, counter);
+        return resolve(response);
+      }
+      const savedArchivedEvent = await ArchivedEvent.findOne({
+        url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i'),
+      });
+      if (savedArchivedEvent !== undefined) {
+        if (
+          object._id &&
+          model === 'archive' &&
+          object._id.toString() === savedArchivedEvent._id.toString()
+        ) {
+          object.url = url;
+          return resolve(object);
+        }
+        url = `${object.url}--${counter}`;
+        counter++;
+        const response = await checkEventUrl(object, model, url, urlList, counter);
+        return resolve(response);
+      }
+      object.url = url;
+      return resolve(object);
+    } catch (err) {
+      return reject(err);
+    }
+  });
+};
 
-function generateEventUrl(object, model, urlList) {
-	return new Promise(async (resolve, reject) => {
-		const urlListChecked = urlList || [];
-		try {
-			const copiedObject = JSON.parse(JSON.stringify(object));
-			const dereferenced = await dereference.eventObject(object);
-			copiedObject.url = generateUrlFromObject(dereferenced, model);
-			const response = await checkEventUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
-			return resolve(response);
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
+const checkUrl = (inputObject, model, inputUrl, urlList, inputCounter) => {
+  return new Promise(async (resolve, reject) => {
+    const object = { ...inputObject };
+    let url = inputUrl;
+    let counter = inputCounter;
 
-function checkEventUrl(object, model, url, urlList, counter) {
-	return new Promise(async (resolve, reject) => {
-		if (!object) return resolve(null);
+    if (!object) {
+      return resolve(null);
+    }
 
-		try {
-			if ((urlList.length > 0) && urlList.includes(url)) {
-				url = object.url + '--' + counter;
-				counter++;
-				const response = await checkEventUrl(object, model, url, urlList, counter);
-				return resolve(response);
-			}
+    const collection = {
+      band: Band,
+      location: Location,
+      festival: Festival,
+    };
 
-			const savedEvent = await Event.findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
-			if (savedEvent != undefined) {
-				if (object._id && model == 'event' && object._id.toString() == savedEvent._id.toString()) {
-					object.url = url;
-					return resolve(object);
-				}
-				else {
-					url = object.url + '--' + counter;
-					counter++;
-					const response = await checkEventUrl(object, model, url, urlList, counter);
-					return resolve(response);
-				}
-			}
-			else {
-				const savedArchivedEvent = await ArchivedEvent.findOne({ url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i') });
-				if (savedArchivedEvent != undefined) {
-					if (object._id && model == 'archive' && object._id.toString() == savedArchivedEvent._id.toString()) {
-						object.url = url;
-						return resolve(object);
-					}
-					else {
-						url = object.url + '--' + counter;
-						counter++;
-						const response = await checkEventUrl(object, model, url, urlList, counter);
-						return resolve(response);
-					}
-				}
-				else {
-					object.url = url;
-					return resolve(object);
-				}
-			}
-		}
-		catch (err) {
-			reject(err);
-		}
-	});
-}
+    try {
+      if (urlList.length > 0 && urlList.includes(url)) {
+        url = `${object.url}--${counter}`;
+        counter++;
+        const response = await checkUrl(object, model, url, urlList, counter);
+        return resolve(response);
+      }
 
-function generateUrlFromObject(object, type) {
-	let url = '';
-	
-	switch (type) {
-		case 'location':
-			url = deUmlaut(object.name) + '--' + deUmlaut(object.address.default.city);
-			break;
-		case 'event':
-		case 'archive':
-		case 'unvalidated':
-			url = deUmlaut(object.name) + '--' + moment(object.date).format('DD-MM-YYYY') + '--' + deUmlaut(object.location.name);
-			break;
-		default:
-			url = deUmlaut(object.name);
-	}
-	return url.toLocaleLowerCase();
-}
+      const savedObject = await collection[model].findOne({
+        url: new RegExp(`^${escapeStringRegexp(url.trim())}$`, 'i'),
+      });
+      if (!savedObject) {
+        object.url = url;
+        return resolve(object);
+      }
+      if (object._id && object._id.toString() === savedObject._id.toString()) {
+        object.url = url;
+        return resolve(object);
+      }
+      url = `${object.url}--${counter}`;
+      counter++;
+      const response = await checkUrl(object, model, url, urlList, counter);
+      return resolve(response);
+    } catch (err) {
+      return reject(err);
+    }
+  });
+};
 
-function deUmlaut(value) {
-	value = value.replace(/ä/g, 'ae');
-	value = value.replace(/ö/g, 'oe');
-	value = value.replace(/ü/g, 'ue');
-	value = value.replace(/Ä/g, 'Ae');
-	value = value.replace(/Ö/g, 'Oe');
-	value = value.replace(/Ü/g, 'Ue');
-	value = value.replace(/ß/g, 'ss');
-	value = value.replace(/ /g, '-');
-	value = value.replace(/\./g, '');
-	value = value.replace(/,/g, '');
-	value = value.replace(/\(/g, '');
-	value = value.replace(/\)/g, '');
-	value = value.replace(/\//g, '-');
-	value = value.replace(/\\/g, '-');
-	value = value.replace(/-+/g, '-');
-	value = value.replace(/-$/g, '');
-	value = value.replace(/^-/g, '');
-	value = encodeURIComponent(value);
-	return value;
-}
+const generateEventUrl = (object, model, urlList) => {
+  return new Promise(async (resolve, reject) => {
+    const urlListChecked = urlList || [];
+    try {
+      const copiedObject = JSON.parse(JSON.stringify(object));
+      const dereferenced = await dereference.eventObject(object);
+      copiedObject.url = generateUrlFromObject(dereferenced, model);
+      const response = await checkEventUrl(
+        copiedObject,
+        model,
+        copiedObject.url,
+        urlListChecked,
+        2
+      );
+      return resolve(response);
+    } catch (err) {
+      return reject(err);
+    }
+  });
+};
+
+const generateUrl = (object, model, urlList) => {
+  return new Promise(async (resolve, reject) => {
+    const urlListChecked = urlList || [];
+    const copiedObject = JSON.parse(JSON.stringify(object));
+    copiedObject.url = generateUrlFromObject(object, model);
+    try {
+      const response = await checkUrl(copiedObject, model, copiedObject.url, urlListChecked, 2);
+      return resolve(response);
+    } catch (err) {
+      return reject(err);
+    }
+  });
+};
 
 module.exports = {
-	generateUrl: generateUrl,
-	generateEventUrl: generateEventUrl
+  generateUrl,
+  generateEventUrl,
 };

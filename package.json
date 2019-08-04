@@ -4,8 +4,8 @@
   "description": "Backend Api Application for Awayfromlife Streets",
   "main": "app.js",
   "scripts": {
-    "start": "NODE_ENV=production pm2 start app.js -i max",
-    "start-node": "NODE_ENV=production node app.js",
+    "start": "NODE_ENV=production node app.js",
+    "start:pm2": "NODE_ENV=production pm2 start app.js -i max",
     "dev": "npx nodemon app.js"
   },
   "author": "Sergi Domenech Guzy",
@@ -26,6 +26,14 @@
     "node-schedule": "^1.3.2",
     "sharp": "^0.21.1",
     "uuid": "^3.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^5.0.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.13.0"
   },
   "nodemonConfig": {
     "ignore": [

@@ -5,12 +5,11 @@ const escapeStringRegexp = require('escape-string-regexp');
 
 const deleteRoute = require('../routes/controller/delete');
 const latest = require('../routes/controller/latest');
+const archive = require('../routes/controller/archive');
 const token = require('../helpers/token');
 const dereference = require('../helpers/dereference');
 const validateEvent = require('../helpers/validateEvent');
-const csv = require('../helpers/csv');
 const multerConfig = require('../config/multerConfig');
-const rateLimit = require('../config/rateLimit');
 require('../models/Event');
 require('../models/Location');
 require('../models/Festival');
@@ -19,7 +18,6 @@ const router = express.Router();
 
 const Event = mongoose.model('events');
 const ArchivedEvent = mongoose.model('archived_events');
-const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const Location = mongoose.model('locations');
 const Festival = mongoose.model('festivals');
 
@@ -27,7 +25,7 @@ const Festival = mongoose.model('festivals');
 // get all events
 router.get('/', token.checkToken(false), async (req, res) => {
   try {
-    const events = await Event.find();
+    const events = await ArchivedEvent.find();
     if (events.length === 0) {
       return res.status(200).json({ message: 'No events found', token: res.locals.token });
     }
@@ -35,38 +33,7 @@ router.get('/', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: 'Error, something went wrong. Please try again.',
-      error: `${err.name}: ${err.message}`,
-    });
-  }
-});
-
-// get all events including unvalidated events
-router.get('/all', token.checkToken(false), async (req, res) => {
-  try {
-    const objects = await Event.find();
-    const unvalidatedObjects = await UnvalidatedEvent.find();
-    if (objects.length === 0 && unvalidatedObjects.length === 0) {
-      return res.status(200).json({ message: 'No events found', token: res.locals.token });
-    }
-
-    let dereferenced = await dereference.objectArray(objects, 'event', false);
-    let dereferencedUnvalidated = await dereference.objectArray(unvalidatedObjects, 'event', false);
-
-    dereferenced = dereferenced.map(object => ({ ...object, isValidated: true }));
-    dereferencedUnvalidated = dereferencedUnvalidated.map(object => ({
-      ...object,
-      isValidated: false,
-    }));
-
-    let finalList = dereferenced.concat(dereferencedUnvalidated);
-    finalList = dereference.eventSort(finalList, 'name', 1);
-
-    return res.status(200).json({ data: finalList, token: res.locals.token });
-  } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -107,7 +74,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
       }
     }
 
-    const events = await Event.find(query);
+    const events = await ArchivedEvent.find(query);
     if (events.length === 0 && req.query.includeFestivals !== 'true') {
       return res.status(200).json({ message: 'No events found', token: res.locals.token });
     }
@@ -200,7 +167,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
         }
 
         festival.events.forEach(event => {
-          if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0) {
+          if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0) {
             return;
           }
 
@@ -264,13 +231,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 // get event by id
 router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
   try {
-    let object = await Event.findById(req.params._id);
-    let isArchived = false;
-
-    if (!object && req.query.includeArchived === 'true') {
-      object = await ArchivedEvent.findById(req.params._id);
-      isArchived = true;
-    }
+    const object = await ArchivedEvent.findById(req.params._id);
     if (!object) {
       return res
         .status(400)
@@ -278,10 +239,9 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
     }
 
     const dereferenced = await dereference.eventObject(object);
-    dereferenced.isArchived = isArchived;
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -292,27 +252,19 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get event by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
   try {
-    let object = await Event.findOne({
+    const object = await ArchivedEvent.findOne({
       url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i'),
     });
-    let isArchived = false;
-
-    if (!object && req.query.includeArchived === 'true') {
-      object = await ArchivedEvent.findOne({
-        url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i'),
-      });
-      isArchived = true;
-    }
     if (!object) {
       return res
         .status(400)
         .json({ message: 'No event found with this URL', token: res.locals.token });
     }
+
     const dereferenced = await dereference.eventObject(object);
-    dereferenced.isArchived = isArchived;
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -328,10 +280,10 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
       count = parseInt(req.query.count, 10);
     }
 
-    const latestObjects = await latest.get('event', count);
+    const latestObjects = await latest.get('archivedEvent', count);
     return res.status(200).json({ data: latestObjects, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -342,7 +294,7 @@ router.get('/latest', token.checkToken(false), async (req, res) => {
 // get events by name
 router.get('/name/:name', token.checkToken(false), async (req, res) => {
   try {
-    const events = await Event.find({
+    const events = await ArchivedEvent.find({
       name: new RegExp(`^${escapeStringRegexp(req.params.name.trim())}$`, 'i'),
     });
     if (events.length === 0) {
@@ -354,7 +306,7 @@ router.get('/name/:name', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -378,7 +330,7 @@ router.get('/city/:city', token.checkToken(false), async (req, res) => {
     }
 
     const promises = locations.map(async location => {
-      const result = await Event.find({ location: location._id });
+      const result = await ArchivedEvent.find({ location: location._id });
       if (!result) {
         return [];
       }
@@ -390,7 +342,7 @@ router.get('/city/:city', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(eventList, 'event', 'name', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -404,7 +356,7 @@ router.get('/day/:day', token.checkToken(false), async (req, res) => {
     if (!moment(req.params.day, 'YYYY-MM-DD', true).isValid()) {
       return res.status(400).json({ message: 'The date has to be in the format YYYY-MM-DD.' });
     }
-    const events = await Event.find({ date: new Date(req.params.day) });
+    const events = await ArchivedEvent.find({ date: new Date(req.params.day) });
     if (events.length === 0) {
       return res
         .status(200)
@@ -414,7 +366,7 @@ router.get('/day/:day', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -428,7 +380,7 @@ router.get('/month/:month', token.checkToken(false), async (req, res) => {
     if (!moment(req.params.month, 'YYYY-MM', true).isValid()) {
       return res.status(400).json({ message: 'The date has to be in the format YYYY-MM.' });
     }
-    const events = await Event.find({
+    const events = await ArchivedEvent.find({
       date: {
         $gte: new Date(req.params.month),
         $lte: new Date(moment(req.params.month).add(1, 'months')),
@@ -443,28 +395,7 @@ router.get('/month/:month', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: 'Error, something went wrong. Please try again.',
-      error: `${err.name}: ${err.message}`,
-    });
-  }
-});
-
-// get canceled events
-router.get('/canceled', token.checkToken(true), async (req, res) => {
-  try {
-    const events = await Event.find({ canceled: 1 });
-    if (events.length === 0) {
-      return res
-        .status(200)
-        .json({ message: 'No canceled events found.', token: res.locals.token });
-    }
-
-    const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
-    return res.status(200).json({ data: dereferenced, token: res.locals.token });
-  } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -487,7 +418,7 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
     query.location = req.query.location;
     query.date = new Date(req.query.date);
 
-    const events = await Event.find(query);
+    const events = await ArchivedEvent.find(query);
     if (events.length === 0) {
       return res.status(200).json({ message: 'No similar events found.', token: res.locals.token });
     }
@@ -495,7 +426,7 @@ router.get('/similar', token.checkToken(false), async (req, res) => {
     const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -514,12 +445,12 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
       firstDate: '',
       lastDate: '',
     };
-    const events = await Event.find();
-    if (events.length === 0 && req.query.includeFestivals !== 'true') {
+    const archivedEvents = await ArchivedEvent.find();
+    if (archivedEvents.length === 0 && req.query.includeFestivals !== 'true') {
       return res.status(200).json({ data: filters, token: res.locals.token });
     }
 
-    const dereferenced = await dereference.objectArray(events, 'event', 'date', 1);
+    const dereferenced = await dereference.objectArray(archivedEvents, 'event', 'date', 1);
 
     if (dereferenced.length > 0) {
       filters.firstDate = dereferenced[0].date;
@@ -567,7 +498,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
 
     if (req.query.includeFestivals === 'true') {
       const festivals = await Festival.find();
-      if (events.length === 0 && festivals.length === 0) {
+      if (archivedEvents.length === 0 && festivals.length === 0) {
         return res.status(200).json({ data: filters, token: res.locals.token });
       }
 
@@ -576,7 +507,7 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
       dereferencedFestivals.forEach(festival => {
         let valid = false;
         festival.events.forEach(event => {
-          if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) >= 0) {
+          if (event.startDate.localeCompare(moment(Date.now()).format('YYYY-MM-DD')) < 0) {
             valid = true;
             if (event.name && !filters.startWith.includes(event.name.charAt(0).toUpperCase())) {
               if (event.name.charAt(0).toUpperCase() === 'Ä') {
@@ -636,7 +567,23 @@ router.get('/filters', token.checkToken(false), async (req, res) => {
     });
     return res.status(200).json({ data: filters, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
+    return res.status(500).json({
+      message: 'Error, something went wrong. Please try again.',
+      error: `${err.name}: ${err.message}`,
+    });
+  }
+});
+
+// move old events to archived events collection
+router.get('/archive', token.checkToken(true), async (req, res) => {
+  try {
+    const archived = await archive.events();
+    return res
+      .status(200)
+      .json({ message: `${archived.length} event(s) moved to archive.`, token: res.locals.token });
+  } catch (err) {
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,
@@ -649,7 +596,7 @@ router.post(
   '/',
   token.checkToken(true),
   multerConfig.upload.single('image'),
-  validateEvent.validateObject('post', 'event'),
+  validateEvent.validateObject('post', 'archive'),
   async (req, res) => {
     try {
       let newEvent = res.locals.validated;
@@ -682,7 +629,7 @@ router.post(
   '/multiple',
   token.checkToken(true),
   multerConfig.upload.single('image'),
-  validateEvent.validateList('post', 'event'),
+  validateEvent.validateList('post', 'archive'),
   async (req, res) => {
     try {
       const objectList = res.locals.validated;
@@ -712,23 +659,28 @@ router.post(
   }
 );
 
-// post multiple events to database from json file
-router.post(
-  '/fromJSON',
+// update event by id
+router.put(
+  '/:_id',
   token.checkToken(true),
-  multerConfig.uploadJSON.single('file'),
-  validateEvent.validateFromJson('post', 'event'),
+  multerConfig.upload.single('image'),
+  validateEvent.validateObject('put', 'archive'),
   async (req, res) => {
     try {
-      const objectList = res.locals.validated;
-      const promises = objectList.map(async object => {
-        const result = await new Event(object).save();
-        return result;
-      });
-      const responseList = await Promise.all(promises);
-      const dereferenced = await dereference.objectArray(responseList, 'event', 'name', 1);
+      let updatedEvent = res.locals.validated;
+      let category = '';
+      if (new Date(updatedEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
+        await ArchivedEvent.updateOne({ _id: req.params._id }, updatedEvent);
+        updatedEvent = await ArchivedEvent.findById(req.params._id);
+      } else {
+        await ArchivedEvent.remove({ _id: req.params._id });
+        updatedEvent = await new Event(updatedEvent).save();
+        category = ' and moved to events';
+      }
+
+      const dereferenced = await dereference.eventObject(updatedEvent);
       return res.status(200).json({
-        message: `${responseList.length} event(s) saved`,
+        message: `Event updated ${category}`,
         data: dereferenced,
         token: res.locals.token,
       });
@@ -742,92 +694,13 @@ router.post(
   }
 );
 
-// convert incoming csv data to matching json
-router.post(
-  '/convertCSV',
-  token.checkToken(false),
-  multerConfig.uploadCSV.single('file'),
-  async (req, res) => {
-    try {
-      const events = await csv.convertFile(req.file, 'events');
-      return res.status(200).json({ data: events, token: res.locals.token });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: 'Error, something went wrong. Please try again.',
-        error: `${err.name}: ${err.message}`,
-      });
-    }
-  }
-);
-
-// update event by id
-router.put(
-  '/:_id',
-  token.checkToken(true),
-  multerConfig.upload.single('image'),
-  validateEvent.validateObject('put', 'event'),
-  async (req, res) => {
-    try {
-      let updatedEvent = res.locals.validated;
-      let category = '';
-      if (new Date(updatedEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
-        await Event.remove({ _id: req.params._id });
-        updatedEvent = await new ArchivedEvent(updatedEvent).save();
-        category = ' and moved to events archive';
-      } else {
-        await Event.updateOne({ _id: req.params._id }, updatedEvent);
-        updatedEvent = await Event.findById(req.params._id);
-      }
-
-      const dereferenced = await dereference.eventObject(updatedEvent);
-      return res
-        .status(200)
-        .json({ message: `Event updated${category}`, data: dereferenced, token: res.locals.token });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: 'Error, something went wrong. Please try again.',
-        error: `${err.name}: ${err.message}`,
-      });
-    }
-  }
-);
-
-// cancel event by id
-router.put('/cancel/:_id', rateLimit.dataLimiter, token.checkToken(false), async (req, res) => {
-  try {
-    const event = await Event.findById(req.params._id);
-    if (!event) {
-      return res
-        .status(400)
-        .json({ message: 'No event found with this ID', token: res.locals.token });
-    }
-
-    event.canceled = 1;
-    event.lastModified = Date.now();
-
-    const updated = await Event.findOneAndUpdate({ _id: req.params._id }, event, { new: true });
-    const dereferenced = await dereference.eventObject(updated);
-    return res
-      .status(200)
-      .json({ message: 'Event canceled', data: dereferenced, token: res.locals.token });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: 'Error, something went wrong. Please try again.',
-      error: `${err.name}: ${err.message}`,
-    });
-  }
-});
-
-// delete event by id
+// delete location by id
 router.delete('/:_id', token.checkToken(true), async (req, res) => {
   try {
-    const response = await deleteRoute.deleteObject(req.params._id, 'event');
+    const response = await deleteRoute.deleteObject(req.params._id, 'archivedEvent');
     return res.status(response.status).json({ message: response.message, token: res.locals.token });
   } catch (err) {
-    console.error(err);
+    console.log(err);
     return res.status(500).json({
       message: 'Error, something went wrong. Please try again.',
       error: `${err.name}: ${err.message}`,

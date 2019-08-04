@@ -1,0 +1,16 @@
+{
+  "extends": ["airbnb-base", "prettier", "plugin:prettier/recommended"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "no-plusplus": [0],
+    "import/no-extraneous-dependencies": "Off",
+    "no-underscore-dangle": ["error", { "allow": ["_id", "_geoloc"] }],
+    "curly": "error",
+    "no-console": "off"
+  },
+  "globals": {
+    "self": true,
+    "process": true
+  }
+}
