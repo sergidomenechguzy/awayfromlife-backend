@@ -9,7 +9,6 @@ require('../models/Band');
 require('../models/Location');
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
@@ -17,7 +16,7 @@ const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 
 // check all attributes and build the finished object
-const validateEvent = (data, type, collection, options) => {
+const validateEvent = (data, type, options) => {
   return new Promise(async (resolve, reject) => {
     try {
       const optionsChecked = options || {};
@@ -183,11 +182,10 @@ const validateEvent = (data, type, collection, options) => {
 
       if (type === 'put' || type === 'validate') {
         const model = {
-          event: Event,
-          archive: ArchivedEvent,
-          unvalidated: UnvalidatedEvent,
+          put: Event,
+          validate: UnvalidatedEvent,
         };
-        const object = await model[collection].findById(id);
+        const object = await model[type].findById(id);
         if (!object) {
           return resolve('No event found with this ID');
         }
@@ -223,7 +221,7 @@ const validateEvent = (data, type, collection, options) => {
         if (type === 'put') {
           newEvent._id = id;
         }
-        const updatedObject = await url.generateEventUrl(newEvent, collection);
+        const updatedObject = await url.generateUrl(newEvent, 'event');
         return resolve(updatedObject);
       }
       const newEvent = {
@@ -247,7 +245,7 @@ const validateEvent = (data, type, collection, options) => {
       if (type === 'unvalidated') {
         return resolve(newEvent);
       }
-      const updatedObject = await url.generateEventUrl(newEvent, collection, urlList);
+      const updatedObject = await url.generateUrl(newEvent, 'event', urlList);
       return resolve(updatedObject);
     } catch (err) {
       return reject(err);

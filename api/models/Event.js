@@ -68,4 +68,3 @@ const EventSchema = new Schema({
 
 mongoose.model('events', EventSchema);
 mongoose.model('unvalidated_events', EventSchema);
-mongoose.model('archived_events', EventSchema);

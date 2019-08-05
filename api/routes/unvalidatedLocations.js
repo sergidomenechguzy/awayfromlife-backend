@@ -16,7 +16,6 @@ const router = express.Router();
 const Location = mongoose.model('locations');
 const UnvalidatedLocation = mongoose.model('unvalidated_locations');
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // unvalidated_locations routes
@@ -140,11 +139,6 @@ router.post(
       const newLocation = await new Location(res.locals.validated).save();
       await Promise.all([
         deleteRoute.deleteLocationFromEventCollection(Event, req.params._id, newLocation._id),
-        deleteRoute.deleteLocationFromEventCollection(
-          ArchivedEvent,
-          req.params._id,
-          newLocation._id
-        ),
         deleteRoute.deleteLocationFromEventCollection(
           UnvalidatedEvent,
           req.params._id,

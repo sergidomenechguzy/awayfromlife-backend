@@ -13,7 +13,6 @@ require('../models/Event');
 const router = express.Router();
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 
 // unvalidated_events routes
@@ -176,19 +175,11 @@ router.post(
           token: res.locals.token,
         });
       }
-      let newEvent = res.locals.validated;
-      let category;
-      if (new Date(newEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
-        newEvent = await new ArchivedEvent(newEvent).save();
-        category = 'events archive';
-      } else {
-        newEvent = await new Event(newEvent).save();
-        category = 'events';
-      }
+      const newEvent = await new Event(res.locals.validated).save();
       await UnvalidatedEvent.remove({ _id: req.params._id });
       const dereferenced = await dereference.eventObject(newEvent);
       return res.status(200).json({
-        message: `Event validated and saved to ${category}`,
+        message: 'Event validated and saved',
         data: dereferenced,
         token: res.locals.token,
       });

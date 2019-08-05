@@ -12,7 +12,6 @@ require('../../models/Bug');
 require('../../models/Feedback');
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
@@ -110,13 +109,6 @@ function deleteLocationData(id) {
           return response;
         })
       );
-      const archivedEvents = await ArchivedEvent.find({ location: id });
-      promises = promises.concat(
-        archivedEvents.map(async event => {
-          const response = await deleteObject(event._id, 'archivedEvent');
-          return response;
-        })
-      );
       const unvalidatedEvents = await UnvalidatedEvent.find({ location: id });
       promises = promises.concat(
         unvalidatedEvents.map(async event => {
@@ -159,7 +151,6 @@ function deleteObject(id, collection) {
   return new Promise(async (resolve, reject) => {
     const categories = {
       event: { model: Event, string: 'Event' },
-      archivedEvent: { model: ArchivedEvent, string: 'Event' },
       unvalidatedEvent: { model: UnvalidatedEvent, string: 'Event' },
       location: { model: Location, string: 'Location' },
       unvalidatedLocation: { model: UnvalidatedLocation, string: 'Location' },
@@ -195,7 +186,6 @@ function deleteObject(id, collection) {
         case 'unvalidatedBand':
           await Promise.all([
             deleteBandFromEventCollection(Event, id),
-            deleteBandFromEventCollection(ArchivedEvent, id),
             deleteBandFromEventCollection(UnvalidatedEvent, id),
             deleteBandFromEventCollection(FestivalEvent, id),
             deleteBandFromEventCollection(UnvalidatedFestivalEvent, id),

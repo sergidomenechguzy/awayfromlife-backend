@@ -7,18 +7,19 @@ require('../../models/FestivalEvent');
 require('../../models/Festival');
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const FestivalEvent = mongoose.model('festival_events');
 const Festival = mongoose.model('festivals');
 
 function getEvents(type, attribute, id) {
   return new Promise(async (resolve, reject) => {
     try {
-      const collection = type === 'past' ? ArchivedEvent : Event;
       const comparison = type === 'past' ? '$lt' : '$gte';
       const order = type === 'past' ? -1 : 1;
 
-      const events = await collection.find({ [attribute]: id });
+      const events = await Event.find({
+        [attribute]: id,
+        date: { [comparison]: new Date().setUTCHours(0, 0, 0, 0) },
+      });
       let festivalEvents = [];
       if (attribute === 'bands') {
         festivalEvents = await FestivalEvent.find({

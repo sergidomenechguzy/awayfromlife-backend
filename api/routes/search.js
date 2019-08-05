@@ -12,7 +12,6 @@ require('../models/Band');
 const router = express.Router();
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const Festival = mongoose.model('festivals');
 const Location = mongoose.model('locations');
 const Band = mongoose.model('bands');
@@ -143,9 +142,7 @@ const eventFind = (queries, regex) => {
       ];
       const eventResults = [];
 
-      let events = await Event.find();
-      const archivedEvents = await ArchivedEvent.find();
-      events = [...events, ...archivedEvents];
+      const events = await Event.find();
       const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
 
       dereferenced.forEach(event => {
