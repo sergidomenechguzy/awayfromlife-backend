@@ -8,15 +8,7 @@ const router = express.Router();
 // get latest added events
 router.get('/latest', token.checkToken(false), async (req, res) => {
   try {
-    let allCategories = [
-      'event',
-      'archivedEvent',
-      'location',
-      'band',
-      'festival',
-      'festivalEvent',
-      'genre',
-    ];
+    let allCategories = ['event', 'location', 'band', 'festival', 'festivalEvent', 'genre'];
     if (res.locals.token !== undefined) {
       allCategories = allCategories.concat([
         'unvalidatedEvent',

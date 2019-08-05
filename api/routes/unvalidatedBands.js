@@ -15,7 +15,6 @@ require('../models/FestivalEvent');
 const router = express.Router();
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const Band = mongoose.model('bands');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
@@ -144,7 +143,6 @@ router.post(
       const newBand = await new Band(res.locals.validated).save();
       await Promise.all([
         deleteRoute.deleteBandFromEventCollection(Event, req.params._id, newBand._id),
-        deleteRoute.deleteBandFromEventCollection(ArchivedEvent, req.params._id, newBand._id),
         deleteRoute.deleteBandFromEventCollection(UnvalidatedEvent, req.params._id, newBand._id),
         deleteRoute.deleteBandFromEventCollection(FestivalEvent, req.params._id, newBand._id),
         deleteRoute.deleteBandFromEventCollection(

@@ -12,7 +12,6 @@ require('../../models/Bug');
 require('../../models/Feedback');
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const UnvalidatedBand = mongoose.model('unvalidated_bands');
 const Band = mongoose.model('bands');
@@ -29,7 +28,6 @@ const Feedback = mongoose.model('feedback');
 
 const categories = {
   event: { model: Event, string: 'event' },
-  archivedEvent: { model: ArchivedEvent, string: 'event' },
   unvalidatedEvent: { model: UnvalidatedEvent, string: 'event' },
   location: { model: Location, string: 'location' },
   unvalidatedLocation: { model: UnvalidatedLocation, string: 'location' },

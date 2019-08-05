@@ -18,7 +18,6 @@ require('../models/Festival');
 const router = express.Router();
 
 const Event = mongoose.model('events');
-const ArchivedEvent = mongoose.model('archived_events');
 const UnvalidatedEvent = mongoose.model('unvalidated_events');
 const Location = mongoose.model('locations');
 const Festival = mongoose.model('festivals');
@@ -27,7 +26,26 @@ const Festival = mongoose.model('festivals');
 // get all events
 router.get('/', token.checkToken(false), async (req, res) => {
   try {
-    const events = await Event.find();
+    const events = await Event.find({ date: { $gte: new Date().setUTCHours(0, 0, 0, 0) } });
+    if (events.length === 0) {
+      return res.status(200).json({ message: 'No events found', token: res.locals.token });
+    }
+
+    const dereferenced = await dereference.objectArray(events, 'event', 'name', 1);
+    return res.status(200).json({ data: dereferenced, token: res.locals.token });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: 'Error, something went wrong. Please try again.',
+      error: `${err.name}: ${err.message}`,
+    });
+  }
+});
+
+// get all passed events
+router.get('/archive', token.checkToken(false), async (req, res) => {
+  try {
+    const events = await Event.find({ date: { $lt: new Date().setUTCHours(0, 0, 0, 0) } });
     if (events.length === 0) {
       return res.status(200).json({ message: 'No events found', token: res.locals.token });
     }
@@ -264,21 +282,13 @@ router.get('/page', token.checkToken(false), async (req, res) => {
 // get event by id
 router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
   try {
-    let object = await Event.findById(req.params._id);
-    let isArchived = false;
-
-    if (!object && req.query.includeArchived === 'true') {
-      object = await ArchivedEvent.findById(req.params._id);
-      isArchived = true;
-    }
+    const object = await Event.findById(req.params._id);
     if (!object) {
       return res
         .status(400)
         .json({ message: 'No event found with this ID', token: res.locals.token });
     }
-
     const dereferenced = await dereference.eventObject(object);
-    dereferenced.isArchived = isArchived;
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
     console.error(err);
@@ -292,24 +302,15 @@ router.get('/byid/:_id', token.checkToken(false), async (req, res) => {
 // get event by name-url
 router.get('/byurl/:url', token.checkToken(false), async (req, res) => {
   try {
-    let object = await Event.findOne({
+    const object = await Event.findOne({
       url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i'),
     });
-    let isArchived = false;
-
-    if (!object && req.query.includeArchived === 'true') {
-      object = await ArchivedEvent.findOne({
-        url: new RegExp(`^${escapeStringRegexp(req.params.url.trim())}$`, 'i'),
-      });
-      isArchived = true;
-    }
     if (!object) {
       return res
         .status(400)
         .json({ message: 'No event found with this URL', token: res.locals.token });
     }
     const dereferenced = await dereference.eventObject(object);
-    dereferenced.isArchived = isArchived;
     return res.status(200).json({ data: dereferenced, token: res.locals.token });
   } catch (err) {
     console.error(err);
@@ -653,17 +654,10 @@ router.post(
   async (req, res) => {
     try {
       let newEvent = res.locals.validated;
-      let category;
-      if (new Date(newEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
-        newEvent = await new ArchivedEvent(newEvent).save();
-        category = 'events archive';
-      } else {
-        newEvent = await new Event(newEvent).save();
-        category = 'events';
-      }
+      newEvent = await new Event(newEvent).save();
       const dereferenced = await dereference.eventObject(newEvent);
       return res.status(200).json({
-        message: `Event saved to ${category}`,
+        message: 'Event saved',
         data: dereferenced,
         token: res.locals.token,
       });
@@ -687,12 +681,7 @@ router.post(
     try {
       const objectList = res.locals.validated;
       const promises = objectList.map(async object => {
-        let result;
-        if (new Date(object.date) < new Date().setUTCHours(0, 0, 0, 0)) {
-          result = await new ArchivedEvent(object).save();
-        } else {
-          result = await new Event(object).save();
-        }
+        const result = await new Event(object).save();
         return result;
       });
       const responseList = await Promise.all(promises);
@@ -769,21 +758,12 @@ router.put(
   validateEvent.validateObject('put', 'event'),
   async (req, res) => {
     try {
-      let updatedEvent = res.locals.validated;
-      let category = '';
-      if (new Date(updatedEvent.date) < new Date().setUTCHours(0, 0, 0, 0)) {
-        await Event.remove({ _id: req.params._id });
-        updatedEvent = await new ArchivedEvent(updatedEvent).save();
-        category = ' and moved to events archive';
-      } else {
-        await Event.updateOne({ _id: req.params._id }, updatedEvent);
-        updatedEvent = await Event.findById(req.params._id);
-      }
-
+      await Event.updateOne({ _id: req.params._id }, res.locals.validated);
+      const updatedEvent = await Event.findById(req.params._id);
       const dereferenced = await dereference.eventObject(updatedEvent);
       return res
         .status(200)
-        .json({ message: `Event updated${category}`, data: dereferenced, token: res.locals.token });
+        .json({ message: 'Event updated', data: dereferenced, token: res.locals.token });
     } catch (err) {
       console.log(err);
       return res.status(500).json({

@@ -7,7 +7,6 @@ const path = require('path');
 const schedule = require('node-schedule');
 
 const secrets = require('./api/config/secrets');
-const archive = require('./api/routes/controller/archive');
 
 const app = express();
 global.dirPath = __dirname;
@@ -16,7 +15,6 @@ global.dirPath = __dirname;
 const general = require('./api/routes/general');
 const events = require('./api/routes/events');
 const unvalidatedEvents = require('./api/routes/unvalidatedEvents');
-const archivedEvents = require('./api/routes/archivedEvents');
 const festivals = require('./api/routes/festivals');
 const unvalidatedFestivals = require('./api/routes/unvalidatedFestivals');
 const festivalEvents = require('./api/routes/festivalEvents');
@@ -84,7 +82,6 @@ app.use('/api/general', general);
 
 app.use('/api/events', events);
 app.use('/api/unvalidated-events', unvalidatedEvents);
-app.use('/api/archived-events', archivedEvents);
 
 app.use('/api/festivals', festivals);
 app.use('/api/unvalidated-festivals', unvalidatedFestivals);
@@ -116,14 +113,3 @@ app.listen(port, ip, () => {
 app.use((req, res) => {
   res.status(404).json({ error: '404 - Not found' });
 });
-
-if (process.env.NODE_ENV === 'production') {
-  schedule.scheduleJob('0 3 * * *', async () => {
-    try {
-      console.log('EXECUTED SCHEDULE JOB AT ', Date.now());
-      await archive.events();
-    } catch (err) {
-      console.error(err);
-    }
-  });
-}
