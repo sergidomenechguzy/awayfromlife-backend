@@ -127,7 +127,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
         const locationQuery = { _id: event.location };
         if (req.query.city) {
           const regexp = new RegExp(escapeStringRegexp(req.query.city.trim()), 'i');
-          query.$or = [
+          locationQuery.$or = [
             { 'address.default.city': regexp },
             { 'address.default.administrative': regexp },
             { 'address.default.county': regexp },
@@ -135,13 +135,13 @@ router.get('/page', token.checkToken(false), async (req, res) => {
           ];
         } else if (req.query.country) {
           const regexp = new RegExp(escapeStringRegexp(req.query.country.trim()), 'i');
-          query.$or = [
+          locationQuery.$or = [
             { 'address.default.country': regexp },
             { 'address.international.country': regexp },
           ];
         }
         const location = await Location.findOne(locationQuery);
-        if (location === undefined) {
+        if (!location) {
           return null;
         }
       }
@@ -170,7 +170,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
       const festivalQuery = {};
       if (req.query.city) {
         const regexp = new RegExp(escapeStringRegexp(req.query.city.trim()), 'i');
-        query.$or = [
+        festivalQuery.$or = [
           { 'address.default.city': regexp },
           { 'address.default.administrative': regexp },
           { 'address.default.county': regexp },
@@ -178,7 +178,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
         ];
       } else if (req.query.country) {
         const regexp = new RegExp(escapeStringRegexp(req.query.country.trim()), 'i');
-        query.$or = [
+        festivalQuery.$or = [
           { 'address.default.country': regexp },
           { 'address.international.country': regexp },
         ];
