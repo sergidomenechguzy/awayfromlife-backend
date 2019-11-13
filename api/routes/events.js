@@ -250,6 +250,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
       data: finalEvents,
       current: page,
       pages: Math.ceil(count / perPage),
+      totalCount: count,
       token: res.locals.token,
     });
   } catch (err) {
