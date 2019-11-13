@@ -80,7 +80,7 @@ router.get('/page', token.checkToken(false), async (req, res) => {
       perPage = parseInt(req.query.perPage, 10);
     }
     let sortBy = 'name';
-    if (['genre', 'origin.city'].includes(req.query.sortBy)) {
+    if (['genre', 'origin.city', 'lastModified'].includes(req.query.sortBy)) {
       sortBy = req.query.sortBy;
     }
     let order = 1;

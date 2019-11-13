@@ -35,10 +35,7 @@ const users = require('./api/routes/users');
 // connect to mongoose
 mongoose.Promise = global.Promise;
 mongoose
-  .connect(
-    secrets.dbURL,
-    { useNewUrlParser: true }
-  )
+  .connect(secrets.dbURL, { useNewUrlParser: true })
   .then(() => console.log('> MongoDB connected'))
   .catch(err => console.error(err));
 

@@ -379,6 +379,12 @@ const bandSort = (objectList, sortBy, order) => {
         .reduce((x, y) => (x < y ? x : y))
         .localeCompare(b.genre.reduce((x, y) => (x < y ? x : y)));
     }
+    if (sortBy === 'lastModified') {
+      if (order === -1) {
+        return b[sortBy] - a[sortBy];
+      }
+      return a[sortBy] - b[sortBy];
+    }
     if (order === -1) {
       return b.name.localeCompare(a.name);
     }
@@ -406,6 +412,12 @@ const eventSort = (objectList, sortBy, order) => {
       }
       return a[sortBy].localeCompare(b[sortBy]);
     }
+    if (sortBy === 'lastModified') {
+      if (order === -1) {
+        return b[sortBy] - a[sortBy];
+      }
+      return a[sortBy] - b[sortBy];
+    }
     if (order === -1) {
       return b.name.localeCompare(a.name);
     }
@@ -420,6 +432,12 @@ const festivalSort = (objectList, sortBy, order) => {
         return b.address[sortBy].localeCompare(a.address[sortBy]);
       }
       return a.address[sortBy].localeCompare(b.address[sortBy]);
+    }
+    if (sortBy === 'lastModified') {
+      if (order === -1) {
+        return b[sortBy] - a[sortBy];
+      }
+      return a[sortBy] - b[sortBy];
     }
     if (order === -1) {
       return b.name.localeCompare(a.name);
@@ -436,6 +454,12 @@ const festivalEventSort = (objectList, sortBy, order) => {
     if (typeof b === 'string') {
       return -1;
     }
+    if (sortBy === 'lastModified') {
+      if (order === -1) {
+        return b[sortBy] - a[sortBy];
+      }
+      return a[sortBy] - b[sortBy];
+    }
     if (order === -1) {
       return b[sortBy].localeCompare(a[sortBy]);
     }
@@ -450,6 +474,12 @@ const locationSort = (objectList, sortBy, order) => {
         return b.address[sortBy].localeCompare(a.address[sortBy]);
       }
       return a.address[sortBy].localeCompare(b.address[sortBy]);
+    }
+    if (sortBy === 'lastModified') {
+      if (order === -1) {
+        return b[sortBy] - a[sortBy];
+      }
+      return a[sortBy] - b[sortBy];
     }
     if (order === -1) {
       return b[sortBy].localeCompare(a[sortBy]);
