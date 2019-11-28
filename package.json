@@ -4,10 +4,10 @@
   "description": "Backend Api Application for Awayfromlife Streets",
   "main": "app.js",
   "scripts": {
-    "start": "NODE_ENV=production node app.js",
-    "start:pm2": "NODE_ENV=production pm2 start app.js -i max",
+    "start": "set NODE_ENV=production && node app.js",
+    "start:pm2": "set NODE_ENV=production && pm2 start app.js -i max",
     "dev": "npx nodemon app.js",
-    "dev:local": "NODE_ENV=local npx nodemon app.js"
+    "dev:local": "set NODE_ENV=local && npx nodemon app.js"
   },
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
