@@ -4,6 +4,7 @@ const algoliasearch = require('algoliasearch');
 
 const url = require('../helpers/url');
 const image = require('../helpers/image');
+const algoliaFallback = require('./algoliaFallback.json');
 require('../models/Band');
 require('../models/Genre');
 
@@ -153,13 +154,18 @@ const validateBand = (data, type, options) => {
         return resolve("Attribute 'facebookUrl' can be left out or has to be a string.");
       }
 
-      const res = await places.search({
-        query: data.origin.value
-          ? data.origin.value
-          : `${data.origin.city}, ${data.origin.country}`,
-        language: data.countryCode,
-        type: 'city',
-      });
+      let res;
+      if (process.env.NODE_ENV === 'local') {
+        res = algoliaFallback.city;
+      } else {
+        res = await places.search({
+          query: data.origin.value
+            ? data.origin.value
+            : `${data.origin.city}, ${data.origin.country}`,
+          language: data.countryCode,
+          type: 'city',
+        });
+      }
 
       const origin = {
         city: [],
@@ -167,7 +173,7 @@ const validateBand = (data, type, options) => {
       };
       if (res.hits[0] !== undefined) {
         if (res.hits[0].locale_names) {
-          Object.keys(res.hits[0].locale_name).forEach(attribute => {
+          Object.keys(res.hits[0].locale_names).forEach(attribute => {
             res.hits[0].locale_names[attribute].forEach(value => {
               if (!origin.city.includes(value)) {
                 origin.city.push(value);

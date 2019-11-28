@@ -3,6 +3,7 @@ const algoliasearch = require('algoliasearch');
 
 const url = require('../helpers/url');
 const image = require('../helpers/image');
+const algoliaFallback = require('./algoliaFallback.json');
 require('../models/Festival');
 require('../models/Genre');
 
@@ -131,19 +132,24 @@ const validateFestival = (data, type, options) => {
         return resolve("Attribute 'facebookUrl' can be left out or has to be a string.");
       }
 
-      let res = await places.search({
-        query: data.address.value
-          ? data.address.value
-          : `${data.address.street}, ${data.address.city}`,
-        language: data.countryCode,
-        type: 'address',
-      });
-      if (res.hits[0] === undefined) {
+      let res;
+      if (process.env.NODE_ENV === 'local') {
+        res = algoliaFallback.address;
+      } else {
         res = await places.search({
-          query: `${data.address.street}, ${data.address.county}`,
+          query: data.address.value
+            ? data.address.value
+            : `${data.address.street}, ${data.address.city}`,
           language: data.countryCode,
           type: 'address',
         });
+        if (res.hits[0] === undefined) {
+          res = await places.search({
+            query: `${data.address.street}, ${data.address.county}`,
+            language: data.countryCode,
+            type: 'address',
+          });
+        }
       }
 
       const address = {

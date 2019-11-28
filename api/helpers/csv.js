@@ -7,6 +7,7 @@ const algoliasearch = require('algoliasearch');
 const escapeStringRegexp = require('escape-string-regexp');
 
 const dereference = require('../helpers/dereference');
+const algoliaFallback = require('./algoliaFallback.json');
 require('../models/Band');
 require('../models/Location');
 require('../models/Genre');
@@ -65,7 +66,13 @@ const convertBand = object => {
         index = index4;
       }
 
-      const res = await places.search({ query: object.origin, type: 'city' });
+      let res;
+      if (process.env.NODE_ENV === 'local') {
+        res = algoliaFallback.city;
+      } else {
+        res = await places.search({ query: object.origin, type: 'city' });
+      }
+
       const origin =
         res.hits.length === 0
           ? `ERROR: Origin "${object.origin}" not found`
@@ -182,7 +189,13 @@ const convertFestival = object => {
         return a.localeCompare(b);
       });
 
-      const res = await places.search({ query: object.address, type: 'address' });
+      let res;
+      if (process.env.NODE_ENV === 'local') {
+        res = algoliaFallback.address;
+      } else {
+        res = await places.search({ query: object.address, type: 'address' });
+      }
+
       const address =
         res.hits.length === 0
           ? `ERROR: Address "${object.address}" not found`
@@ -239,7 +252,12 @@ const convertFestival = object => {
 const convertLocation = object => {
   return new Promise(async (resolve, reject) => {
     try {
-      const res = await places.search({ query: object.address, type: 'address' });
+      let res;
+      if (process.env.NODE_ENV === 'local') {
+        res = algoliaFallback.address;
+      } else {
+        res = await places.search({ query: object.address, type: 'address' });
+      }
       const address =
         res.hits.length === 0
           ? `ERROR: Address "${object.address}" not found`
