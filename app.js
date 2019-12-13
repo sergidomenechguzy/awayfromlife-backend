@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const app = express();
 
@@ -44,9 +45,17 @@ const archive = require(dirPath + '/api/routes/controller/archive');
 
 // connect to mongoose
 mongoose.Promise = global.Promise;
-mongoose.connect(secrets.dbURL, {  useNewUrlParser: true })
-	.then(() => console.log('> MongoDB connected'))
-	.catch(err => console.log(err));
+const connectMongoDB = async () => {
+	let mongoUri = secrets.dbURL;
+	if (process.env.NODE_ENV === 'test') {
+		const mongoServer = new MongoMemoryServer();
+		mongoUri = await mongoServer.getConnectionString();
+	}
+	mongoose.connect(mongoUri, {  useNewUrlParser: true })
+		.then(() => console.log('> MongoDB connected'))
+		.catch(err => console.log(err));
+}
+connectMongoDB();
 
 // make images folder publicly available
 app.use('/images', express.static('images'));
@@ -127,3 +136,5 @@ if (process.env.NODE_ENV === 'production') {
 		}
 	});
 }
+
+module.exports = app;

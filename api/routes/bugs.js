@@ -21,11 +21,11 @@ const rateLimit = require(dirPath + '/api/config/rateLimit');
 
 // bugs routes
 // get all bugs
-router.get('/', token.checkToken(true), async (req, res) => {
+router.get('/', token.checkToken(false), async (req, res) => {
 	try {
 		const bugs = await Bug.find();
 		if (bugs.length === 0)
-			return res.status(200).json({ message: 'No bugs found', token: res.locals.token });
+			return res.status(200).json({ message: 'No bugs found', data: [], token: res.locals.token });
 
 		return res.status(200).json({ data: bugs, token: res.locals.token });
 	}

@@ -6,7 +6,9 @@
   "scripts": {
     "start": "NODE_ENV=production pm2 start app.js -i max",
     "start-node": "NODE_ENV=production node app.js",
-    "dev": "npx nodemon app.js"
+    "dev": "nodemon app.js",
+    "start:test": "set NODE_ENV=test && node app.js",
+    "test": "nodemon -x \"mocha --timeout 60000\""
   },
   "author": "Sergi Domenech Guzy",
   "license": "ISC",
@@ -31,5 +33,12 @@
     "ignore": [
       "images/*"
     ]
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
+    "mocha": "^6.2.0",
+    "mongodb-memory-server": "^5.1.10",
+    "nodemon": "^1.19.1"
   }
 }
